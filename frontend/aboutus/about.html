@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Us - Toughcuts Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="Meet the Toughcuts team — our story, our values, and the barbers behind every precision cut." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="about.css" />
+</head>
+<body>
+
+    <!-- ==========================================
+    ANNOUNCEMENT BAR + HEADER
+    ========================================== -->
+    <div class="site-header-group">
+
+        <div class="announce-bar" id="announceBar">
+            <div class="container announce-bar-inner">
+                <p class="announce-bar-text">
+                    <i class="fas fa-scissors" aria-hidden="true"></i>
+                    New client special — 20% off your first cut. <a href="../booking.html">Book now →</a>
+                </p>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="container">
+                <nav class="navbar">
+                    <div class="logo">
+                        <a href="../index.html">
+                            <img src="../images/toughcutslogo.png" alt="Toughcuts Logo" />
+                        </a>
+                    </div>
+
+                    <ul class="nav-menu" id="navMenu">
+                        <li><a href="../index.html">HOME</a></li>
+                        <li><a href="../index.html#branches">BRANCH</a></li>
+                        <li><a href="../index.html#products">PRODUCTS</a></li>
+                        <li><a href="../index.html#services">SERVICES</a></li>
+                        <li><a href="about.html" class="active">ABOUT US</a></li>
+
+                        <li class="nav-menu-divider" aria-hidden="true"></li>
+                        <li class="nav-menu-search">
+                            <form class="mobile-search-form" role="search" onsubmit="return false;">
+                                <i class="fas fa-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search styles, products..." aria-label="Search" />
+                            </form>
+                        </li>
+                        <li class="nav-menu-auth">
+                            <a href="../login.html" class="nav-auth-link">Log In</a>
+                            <a href="../signup.html" class="nav-auth-btn">Sign Up</a>
+                        </li>
+                        <li>
+                            <a href="../booking.html" class="btn-book nav-menu-book">Book Appointment</a>
+                        </li>
+                    </ul>
+
+                    <div class="nav-actions">
+                        <button class="icon-btn" id="searchToggle" aria-label="Search" aria-expanded="false">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+
+                        <a href="../cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
+                            <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                            <span class="cart-count">0</span>
+                        </a>
+
+                        <div class="nav-auth">
+                            <a href="../login.html" class="nav-auth-link">Log In</a>
+                            <a href="../signup.html" class="nav-auth-btn">Sign Up</a>
+                        </div>
+
+                        <a href="../booking.html" class="btn-book">Book Appointment</a>
+
+                        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
+                            <i class="fas fa-bars" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
+
+                <div class="header-search-panel" id="headerSearchPanel">
+                    <form class="header-search-form" role="search" onsubmit="return false;">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="headerSearchInput" placeholder="Search styles, products, services..." aria-label="Search" />
+                        <button type="button" class="header-search-close" id="headerSearchClose" aria-label="Close search">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+    </div>
+
+    <!-- ==========================================
+    SHOP STORY
+    ========================================== -->
+    <section class="about-story" id="top">
+        <div class="container">
+            <div class="about-story-wrapper">
+                <div class="about-story-image">
+                    <img src="../images/toughcutshomepagepic.png" alt="Inside the Toughcuts studio" loading="lazy" />
+                </div>
+                <div class="about-story-content">
+                    <span class="section-badge">✦ OUR STORY</span>
+                    <h1 class="about-story-title">MORE THAN A <span class="highlight">HAIRCUT.</span></h1>
+                    <p class="about-story-text">
+                        Toughcuts started as a single chair in a garage and grew into a studio built on one idea:
+                        every client leaves looking sharper than when they walked in. No rushed clippers, no
+                        guesswork — just barbers who treat every fade, every line-up, every beard trim like it's
+                        the only appointment of the day.
+                    </p>
+                    <p class="about-story-text">
+                        Years later, that idea hasn't changed. We've just gotten better at it.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    MISSION & VALUES
+    ========================================== -->
+    <section class="about-values">
+        <div class="container">
+            <div class="section-header on-light">
+                <span class="section-badge">✦ WHAT WE STAND FOR</span>
+                <h2 class="section-title">MISSION <span class="highlight">&amp; VALUES.</span></h2>
+                <p class="section-subtitle">The three things every cut is built on.</p>
+            </div>
+
+            <div class="values-grid">
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-crosshairs" aria-hidden="true"></i></div>
+                    <h3>Precision</h3>
+                    <p>Every line, fade, and taper is measured, not guessed. Consistency is the whole craft.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-heart" aria-hidden="true"></i></div>
+                    <h3>Passion</h3>
+                    <p>Our barbers train off the clock because cutting hair well is something they actually care about.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-users" aria-hidden="true"></i></div>
+                    <h3>Community</h3>
+                    <p>A barbershop is a neighborhood spot first. We know your name before we know your fade.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    OWNER SPOTLIGHT
+    ========================================== -->
+    <section class="about-owner">
+        <div class="container">
+            <div class="owner-wrapper">
+                <div class="owner-photo">
+                    <img src="../images/booknowpic.jpg" alt="Miguel Torres, Owner of Toughcuts" loading="lazy"
+                         onerror="this.src='https://placehold.co/500x600/191919/666?text=Photo'" />
+                </div>
+                <div class="owner-content">
+                    <span class="section-badge">✦ FROM THE FOUNDER</span>
+                    <h2 class="owner-name">Klark Dizon</h2>
+                    <p class="owner-title">Owner &amp; Master Barber · 10 Years</p>
+
+                    <blockquote class="owner-quote">
+                        <i class="fas fa-quote-left" aria-hidden="true"></i>
+                        I didn't open Toughcuts to be the biggest shop in town. I opened it so every
+                        person who sits in the chair leaves looking like the best version of themselves —
+                        that's still the only standard that matters here.
+                    </blockquote>
+
+                    <p class="owner-bio">
+                        Miguel started cutting hair out of a one-chair garage setup and built Toughcuts
+                        from the ground up, one client at a time. Ten years later he still works the
+                        chair most days — hot towel shaves and traditional cuts are his specialty, and
+                        he trains every barber on the team personally before they touch a client.
+                    </p>
+
+                    <a href="../booking.html?barber=klark-dizon" class="btn-primary">
+                        <i class="fas fa-calendar-check" aria-hidden="true"></i> Book with Klark
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    MEET THE TEAM — BARBER PROFILES
+    ========================================== -->
+    <section class="barber-profiles" id="team">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">✦ MEET THE TEAM</span>
+                <h2 class="section-title">FIND YOUR <span class="highlight">BARBER.</span></h2>
+                <p class="section-subtitle">Every barber's specialties, experience, and ratings — pick who fits your style.</p>
+            </div>
+
+            <div class="barber-grid" id="barberGrid">
+                <!-- Cards are rendered by JS from the barbers array in main.js,
+                     so the same data can populate both the card and the "View More" modal
+                     without duplicating markup. -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    FULL PROFILE MODAL
+    ========================================== -->
+    <div class="barber-modal" id="barberModal" role="dialog" aria-modal="true" aria-labelledby="barberModalName" hidden>
+        <div class="barber-modal-backdrop" id="barberModalBackdrop"></div>
+        <div class="barber-modal-panel">
+            <button class="barber-modal-close" id="barberModalClose" aria-label="Close profile">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+
+            <div class="barber-modal-header">
+                <img id="barberModalPhoto" src="" alt="" />
+                <div>
+                    <h3 id="barberModalName"></h3>
+                    <p id="barberModalRole" class="barber-modal-role"></p>
+                    <div class="barber-modal-rating" id="barberModalRating"></div>
+                </div>
+            </div>
+
+            <p id="barberModalBio" class="barber-modal-bio"></p>
+
+            <div class="barber-modal-section">
+                <h4>Specialties</h4>
+                <div class="barber-modal-tags" id="barberModalSpecialties"></div>
+            </div>
+
+            <div class="barber-modal-stats">
+                <div>
+                    <span class="barber-modal-stat-value" id="barberModalExperience"></span>
+                    <span class="barber-modal-stat-label">Years Experience</span>
+                </div>
+                <div>
+                    <span class="barber-modal-stat-value" id="barberModalReviews"></span>
+                    <span class="barber-modal-stat-label">Client Reviews</span>
+                </div>
+            </div>
+
+            <div class="barber-modal-actions">
+                <a href="#" id="barberModalBook" class="btn-primary">
+                    <i class="fas fa-calendar-check" aria-hidden="true"></i> Book with This Barber
+                </a>
+                <button class="btn-secondary" id="barberModalReturn" type="button">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Return
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    FOOTER
+    ========================================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+
+                <div class="footer-brand">
+                    <img class="footer-logo" src="../images/toughcutslogo.png" alt="Toughcuts Logo" loading="lazy" />
+                    <p>Precision cuts, premium style, pure confidence. Modern craftsmanship in a classic atmosphere.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/_toughcuts/" class="footer-social-link" aria-label="Toughcuts on Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on TikTok">
+                            <i class="fab fa-tiktok" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <h4>QUICK LINKS</h4>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="../index.html#branches">Branch</a></li>
+                        <li><a href="../index.html#products">Products</a></li>
+                        <li><a href="../index.html#services">Services</a></li>
+                        <li><a href="about.html">About Us</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-hours">
+                    <h4>BUSINESS HOURS</h4>
+                    <div class="footer-hours-row">
+                        <span>Mon — Fri</span>
+                        <span>9:00 AM – 8:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Saturday</span>
+                        <span>9:00 AM – 6:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Sunday</span>
+                        <span>Closed</span>
+                    </div>
+                </div>
+
+                <div class="footer-contact">
+                    <h4>TALK TO US</h4>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> 04 398 3985 2092</p>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> +76 209 1092 4095</p>
+                    <p class="footer-email"><i class="fas fa-envelope" aria-hidden="true"></i> info@toughcuts.com</p>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 <strong>Toughcuts</strong>. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="../privacy.html">Privacy Policy</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="../terms.html">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+    AI CHAT WIDGET
+    ========================================== -->
+    <div class="chat-widget" id="chatWidget">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+            <i class="fas fa-comment-dots" aria-hidden="true"></i>
+        </button>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <i class="fas fa-robot" aria-hidden="true"></i>
+                <span>Toughcuts AI</span>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <p>👋 Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <small>Ask about services, booking, or products</small>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message..." aria-label="Type your message" />
+                <button id="chatSend" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/main.js"></script>
+    <script src="about.js"></script>
+</body>
+</html>

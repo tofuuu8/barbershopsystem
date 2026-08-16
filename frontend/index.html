@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toughcuts - Premium Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="Toughcuts — premium barbershop and grooming studio. Book precision cuts, browse grooming products, and find a studio near you." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+    <!-- ==========================================
+    ANNOUNCEMENT BAR + HEADER
+    (wrapped together so the header sticks right below the bar
+    automatically, regardless of how tall the bar's text gets —
+    no hardcoded pixel offset to maintain)
+    ========================================== -->
+    <div class="site-header-group">
+
+        <div class="announce-bar" id="announceBar">
+            <div class="container announce-bar-inner">
+                <p class="announce-bar-text">
+                    <i class="fas fa-scissors" aria-hidden="true"></i>
+                    New client special — 20% off your first cut. <a href="booking.html">Book now →</a>
+                </p>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="container">
+                <nav class="navbar">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="images/toughcutslogo.png" alt="Toughcuts Logo" />
+                        </a>
+                    </div>
+
+                    <ul class="nav-menu" id="navMenu">
+                        <li><a href="index.html" class="active">HOME</a></li>
+                        <li><a href="#branches">BRANCH</a></li>
+                        <li><a href="#products">PRODUCTS</a></li>
+                        <li><a href="#services">SERVICES</a></li>
+                        <li><a href="aboutus/about.html">ABOUT US</a></li>
+
+                        <!-- Mobile-drawer-only: hidden on desktop, shown inside the hamburger panel -->
+                        <li class="nav-menu-divider" aria-hidden="true"></li>
+                        <li class="nav-menu-search">
+                            <form class="mobile-search-form" role="search" onsubmit="return false;">
+                                <i class="fas fa-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search styles, products..." aria-label="Search" />
+                            </form>
+                        </li>
+                        <li class="nav-menu-auth">
+                            <a href="login.html" class="nav-auth-link">Log In</a>
+                            <a href="signup.html" class="nav-auth-btn">Sign Up</a>
+                        </li>
+                        <li>
+                            <a href="booking.html" class="btn-book nav-menu-book">Book Appointment</a>
+                        </li>
+                    </ul>
+
+                    <div class="nav-actions">
+                        <button class="icon-btn" id="searchToggle" aria-label="Search" aria-expanded="false">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+
+                        <a href="cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
+                            <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                            <span class="cart-count">0</span>
+                        </a>
+
+                        <div class="nav-auth">
+                            <a href="login.html" class="nav-auth-link">Log In</a>
+                            <a href="signup.html" class="nav-auth-btn">Sign Up</a>
+                        </div>
+
+                        <a href="booking.html" class="btn-book">Book Appointment</a>
+
+                        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
+                            <i class="fas fa-bars" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
+
+                <!-- Expandable search bar (desktop) -->
+                <div class="header-search-panel" id="headerSearchPanel">
+                    <form class="header-search-form" role="search" onsubmit="return false;">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="headerSearchInput" placeholder="Search styles, products, services..." aria-label="Search" />
+                        <button type="button" class="header-search-close" id="headerSearchClose" aria-label="Close search">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+    </div>
+
+    <!-- ==========================================
+    HERO SECTION
+    ========================================== -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">WELCOME TO OUR <span class="highlight">STUDIOS</span></h1>
+
+            <div class="hero-wrapper">
+                <div class="hero-image">
+                    <div class="hero-image-placeholder">
+                        <img src="images/toughcutshomepagepic.png" alt="Barbershop interior" />
+                        <div class="overlay"></div>
+                    </div>
+                </div>
+
+                <div class="hero-content">
+                    <h2 class="hero-subtitle">
+                        PRECISION CUTS.<br />
+                        PREMIUM STYLE.<br />
+                        PURE CONFIDENCE.
+                    </h2>
+
+                    <p class="hero-description">
+                        Experience more than just a haircut — we deliver top tier grooming
+                        tailored to your unique style. Modern craftsmanship in a classic atmosphere.
+                    </p>
+
+                    <div class="hero-buttons">
+                        <a href="booking.html" class="btn-primary">Book Now</a>
+                        <a href="services.html" class="btn-secondary">Our Services</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    4 REASONS — AUTO-SLIDING CAROUSEL
+    ========================================== -->
+    <section class="reasons" id="reasons">
+        <div class="reasons-wrapper" id="reasonsWrapper" tabindex="0" role="region" aria-roledescription="carousel" aria-label="4 reasons to book ahead">
+            <div class="reasons-track" id="reasonsTrack">
+
+                <!-- INTRO CARD -->
+                <div class="reason-card reason-card--intro" id="introCard" aria-roledescription="slide">
+                    <div class="reason-card--intro-top">
+                        <span class="reason-card--intro-badge">✦ WHY BOOK AHEAD</span>
+                        <h2>4 REASONS<br />TO BOOK AHEAD<br />INSTEAD OF<br />LAST MINUTE</h2>
+                        <p class="reason-card--intro-text">Walk-ins aren't guaranteed. A two-minute booking locks in your seat, your barber, your time.</p>
+                    </div>
+                    <button class="btn-slide" id="slideBtn">
+                        SLIDE RIGHT <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <!-- CARD #1 -->
+                <div class="reason-card" aria-roledescription="slide">
+                    <div class="reason-icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></div>
+                    <span class="reason-number">01</span>
+                    <h3>GUARANTEED SPOT</h3>
+                    <p>Your barber fills up fast, locks in your spot before somebody else books it.</p>
+                </div>
+
+                <!-- CARD #2 -->
+                <div class="reason-card" aria-roledescription="slide">
+                    <div class="reason-icon"><i class="fas fa-clock" aria-hidden="true"></i></div>
+                    <span class="reason-number">02</span>
+                    <h3>WEEK-AHEAD, LAST MINUTE</h3>
+                    <p>Don't risk it — our schedule fills up fast. Secure your preferred time.</p>
+                </div>
+
+                <!-- CARD #3 -->
+                <div class="reason-card" aria-roledescription="slide">
+                    <div class="reason-icon"><i class="fas fa-rotate" aria-hidden="true"></i></div>
+                    <span class="reason-number">03</span>
+                    <h3>CONSISTENT</h3>
+                    <p>Appointments keep you consistent, and lineup-free every week — no more &ldquo;in-between&rdquo; days.</p>
+                </div>
+
+                <!-- CARD #4 -->
+                <div class="reason-card" aria-roledescription="slide">
+                    <div class="reason-icon"><i class="fas fa-user-check" aria-hidden="true"></i></div>
+                    <span class="reason-number">04</span>
+                    <h3>LOCKS IN YOUR BARBER</h3>
+                    <p>Your favorite barber, even days ahead. They refresh, you relax.</p>
+                </div>
+
+            </div>
+
+            <!-- Carousel Navigation Dots -->
+            <div class="carousel-dots" id="carouselDots">
+                <button class="carousel-dot active" data-index="0" aria-label="Go to slide 1"></button>
+                <button class="carousel-dot" data-index="1" aria-label="Go to slide 2"></button>
+                <button class="carousel-dot" data-index="2" aria-label="Go to slide 3"></button>
+                <button class="carousel-dot" data-index="3" aria-label="Go to slide 4"></button>
+                <button class="carousel-dot" data-index="4" aria-label="Go to slide 5"></button>
+            </div>
+
+            <span class="sr-only" aria-live="polite" id="carouselStatus"></span>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    UPGRADE YOUR STYLE - VERTICAL VIDEO + GALLERY
+    ========================================== -->
+    <section class="style-upgrade" id="services">
+        <div class="container">
+            <div class="section-header on-light">
+                <span class="section-badge">✦ HAIRSTYLES</span>
+                <h2 class="section-title">UPGRADE YOUR <span class="highlight">STYLE.</span></h2>
+                <p class="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            </div>
+
+            <div class="style-wrapper">
+                <!-- LEFT: Vertical Video -->
+                <div class="style-video">
+                    <div class="video-container">
+                        <video id="styleVideo" src="images/hairstylesvid.mp4" muted loop playsinline preload="none"></video>
+                        <button class="video-play-btn" id="videoPlayBtn" aria-label="Play video">
+                            <i class="fas fa-play" aria-hidden="true"></i>
+                        </button>
+                        <div class="video-overlay">
+                            <span class="video-badge">✦ WATCH</span>
+                            <span class="video-title">The Toughcuts Experience</span>
+                        </div>
+                    </div>
+                    <div class="video-caption">
+                        <i class="fas fa-scissors" aria-hidden="true"></i>
+                        <p>Watch how we transform style with precision and craft.</p>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Hairstyle Gallery -->
+                <div class="style-gallery">
+                    <div class="gallery-grid">
+                        <div class="gallery-item">
+                            <img src="images/tapercut.jpg" alt="Taper haircut" loading="lazy" />
+                            <div class="gallery-overlay">
+                                <span class="gallery-name">Taper</span>
+                                <span class="gallery-cta-text">View style <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="images/pompadourcut.jpg" alt="Pompadour haircut" loading="lazy" />
+                            <div class="gallery-overlay">
+                                <span class="gallery-name">Pompadour</span>
+                                <span class="gallery-cta-text">View style <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="images/modernmulletcut.jpg" alt="Modern mullet haircut" loading="lazy" />
+                            <div class="gallery-overlay">
+                                <span class="gallery-name">Modern mullet</span>
+                                <span class="gallery-cta-text">View style <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="images/fadecut.jpg" alt="Fade haircut" loading="lazy" />
+                            <div class="gallery-overlay">
+                                <span class="gallery-name">Fade</span>
+                                <span class="gallery-cta-text">View style <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="images/crewcut.jpg" alt="Crew cut haircut" loading="lazy" />
+                            <div class="gallery-overlay">
+                                <span class="gallery-name">Crew cut</span>
+                                <span class="gallery-cta-text">View style <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                        <div class="gallery-item">
+                            <img src="images/buzzcut.jpg" alt="Buzz cut haircut" loading="lazy" />
+                            <div class="gallery-overlay">
+                                <span class="gallery-name">Buzz cut</span>
+                                <span class="gallery-cta-text">View style <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gallery-cta">
+                        <a href="booking.html" class="btn-primary">
+                            <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now!
+                        </a>
+                        <a href="services.html" class="btn-secondary">
+                            See more in Our Services <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    FOR YOUR EVERYDAY GROOMING - PRODUCTS
+    ========================================== -->
+    <section class="everyday-grooming" id="products">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">✦ OUR PRODUCTS</span>
+                <h2 class="section-title">FOR YOUR <span class="highlight">EVERYDAY</span> GROOMING.</h2>
+                <p class="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            </div>
+
+            <div class="category-tabs">
+                <button class="category-tab active" data-category="latest">LATEST PRODUCTS</button>
+                <button class="category-tab" data-category="wax">HAIR WAX</button>
+                <button class="category-tab" data-category="sprays">HAIR SPRAYS</button>
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+
+                <div class="product-card" data-category="latest">
+                    <div class="product-brand">BENCH/</div>
+                    <div class="product-image">
+                        <img src="images/hairwax.webp" alt="Matte Molding Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
+                    </div>
+                    <h3>Matte Molding Wax</h3>
+                    <p class="product-price">PHP 250</p>
+                    <button class="product-btn" data-id="latest-matte-wax" data-name="Matte Molding Wax" data-price="250">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="latest">
+                    <div class="product-brand">THE MAVERICK</div>
+                    <div class="product-image">
+                        <img src="images/hairwax2.webp" alt="Natural Styling Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
+                    </div>
+                    <h3>Natural Styling Wax</h3>
+                    <p class="product-price">PHP 350</p>
+                    <button class="product-btn" data-id="latest-natural-wax" data-name="Natural Styling Wax" data-price="350">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="latest">
+                    <div class="product-brand">Gatsby</div>
+                    <div class="product-image">
+                        <img src="images/hairspray.png" alt="Solid Matte Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
+                    </div>
+                    <h3>Solid Matte Spray</h3>
+                    <p class="product-price">PHP 450</p>
+                    <button class="product-btn" data-id="latest-matte-spray" data-name="Solid Matte Spray" data-price="450">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="wax" style="display:none;">
+                    <div class="product-brand">FOX</div>
+                    <div class="product-image">
+                        <img src="images/products/matte-wax.jpg" alt="Matte Molding Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
+                    </div>
+                    <h3>Matte Molding Wax</h3>
+                    <p class="product-price">PHP 250</p>
+                    <button class="product-btn" data-id="wax-fox-matte" data-name="Matte Molding Wax" data-price="250">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="wax" style="display:none;">
+                    <div class="product-brand">ATLAS</div>
+                    <div class="product-image">
+                        <img src="images/products/natural-wax.jpg" alt="Natural Styling Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
+                    </div>
+                    <h3>Natural Styling Wax</h3>
+                    <p class="product-price">PHP 350</p>
+                    <button class="product-btn" data-id="wax-atlas-natural" data-name="Natural Styling Wax" data-price="350">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="wax" style="display:none;">
+                    <div class="product-brand">✦</div>
+                    <div class="product-image">
+                        <img src="images/products/premium-wax.jpg" alt="Premium Styling Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
+                    </div>
+                    <h3>Premium Styling Wax</h3>
+                    <p class="product-price">PHP 450</p>
+                    <button class="product-btn" data-id="wax-premium" data-name="Premium Styling Wax" data-price="450">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="sprays" style="display:none;">
+                    <div class="product-brand">FOX</div>
+                    <div class="product-image">
+                        <img src="images/products/matte-spray.jpg" alt="Solid Matte Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
+                    </div>
+                    <h3>Solid Matte Spray</h3>
+                    <p class="product-price">PHP 400</p>
+                    <button class="product-btn" data-id="spray-fox-matte" data-name="Solid Matte Spray" data-price="400">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="sprays" style="display:none;">
+                    <div class="product-brand">ATLAS</div>
+                    <div class="product-image">
+                        <img src="images/products/volume-spray.jpg" alt="Volume Boost Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
+                    </div>
+                    <h3>Volume Boost Spray</h3>
+                    <p class="product-price">PHP 380</p>
+                    <button class="product-btn" data-id="spray-atlas-volume" data-name="Volume Boost Spray" data-price="380">Add to Cart</button>
+                </div>
+
+                <div class="product-card" data-category="sprays" style="display:none;">
+                    <div class="product-brand">✦</div>
+                    <div class="product-image">
+                        <img src="images/products/premium-hold-spray.jpg" alt="Premium Hold Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
+                    </div>
+                    <h3>Premium Hold Spray</h3>
+                    <p class="product-price">PHP 420</p>
+                    <button class="product-btn" data-id="spray-premium-hold" data-name="Premium Hold Spray" data-price="420">Add to Cart</button>
+                </div>
+
+            </div>
+
+            <div class="products-cta">
+                <a href="products.html" class="btn-primary">
+                    Shop Our Products <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    MEET THE TEAM - TOUGH BARBERS
+    ========================================== -->
+    <section class="team-gallery" id="about">
+        <div class="container">
+
+            <div class="team-gallery-header">
+                <span class="section-badge">✦ MEET THE TEAM</span>
+                <h2>TOUGH <span class="highlight">BARBERS.</span></h2>
+                <p class="team-gallery-subtitle">Lorem ipsum dolor sit amet.</p>
+            </div>
+
+            <div class="team-grid">
+
+                <div class="team-grid-item area-kids">
+                    <img src="images/team1.jpg" alt="Team throwback" loading="lazy"
+                         onerror="this.src='https://placehold.co/400x300/232323/666?text=Photo'" />
+                </div>
+
+                <div class="team-grid-item area-video">
+                    <video
+                        id="teamVideo"
+                        src="images/teamvid.mp4"
+                        muted
+                        playsinline
+                        preload="none"
+                    ></video>
+                    <button class="play-btn" id="teamVideoBtn" type="button" aria-label="Play video">
+                        <i class="fas fa-play" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="team-grid-item area-haircut">
+                    <img src="images/booknowpic.jpg" alt="Barber cutting hair" loading="lazy"
+                         onerror="this.src='https://placehold.co/400x500/232323/666?text=Photo'" />
+                </div>
+
+                <div class="team-grid-item area-barbers">
+                    <img src="images/team.jpg" alt="Barbers group" loading="lazy"
+                         onerror="this.src='https://placehold.co/400x400/232323/666?text=Photo'" />
+                </div>
+
+                <div class="team-grid-item area-text">
+                    <h3>Lorem ipsum dolor sit amet consectetur adipiscing elit.</h3>
+                    <p>
+                        Lorem ipsum dolor sit amet consectetur adipiscing elit.
+                        Sit amet consectetur adipiscing elit quisque faucibus ex.
+                        Adipiscing elit quisque faucibus ex sapien vitae pellentesque.
+                    </p>
+                </div>
+
+                <div class="team-grid-item area-landscape">
+                    <img src="images/landscape.jpg" alt="Studio surroundings" loading="lazy"
+                         onerror="this.src='https://placehold.co/400x300/87ceeb/ffffff?text=Photo'" />
+                </div>
+
+            </div>
+
+            <div class="team-gallery-footer">
+                <img class="team-gallery-logo" src="images/toughcutslogo.png" alt="Toughcuts Studios" loading="lazy" />
+                <a href="aboutus/about.html" class="btn-know-more">Know More</a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==========================================
+    FOOTER
+    ========================================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+
+                <div class="footer-brand">
+                    <img class="footer-logo" src="images/toughcutslogo.png" alt="Toughcuts Logo" loading="lazy" />
+                    <p>Precision cuts, premium style, pure confidence. Modern craftsmanship in a classic atmosphere.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/_toughcuts/" class="footer-social-link" aria-label="Toughcuts on Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on TikTok">
+                            <i class="fab fa-tiktok" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <h4>QUICK LINKS</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="#branches">Branch</a></li>
+                        <li><a href="#products">Products</a></li>
+                        <li><a href="#services">Services</a></li>
+                        <li><a href="aboutus/about.html">About Us</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-hours">
+                    <h4>BUSINESS HOURS</h4>
+                    <div class="footer-hours-row">
+                        <span>Mon — Fri</span>
+                        <span>9:00 AM – 8:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Saturday</span>
+                        <span>9:00 AM – 6:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Sunday</span>
+                        <span>Closed</span>
+                    </div>
+                </div>
+
+                <div class="footer-contact">
+                    <h4>TALK TO US</h4>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> 04 398 3985 2092</p>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> +76 209 1092 4095</p>
+                    <p class="footer-email"><i class="fas fa-envelope" aria-hidden="true"></i> info@toughcuts.com</p>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 <strong>Toughcuts</strong>. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="privacy.html">Privacy Policy</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="terms.html">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+    AI CHAT WIDGET
+    ========================================== -->
+    <div class="chat-widget" id="chatWidget">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+            <i class="fas fa-comment-dots" aria-hidden="true"></i>
+        </button>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <i class="fas fa-robot" aria-hidden="true"></i>
+                <span>Toughcuts AI</span>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <p>👋 Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <small>Ask about services, booking, or products</small>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message..." aria-label="Type your message" />
+                <button id="chatSend" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+</body>
+</html>

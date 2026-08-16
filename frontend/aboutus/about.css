@@ -1,0 +1,570 @@
+/* ============================================
+   ABOUT PAGE — SHOP STORY
+   ============================================ */
+.about-story {
+    padding: 72px 0 90px;
+    background: var(--black);
+}
+
+.about-story-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 64px;
+    align-items: center;
+}
+
+.about-story-image {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+}
+
+.about-story-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.about-story-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 3.4rem;
+    line-height: 1.05;
+    color: var(--white);
+    margin: 6px 0 20px;
+}
+
+.about-story-text {
+    font-family: var(--font-body);
+    font-size: 1.02rem;
+    color: var(--off);
+    line-height: 1.85;
+    margin-bottom: 18px;
+    max-width: 520px;
+}
+
+/* ============================================
+   ABOUT PAGE — MISSION & VALUES
+   ============================================ */
+.about-values {
+    padding: 90px 0;
+    background: #faf9f6;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+.value-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: var(--radius);
+    padding: 36px 30px;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.value-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+}
+
+.value-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: var(--black);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin: 0 auto 20px;
+}
+
+.value-card h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+    color: var(--black);
+    margin-bottom: 10px;
+}
+
+.value-card p {
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--gray);
+    line-height: 1.7;
+}
+
+/* ============================================
+   ABOUT PAGE — BARBER PROFILES
+   ============================================ */
+.barber-profiles {
+    padding: 90px 0;
+    background: var(--black);
+}
+
+.barber-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+}
+
+.barber-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+}
+
+.barber-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+.barber-card-photo {
+    aspect-ratio: 4 / 5;
+    background: var(--card-light);
+    overflow: hidden;
+}
+
+.barber-card-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.barber-card:hover .barber-card-photo img {
+    transform: scale(1.05);
+}
+
+.barber-card-body {
+    padding: 22px 22px 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.barber-card-name {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+    color: var(--white);
+}
+
+.barber-card-role {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.82rem;
+    color: var(--dim);
+    margin-bottom: 14px;
+}
+
+.barber-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.barber-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    color: var(--off);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 50px;
+    padding: 5px 12px;
+}
+
+.barber-card-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    margin-bottom: 18px;
+    border-top: 1px dashed var(--line);
+    border-bottom: 1px dashed var(--line);
+}
+
+.barber-card-experience {
+    font-size: 0.8rem;
+    color: var(--off);
+}
+
+.barber-card-experience strong {
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+}
+
+.barber-card-rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: var(--off);
+}
+
+.barber-card-rating i {
+    color: #f2b632;
+    font-size: 0.75rem;
+}
+
+.barber-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.barber-card-actions .btn-primary {
+    padding: 12px 20px;
+    font-size: 0.72rem;
+    text-align: center;
+}
+
+.barber-view-more {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--off);
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    padding: 11px 20px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.barber-view-more:hover {
+    border-color: var(--white);
+    color: var(--white);
+}
+
+/* ============================================
+   ABOUT PAGE — FULL PROFILE MODAL
+   ============================================ */
+.barber-modal[hidden] {
+    display: none;
+}
+
+.barber-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.barber-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+}
+
+.barber-modal-panel {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    max-width: 480px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 32px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+
+.barber-modal-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--card-light);
+    border: none;
+    color: var(--white);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.barber-modal-close:hover {
+    background: var(--white);
+    color: var(--black);
+}
+
+.barber-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+    padding-right: 30px;
+}
+
+.barber-modal-header img {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--line);
+    flex-shrink: 0;
+}
+
+.barber-modal-header h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.4rem;
+    color: var(--white);
+}
+
+.barber-modal-role {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--dim);
+    margin-bottom: 6px;
+}
+
+.barber-modal-rating {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.82rem;
+    color: var(--off);
+}
+
+.barber-modal-rating i {
+    color: #f2b632;
+    font-size: 0.75rem;
+}
+
+.barber-modal-bio {
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--off);
+    line-height: 1.75;
+    margin-bottom: 24px;
+}
+
+.barber-modal-section h4 {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 1.5px;
+    color: var(--white);
+    margin-bottom: 12px;
+}
+
+.barber-modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.barber-modal-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 18px 0;
+    margin-bottom: 24px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.barber-modal-stats > div {
+    text-align: center;
+}
+
+.barber-modal-stat-value {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--white);
+}
+
+.barber-modal-stat-label {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.barber-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.barber-modal-actions .btn-primary,
+.barber-modal-actions .btn-secondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ============================================
+   ABOUT PAGE — RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+    .about-story-wrapper {
+        grid-template-columns: 1fr;
+        gap: 36px;
+    }
+    .about-story-image {
+        max-width: 420px;
+        margin: 0 auto;
+    }
+    .values-grid {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .about-story { padding: 48px 0 64px; }
+    .about-story-title { font-size: 2.4rem; }
+    .about-values { padding: 64px 0; }
+    .barber-profiles { padding: 64px 0; }
+    .barber-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+}
+
+@media (max-width: 640px) {
+    .about-story-title { font-size: 2rem; }
+    .about-story-text { font-size: 0.92rem; }
+    .barber-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+    .barber-card-body { padding: 16px 16px 18px; }
+    .barber-card-name { font-size: 1.05rem; }
+    .barber-modal-panel { padding: 24px; }
+    .barber-modal-header img { width: 60px; height: 60px; }
+    .barber-modal-header h3 { font-size: 1.15rem; }
+}
+
+@media (max-width: 400px) {
+    .barber-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================
+   OWNER SPOTLIGHT
+   ============================================ */
+.about-owner {
+    padding: 90px 0;
+    background: var(--near-black);
+    border-bottom: 1px solid var(--line);
+}
+
+.owner-wrapper {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 64px;
+    align-items: center;
+}
+
+.owner-photo {
+    aspect-ratio: 4 / 5;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.owner-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.owner-name {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 2.6rem;
+    line-height: 1.05;
+    color: var(--white);
+    margin: 4px 0 6px;
+}
+
+.owner-title {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--dim);
+    margin-bottom: 26px;
+}
+
+.owner-quote {
+    position: relative;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: var(--off);
+    padding-left: 28px;
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 28px;
+}
+
+.owner-quote i {
+    position: absolute;
+    left: -4px;
+    top: -6px;
+    font-size: 0.9rem;
+    color: var(--dim);
+    background: var(--near-black);
+    padding-right: 6px;
+}
+
+.owner-bio {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--off);
+    line-height: 1.8;
+    max-width: 540px;
+    margin-bottom: 28px;
+}
+
+@media (max-width: 1024px) {
+    .owner-wrapper {
+        grid-template-columns: 1fr;
+        gap: 36px;
+    }
+    .owner-photo {
+        max-width: 380px;
+        margin: 0 auto;
+    }
+    .about-owner {
+        text-align: center;
+    }
+    .owner-quote {
+        text-align: left;
+    }
+}
+
+@media (max-width: 640px) {
+    .about-owner { padding: 56px 0; }
+    .owner-name { font-size: 2rem; }
+    .owner-quote { font-size: 1rem; }
+}
