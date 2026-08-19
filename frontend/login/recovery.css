@@ -1,0 +1,95 @@
+/* ============================================
+   PASSWORD RECOVERY CHAIN
+   (forgot.html → recovery.html → reset.html)
+   Builds on login.css's .login-card / .login-field /
+   .login-input / .login-submit — this file only adds the
+   bits unique to the recovery flow.
+   ============================================ */
+
+/* These cards hold fewer fields than login/signup, so keep
+   them a little narrower for a tighter, more centered look. */
+.recovery-card--narrow {
+    max-width: 400px;
+}
+
+/* --------------------------------------------
+   Recovery code input — centered, spaced digits
+   -------------------------------------------- */
+.recovery-code-input {
+    text-align: center;
+    letter-spacing: 8px;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.recovery-code-input::placeholder {
+    letter-spacing: 8px;
+}
+
+/* --------------------------------------------
+   "Code resent" confirmation note
+   -------------------------------------------- */
+.recovery-resent-note[hidden] {
+    display: none;
+}
+
+.recovery-resent-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(76, 175, 125, 0.1);
+    border: 1px solid rgba(76, 175, 125, 0.35);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: #8fd6b3;
+    line-height: 1.5;
+}
+
+.recovery-resent-note i {
+    color: #4caf7d;
+    margin-top: 2px;
+}
+
+/* --------------------------------------------
+   Resend code row
+   -------------------------------------------- */
+.recovery-resend-row {
+    text-align: center;
+    margin-top: 22px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--dim);
+}
+
+.recovery-resend-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 4px;
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.recovery-resend-btn:hover {
+    color: var(--steel);
+}
+
+.recovery-resend-btn:disabled {
+    color: var(--dim);
+    cursor: default;
+    text-decoration: none;
+}
+
+@media (max-width: 640px) {
+    .recovery-code-input { letter-spacing: 6px; }
+}

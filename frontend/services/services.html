@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>About Us - Toughcuts Barbershop &amp; Grooming Studio</title>
-    <meta name="description" content="Meet the Toughcuts team — our story, our values, and the barbers behind every precision cut." />
+    <title>Our Services - Toughcuts Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="Browse Toughcuts services — in-studio or home service, for men and women. See pricing, duration, and barber availability, then book in a click." />
 
     <link rel="icon" type="image/png" href="../images/toughcutslogo.png" />
     <link rel="apple-touch-icon" href="../images/toughcutslogo.png" />
@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../css/style.css" />
-    <link rel="stylesheet" href="about.css" />
+    <link rel="stylesheet" href="services.css" />
 </head>
 <body>
 
@@ -47,8 +47,8 @@
                         <li><a href="../index.html">HOME</a></li>
                         <li><a href="../studio/studio.html">STUDIO</a></li>
                         <li><a href="../products/products.html">PRODUCTS</a></li>
-                        <li><a href="../services/services.html">SERVICES</a></li>
-                        <li><a href="about.html" class="active">ABOUT US</a></li>
+                        <li><a href="services.html" class="active">SERVICES</a></li>
+                        <li><a href="../aboutus/about.html">ABOUT US</a></li>
 
                         <li class="nav-menu-divider" aria-hidden="true"></li>
                         <li class="nav-menu-search">
@@ -104,166 +104,148 @@
     </div>
 
     <!-- ==========================================
-    SHOP STORY
+    HERO
     ========================================== -->
-    <section class="about-story" id="top">
+    <section class="services-hero">
         <div class="container">
-            <div class="about-story-wrapper">
-                <div class="about-story-image">
-                    <video src="../images/toughcutsvidaboutus.mp4" autoplay muted loop playsinline
-                           poster="../images/toughcutshomepagepic.png"></video>
-                </div>
-                <div class="about-story-content">
-                    <span class="section-badge">OUR STORY</span>
-                    <h1 class="about-story-title">MORE THAN A <span class="highlight">HAIRCUT.</span></h1>
-                    <p class="about-story-text">
-                        Toughcuts started as a single chair in a garage and grew into a studio built on one idea:
-                        every client leaves looking sharper than when they walked in. No rushed clippers, no
-                        guesswork — just barbers who treat every fade, every line-up, every beard trim like it's
-                        the only appointment of the day.
-                    </p>
-                    <p class="about-story-text">
-                        Years later, that idea hasn't changed. We've just gotten better at it.
-                    </p>
-                </div>
-            </div>
+            <span class="section-badge">WHAT WE OFFER</span>
+            <h1 class="services-title">OUR <span class="highlight">SERVICES.</span></h1>
+            <p class="services-subtitle">Precision cuts and grooming, in the studio or at your doorstep. Pick a mode, browse the styles, see what it costs — then book.</p>
         </div>
     </section>
 
     <!-- ==========================================
-    MISSION & VALUES
+    CONTROLS: SERVICE TYPE, HOME AVAILABILITY, GENDER
     ========================================== -->
-    <section class="about-values">
+    <section class="services-controls">
         <div class="container">
-            <div class="section-header on-light">
-                <span class="section-badge">WHAT WE STAND FOR</span>
-                <h2 class="section-title">MISSION <span class="highlight">&amp; VALUES.</span></h2>
-                <p class="section-subtitle">The three things every cut is built on.</p>
+
+            <!-- Service Type: In-Studio vs Home Service -->
+            <div class="service-type-toggle" id="serviceTypeToggle" role="tablist" aria-label="Service type">
+                <button class="service-type-btn active" data-type="studio" role="tab" aria-selected="true" type="button">
+                    <i class="fas fa-store" aria-hidden="true"></i> In-Studio
+                </button>
+                <button class="service-type-btn" data-type="home" role="tab" aria-selected="false" type="button">
+                    <i class="fas fa-house-chimney-window" aria-hidden="true"></i> Home Service
+                </button>
             </div>
 
-            <div class="values-grid">
-                <div class="value-card">
-                    <div class="value-icon"><i class="fas fa-crosshairs" aria-hidden="true"></i></div>
-                    <h3>Precision</h3>
-                    <p>Every line, fade, and taper is measured, not guessed. Consistency is the whole craft.</p>
+            <!-- Home Service availability gate -->
+            <div class="home-availability" id="homeAvailability" hidden>
+                <div class="home-availability-check">
+                    <i class="fas fa-location-dot" aria-hidden="true"></i>
+                    <div class="home-availability-fields">
+                        <label for="areaSelect">Select your area</label>
+                        <div class="home-availability-row">
+                            <select id="areaSelect" aria-label="Your city or area">
+                                <option value="">Choose your area…</option>
+                                <!-- populated by services.js -->
+                            </select>
+                        </div>
+                        <button type="button" class="home-availability-geo-btn" id="useLocationBtn">
+                            <i class="fas fa-location-crosshairs" aria-hidden="true"></i> Use my current location
+                        </button>
+                        <p class="home-availability-geo-status" id="locationStatus" aria-live="polite" hidden></p>
+
+                        <!-- Visible list of covered areas so people can see coverage
+                             at a glance instead of guessing what to type/select. -->
+                        <div class="home-availability-coverage">
+                            <span class="home-availability-coverage-label">We currently serve:</span>
+                            <div class="home-availability-coverage-chips" id="coverageChips"><!-- populated by services.js --></div>
+                        </div>
+
+                        <!-- Always-visible fallback for anyone whose area isn't in the
+                             list above — previously only the failed-geolocation path
+                             surfaced this, leaving manual browsers with no next step. -->
+                        <p class="home-availability-fallback">
+                            Don't see your area? <a href="../studio/studio.html">View Studio Location</a>
+                        </p>
+                    </div>
                 </div>
-                <div class="value-card">
-                    <div class="value-icon"><i class="fas fa-heart" aria-hidden="true"></i></div>
-                    <h3>Passion</h3>
-                    <p>Our barbers train off the clock because cutting hair well is something they actually care about.</p>
-                </div>
-                <div class="value-card">
-                    <div class="value-icon"><i class="fas fa-users" aria-hidden="true"></i></div>
-                    <h3>Community</h3>
-                    <p>A barbershop is a neighborhood spot first. We know your name before we know your fade.</p>
+
+                <!-- aria-live wrapper: screen readers announce whichever panel becomes visible below -->
+                <div aria-live="polite">
+                    <!-- Success -->
+                    <div class="availability-result availability-result--yes" id="availabilityYes" hidden>
+                        <i class="fas fa-circle-check" aria-hidden="true"></i>
+                        <span>We cover this area — a <strong id="availabilityFeeText">₱150 travel fee</strong> applies on top of the service price.</span>
+                    </div>
+
+                    <!-- Failure (shown when "Use my current location" can't match a covered area) -->
+                    <div class="availability-result availability-result--no" id="availabilityNo" hidden>
+                        <i class="fas fa-circle-xmark" aria-hidden="true"></i>
+                        <div>
+                            <p>Looks like you're outside our current home service coverage.</p>
+                            <a href="../studio/studio.html" class="btn-secondary availability-branch-btn">
+                                <i class="fas fa-map-location-dot" aria-hidden="true"></i> View Studio Location
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Gender tabs -->
+            <div class="gender-tabs-group" id="genderTabsGroup" hidden>
+                <p class="gender-tabs-label">Showing styles for</p>
+                <div class="gender-tabs" id="genderTabs" role="tablist" aria-label="Filter services by gender">
+                    <button class="gender-tab active" data-gender="men" role="tab" aria-selected="true" type="button">
+                        <i class="fas fa-mars" aria-hidden="true"></i> Men's
+                    </button>
+                    <button class="gender-tab" data-gender="women" role="tab" aria-selected="false" type="button">
+                        <i class="fas fa-venus" aria-hidden="true"></i> Women's
+                    </button>
+                </div>
+            </div>
+
         </div>
     </section>
 
     <!-- ==========================================
-    OWNER SPOTLIGHT
+    SERVICES GRID
     ========================================== -->
-    <section class="about-owner">
+    <section class="services-grid-section">
         <div class="container">
-            <div class="owner-wrapper">
-                <div class="owner-photo">
-                    <img src="../images/owner.jpg" alt="Klark Dizon, Owner of Toughcuts" loading="lazy"
-                         onerror="this.src='https://placehold.co/500x600/191919/666?text=Photo'" />
+
+            <!-- In-Studio: simple reference gallery + one general price + one Book Now -->
+            <div class="haircut-gallery" id="haircutGallery" hidden>
+                <div class="haircut-gallery-grid" id="haircutGalleryGrid">
+                    <!-- populated by services.js -->
                 </div>
-                <div class="owner-content">
-                    <span class="section-badge">FROM THE FOUNDER</span>
-                    <h2 class="owner-name">Klark Dizon</h2>
-                    <p class="owner-title">Owner &amp; Master Barber · 10 Years</p>
-
-                    <blockquote class="owner-quote">
-                        <i class="fas fa-quote-left" aria-hidden="true"></i>
-                        I didn't open Toughcuts to be the biggest shop in town. I opened it so every
-                        person who sits in the chair leaves looking like the best version of themselves —
-                        that's still the only standard that matters here.
-                    </blockquote>
-
-                    <p class="owner-bio">
-                        Klark started cutting hair out of a one-chair garage setup and built Toughcuts
-                        from the ground up, one client at a time. Ten years later he still works the
-                        chair most days — hot towel shaves and traditional cuts are his specialty, and
-                        he trains every barber on the team personally before they touch a client.
-                    </p>
-
-                    <a href="../booking.html?barber=klark-dizon" class="btn-primary">
-                        <i class="fas fa-calendar-check" aria-hidden="true"></i> Book with Klark
+                <div class="haircut-gallery-cta">
+                    <div class="haircut-gallery-stat">
+                        <span class="haircut-gallery-stat-value" id="haircutGalleryPrice"></span>
+                        <span class="haircut-gallery-stat-label">Starting At</span>
+                    </div>
+                    <div class="haircut-gallery-divider" aria-hidden="true"></div>
+                    <a href="#" class="btn-primary haircut-gallery-book" id="haircutGalleryBook">
+                        <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now
                     </a>
                 </div>
             </div>
+
+            <!-- In-Studio & Home Service both show this same reference gallery
+                 — Home Service is haircuts-only, so a per-service grid would
+                 just be one card; see renderHaircutGallery() in services.js -->
+            <p class="services-empty" id="servicesEmpty" hidden>Check availability above to browse home service options in your area.</p>
         </div>
     </section>
 
     <!-- ==========================================
-    MEET THE TEAM — BARBER PROFILES
+    BOOK APPOINTMENT CTA
     ========================================== -->
-    <section class="barber-profiles" id="team">
-        <div class="container">
-            <div class="section-header">
-                <span class="section-badge">MEET THE TEAM</span>
-                <h2 class="section-title">FIND YOUR <span class="highlight">BARBER.</span></h2>
-                <p class="section-subtitle">Every barber's specialties, experience, and ratings — pick who fits your style.</p>
+    <section class="services-book-cta">
+        <div class="container services-book-cta-inner">
+            <div class="services-book-cta-text">
+                <span class="section-badge">Already know what you want?</span>
+                <h2 class="services-book-cta-title">SKIP THE BROWSING, <span class="highlight">BOOK DIRECT.</span></h2>
+                <p class="services-book-cta-sub">Jump straight to the booking page and pick your service, barber, and time in one go.</p>
             </div>
-
-            <div class="barber-grid" id="barberGrid">
-                <!-- Cards are rendered by JS from the barbers array in main.js,
-                     so the same data can populate both the card and the "View More" modal
-                     without duplicating markup. -->
-            </div>
+            <a href="../booking.html" class="btn-primary services-book-cta-btn">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                Book Appointment
+            </a>
         </div>
     </section>
-
-    <!-- ==========================================
-    FULL PROFILE MODAL
-    ========================================== -->
-    <div class="barber-modal" id="barberModal" role="dialog" aria-modal="true" aria-labelledby="barberModalName" hidden>
-        <div class="barber-modal-backdrop" id="barberModalBackdrop"></div>
-        <div class="barber-modal-panel">
-            <button class="barber-modal-close" id="barberModalClose" aria-label="Close profile">
-                <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
-
-            <div class="barber-modal-header">
-                <img id="barberModalPhoto" src="" alt="" />
-                <div>
-                    <h3 id="barberModalName"></h3>
-                    <p id="barberModalRole" class="barber-modal-role"></p>
-                    <div class="barber-modal-rating" id="barberModalRating"></div>
-                </div>
-            </div>
-
-            <p id="barberModalBio" class="barber-modal-bio"></p>
-
-            <div class="barber-modal-section">
-                <h4>Specialties</h4>
-                <div class="barber-modal-tags" id="barberModalSpecialties"></div>
-            </div>
-
-            <div class="barber-modal-stats">
-                <div>
-                    <span class="barber-modal-stat-value" id="barberModalExperience"></span>
-                    <span class="barber-modal-stat-label">Years Experience</span>
-                </div>
-                <div>
-                    <span class="barber-modal-stat-value" id="barberModalReviews"></span>
-                    <span class="barber-modal-stat-label">Client Reviews</span>
-                </div>
-            </div>
-
-            <div class="barber-modal-actions">
-                <a href="#" id="barberModalBook" class="btn-primary">
-                    <i class="fas fa-calendar-check" aria-hidden="true"></i> Book with This Barber
-                </a>
-                <button class="btn-secondary" id="barberModalReturn" type="button">
-                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Return
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- ==========================================
     FOOTER
@@ -294,8 +276,8 @@
                         <li><a href="../index.html">Home</a></li>
                         <li><a href="../studio/studio.html">Studio</a></li>
                         <li><a href="../products/products.html">Products</a></li>
-                        <li><a href="../services/services.html">Services</a></li>
-                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="services.html">Services</a></li>
+                        <li><a href="../aboutus/about.html">About Us</a></li>
                     </ul>
                 </div>
 
@@ -350,7 +332,7 @@
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="message bot">
-                    <p>👋 Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
                     <small>Ask about services, booking, or products</small>
                 </div>
             </div>
@@ -364,6 +346,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/main.js"></script>
-    <script src="about.js"></script>
+    <script src="services.js"></script>
 </body>
 </html>

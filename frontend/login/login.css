@@ -1,0 +1,312 @@
+/* ============================================
+   LOGIN PAGE — HERO
+   (mirrors cart-hero / products-hero for visual parity)
+   ============================================ */
+.login-hero {
+    padding: 64px 0 40px;
+    background: var(--black);
+    text-align: center;
+}
+
+.login-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 3.2rem;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+    color: var(--white);
+    margin: 6px 0 16px;
+}
+
+.login-title .highlight {
+    color: var(--steel);
+}
+
+.login-subtitle {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--off);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+/* ============================================
+   LOGIN PAGE — FORM SECTION
+   ============================================ */
+.login-section {
+    padding: 8px 0 100px;
+    background: var(--black);
+}
+
+.login-card {
+    max-width: 440px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px 36px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* --------------------------------------------
+   Redirect note — shown when a signed-out visitor
+   was routed here from another action (?redirect=)
+   -------------------------------------------- */
+.login-redirect-note[hidden],
+.login-error[hidden] {
+    display: none;
+}
+
+.login-redirect-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    font-family: var(--font-body);
+    font-size: 0.84rem;
+    color: var(--off);
+    line-height: 1.55;
+}
+
+.login-redirect-note i {
+    color: var(--steel);
+    margin-top: 2px;
+}
+
+/* --------------------------------------------
+   Inline error banner
+   -------------------------------------------- */
+.login-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(224, 90, 90, 0.1);
+    border: 1px solid rgba(224, 90, 90, 0.35);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: #f2a6a1;
+    line-height: 1.5;
+}
+
+.login-error i {
+    color: #e05a5a;
+    margin-top: 2px;
+}
+
+/* --------------------------------------------
+   Form fields
+   -------------------------------------------- */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.login-field label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+}
+
+.login-input {
+    width: 100%;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: 50px;
+    padding: 13px 20px;
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    outline: none;
+    transition: var(--transition);
+}
+
+.login-input::placeholder {
+    color: var(--dim);
+    opacity: 0.7;
+}
+
+.login-input:focus {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.login-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.login-input-wrap .login-input {
+    padding-right: 48px;
+}
+
+.login-toggle-pass {
+    position: absolute;
+    right: 6px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.login-toggle-pass:hover {
+    color: var(--white);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* --------------------------------------------
+   Remember me / forgot password row
+   -------------------------------------------- */
+.login-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: -4px;
+}
+
+.login-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--off);
+    cursor: pointer;
+}
+
+.login-remember input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--steel);
+    cursor: pointer;
+}
+
+.login-forgot-link {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--dim);
+    transition: var(--transition);
+}
+
+.login-forgot-link:hover {
+    color: var(--white);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* --------------------------------------------
+   Submit button
+   -------------------------------------------- */
+.login-submit {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 2px solid var(--white);
+    margin-top: 4px;
+}
+
+.login-submit:disabled {
+    opacity: 0.7;
+    cursor: default;
+    transform: none !important;
+}
+
+/* --------------------------------------------
+   Divider + signup CTA
+   -------------------------------------------- */
+.login-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 28px 0 18px;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+.login-divider span {
+    padding: 0 14px;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    white-space: nowrap;
+}
+
+.login-signup-btn {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* --------------------------------------------
+   Continue as guest
+   -------------------------------------------- */
+.login-continue-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 26px;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dim);
+    transition: var(--transition);
+}
+
+.login-continue-link:hover {
+    color: var(--white);
+}
+
+/* ============================================
+   LOGIN PAGE — RESPONSIVE
+   ============================================ */
+@media (max-width: 640px) {
+    .login-hero { padding: 44px 0 32px; }
+    .login-title { font-size: 2.2rem; }
+    .login-subtitle { font-size: 0.92rem; }
+    .login-section { padding: 4px 0 72px; }
+    .login-card { padding: 32px 24px 28px; }
+}
+
+@media (max-width: 400px) {
+    .login-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

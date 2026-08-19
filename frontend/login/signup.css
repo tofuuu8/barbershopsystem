@@ -1,0 +1,94 @@
+/* ============================================
+   SIGNUP PAGE
+   Builds on login.css — .login-card, .login-field,
+   .login-input, .login-submit, etc. are shared so both
+   auth pages stay visually identical. This file only adds
+   the bits unique to signup: the password hint and the
+   terms-of-service checkbox row.
+   ============================================ */
+
+.signup-password-hint {
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 0.76rem;
+    color: var(--dim);
+    line-height: 1.5;
+}
+
+.signup-password-hint code {
+    font-family: var(--font-body);
+    font-style: italic;
+    color: var(--off);
+}
+
+/* --------------------------------------------
+   Live password requirements checklist
+   Filled in by main.js's initPasswordChecklist() and kept in sync
+   on every keystroke. Shared by signup.html and reset.html.
+   -------------------------------------------- */
+.password-checklist {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.password-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--dim);
+    transition: var(--transition);
+}
+
+.password-checklist li i {
+    font-size: 0.65rem;
+    color: var(--dim);
+    transition: var(--transition);
+}
+
+.password-checklist li.met {
+    color: var(--off);
+}
+
+.password-checklist li.met i {
+    color: #4caf7d;
+}
+
+.signup-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--off);
+    line-height: 1.55;
+    cursor: pointer;
+    margin-top: -4px;
+}
+
+.signup-terms input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin-top: 3px;
+    flex-shrink: 0;
+    accent-color: var(--steel);
+    cursor: pointer;
+}
+
+.signup-terms a {
+    color: var(--white);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.signup-terms a:hover {
+    color: var(--steel);
+}
+
+@media (max-width: 640px) {
+    .signup-password-hint { font-size: 0.72rem; }
+}

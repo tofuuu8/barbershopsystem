@@ -6,6 +6,9 @@
     <title>Toughcuts - Premium Barbershop &amp; Grooming Studio</title>
     <meta name="description" content="Toughcuts — premium barbershop and grooming studio. Book precision cuts, browse grooming products, and find a studio near you." />
 
+    <link rel="icon" type="image/png" href="images/toughcutslogo.png" />
+    <link rel="apple-touch-icon" href="images/toughcutslogo.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -49,9 +52,9 @@
 
                     <ul class="nav-menu" id="navMenu">
                         <li><a href="index.html" class="active">HOME</a></li>
-                        <li><a href="#branches">BRANCH</a></li>
-                        <li><a href="#products">PRODUCTS</a></li>
-                        <li><a href="#services">SERVICES</a></li>
+                        <li><a href="studio/studio.html">STUDIO</a></li>
+                        <li><a href="products/products.html">PRODUCTS</a></li>
+                        <li><a href="services/services.html">SERVICES</a></li>
                         <li><a href="aboutus/about.html">ABOUT US</a></li>
 
                         <!-- Mobile-drawer-only: hidden on desktop, shown inside the hamburger panel -->
@@ -63,8 +66,8 @@
                             </form>
                         </li>
                         <li class="nav-menu-auth">
-                            <a href="login.html" class="nav-auth-link">Log In</a>
-                            <a href="signup.html" class="nav-auth-btn">Sign Up</a>
+                            <a href="login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="login/signup.html" class="nav-auth-btn">Sign Up</a>
                         </li>
                         <li>
                             <a href="booking.html" class="btn-book nav-menu-book">Book Appointment</a>
@@ -76,14 +79,14 @@
                             <i class="fas fa-search" aria-hidden="true"></i>
                         </button>
 
-                        <a href="cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
+                        <a href="cart/cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
                             <i class="fas fa-shopping-bag" aria-hidden="true"></i>
                             <span class="cart-count">0</span>
                         </a>
 
                         <div class="nav-auth">
-                            <a href="login.html" class="nav-auth-link">Log In</a>
-                            <a href="signup.html" class="nav-auth-btn">Sign Up</a>
+                            <a href="login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="login/signup.html" class="nav-auth-btn">Sign Up</a>
                         </div>
 
                         <a href="booking.html" class="btn-book">Book Appointment</a>
@@ -138,12 +141,67 @@
 
                     <div class="hero-buttons">
                         <a href="booking.html" class="btn-primary">Book Now</a>
-                        <a href="services.html" class="btn-secondary">Our Services</a>
+                        <a href="services/services.html" class="btn-secondary">Our Services</a>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <!-- ==========================================
+    HIGHLIGHTS — INSTAGRAM-STYLE STORY BUBBLES
+    ========================================== -->
+    <section class="highlights" id="highlights">
+        <div class="container">
+            <div class="highlights-header">
+                <span class="highlights-eyebrow">FROM THE CHAIR</span>
+                <h2 class="highlights-title">Studio <span class="highlight">Highlights</span></h2>
+                <span class="highlights-rule" aria-hidden="true"></span>
+            </div>
+            <div class="highlights-track" id="highlightsTrack" role="list" aria-label="Highlights">
+                <!-- populated by main.js -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Highlight story viewer — Instagram "long-press peek" style popup -->
+    <div class="story-viewer" id="storyViewer" role="dialog" aria-modal="true" aria-label="Highlight viewer" hidden>
+        <div class="story-viewer-backdrop" id="storyViewerBackdrop"></div>
+        <div class="story-viewer-panel">
+            <div class="story-header">
+                <span class="story-header-avatar"><img id="storyHeaderAvatar" src="" alt="" /></span>
+                <span class="story-header-label" id="storyHeaderLabel"></span>
+                <button class="story-close" id="storyClose" type="button" aria-label="Close highlight">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="story-media">
+                <div class="story-progress" id="storyProgress"></div>
+                <div class="story-media-scrim story-media-scrim--top" aria-hidden="true"></div>
+                <img id="storyImage" src="" alt="" />
+                <div class="story-media-scrim story-media-scrim--bottom" aria-hidden="true"></div>
+                <button class="story-nav story-nav--prev" id="storyPrev" type="button" aria-label="Previous"></button>
+                <button class="story-nav story-nav--next" id="storyNext" type="button" aria-label="Next"></button>
+                <button class="story-like-btn" id="storyLikeBtn" type="button" aria-pressed="false">
+                    <i class="fa-regular fa-heart" aria-hidden="true"></i>
+                    <span id="storyLikeCount"></span>
+                </button>
+            </div>
+
+            <div class="story-footer">
+                <p class="story-caption" id="storyCaption"></p>
+                <div class="story-actions">
+                    <a href="services/services.html" class="btn-primary story-cta" id="storyBookBtn">
+                        <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now
+                    </a>
+                    <a href="services/services.html" class="btn-secondary story-see-more" id="storySeeMoreBtn">
+                        <span id="storySeeMoreLabel">See More</span> <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ==========================================
     4 REASONS — AUTO-SLIDING CAROUSEL
@@ -155,7 +213,7 @@
                 <!-- INTRO CARD -->
                 <div class="reason-card reason-card--intro" id="introCard" aria-roledescription="slide">
                     <div class="reason-card--intro-top">
-                        <span class="reason-card--intro-badge">✦ WHY BOOK AHEAD</span>
+                        <span class="reason-card--intro-badge">WHY BOOK AHEAD</span>
                         <h2>4 REASONS<br />TO BOOK AHEAD<br />INSTEAD OF<br />LAST MINUTE</h2>
                         <p class="reason-card--intro-text">Walk-ins aren't guaranteed. A two-minute booking locks in your seat, your barber, your time.</p>
                     </div>
@@ -217,7 +275,7 @@
     <section class="style-upgrade" id="services">
         <div class="container">
             <div class="section-header on-light">
-                <span class="section-badge">✦ HAIRSTYLES</span>
+                <span class="section-badge">HAIRSTYLES</span>
                 <h2 class="section-title">UPGRADE YOUR <span class="highlight">STYLE.</span></h2>
                 <p class="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
             </div>
@@ -231,7 +289,7 @@
                             <i class="fas fa-play" aria-hidden="true"></i>
                         </button>
                         <div class="video-overlay">
-                            <span class="video-badge">✦ WATCH</span>
+                            <span class="video-badge">WATCH</span>
                             <span class="video-title">The Toughcuts Experience</span>
                         </div>
                     </div>
@@ -292,7 +350,7 @@
                         <a href="booking.html" class="btn-primary">
                             <i class="fas fa-calendar-check" aria-hidden="true"></i> Book Now!
                         </a>
-                        <a href="services.html" class="btn-secondary">
+                        <a href="services/services.html" class="btn-secondary">
                             See more in Our Services <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                     </div>
@@ -307,7 +365,7 @@
     <section class="everyday-grooming" id="products">
         <div class="container">
             <div class="section-header">
-                <span class="section-badge">✦ OUR PRODUCTS</span>
+                <span class="section-badge">OUR PRODUCTS</span>
                 <h2 class="section-title">FOR YOUR <span class="highlight">EVERYDAY</span> GROOMING.</h2>
                 <p class="section-subtitle">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
             </div>
@@ -413,7 +471,7 @@
             </div>
 
             <div class="products-cta">
-                <a href="products.html" class="btn-primary">
+                <a href="products/products.html" class="btn-primary">
                     Shop Our Products <i class="fas fa-arrow-right" aria-hidden="true"></i>
                 </a>
             </div>
@@ -427,7 +485,7 @@
         <div class="container">
 
             <div class="team-gallery-header">
-                <span class="section-badge">✦ MEET THE TEAM</span>
+                <span class="section-badge">MEET THE TEAM</span>
                 <h2>TOUGH <span class="highlight">BARBERS.</span></h2>
                 <p class="team-gallery-subtitle">Lorem ipsum dolor sit amet.</p>
             </div>
@@ -513,9 +571,9 @@
                     <h4>QUICK LINKS</h4>
                     <ul>
                         <li><a href="index.html">Home</a></li>
-                        <li><a href="#branches">Branch</a></li>
-                        <li><a href="#products">Products</a></li>
-                        <li><a href="#services">Services</a></li>
+                        <li><a href="studio/studio.html">Studio</a></li>
+                        <li><a href="products/products.html">Products</a></li>
+                        <li><a href="services/services.html">Services</a></li>
                         <li><a href="aboutus/about.html">About Us</a></li>
                     </ul>
                 </div>
@@ -571,7 +629,7 @@
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="message bot">
-                    <p>👋 Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
                     <small>Ask about services, booking, or products</small>
                 </div>
             </div>
@@ -582,7 +640,27 @@
         </div>
     </div>
 
+    <!-- Login-required gate — shown when a signed-out visitor tries to
+         add a product to their cart. -->
+    <div class="auth-gate" id="authGate" role="dialog" aria-modal="true" aria-labelledby="authGateTitle" hidden>
+        <div class="auth-gate-backdrop" id="authGateBackdrop"></div>
+        <div class="auth-gate-panel">
+            <button class="auth-gate-close" id="authGateClose" type="button" aria-label="Close">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+            <div class="auth-gate-icon"><i class="fas fa-lock" aria-hidden="true"></i></div>
+            <h3 class="auth-gate-title" id="authGateTitle">Log in to add this to your cart</h3>
+            <p class="auth-gate-text">Create a free account or log in to save items, check out faster, and track your orders.</p>
+            <div class="auth-gate-actions">
+                <a href="login/login.html" class="btn-primary auth-gate-login" id="authGateLoginBtn">Log In</a>
+                <a href="login/signup.html" class="btn-secondary auth-gate-signup" id="authGateSignupBtn">Create Account</a>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

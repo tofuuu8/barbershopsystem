@@ -37,6 +37,59 @@
 
 html {
     scroll-behavior: smooth;
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--steel) var(--near-black);
+}
+
+/* ============================================
+   SCROLLBAR — sitewide (WebKit/Chromium)
+   Thin, dark track with a steel-toned thumb so the
+   scrollbar sits quietly inside the site's palette
+   instead of the default gray browser bar.
+   ============================================ */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--near-black);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(216, 210, 196, 0.35);
+    border-radius: 50px;
+    border: 2px solid var(--near-black);
+    background-clip: padding-box;
+    transition: background-color 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--steel);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--near-black);
+}
+
+/* Scrollable modal panels (barber profile, product details, story
+   viewer, etc.) sit on --card rather than --near-black, so give them a
+   matching track instead of inheriting the darker sitewide one. */
+.barber-modal-panel,
+.product-modal-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--steel) var(--card);
+}
+
+.barber-modal-panel::-webkit-scrollbar-track,
+.product-modal-panel::-webkit-scrollbar-track {
+    background: var(--card);
+}
+
+.barber-modal-panel::-webkit-scrollbar-thumb,
+.product-modal-panel::-webkit-scrollbar-thumb {
+    border-color: var(--card);
 }
 
 body {
@@ -417,6 +470,63 @@ input:focus-visible {
     color: var(--white);
 }
 
+/* Search results dropdown — shared by the desktop header search and the
+   mobile drawer search; both forms already have position: relative. */
+.search-results {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    z-index: 20;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 18px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--white);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+    transition: var(--transition);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: var(--card-light);
+}
+
+.search-result-type {
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.5px;
+    color: var(--dim);
+    white-space: nowrap;
+}
+
+.search-results-empty {
+    padding: 14px 18px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--dim);
+}
+
 /* Mobile-drawer-only items — hidden on desktop by default */
 .nav-menu-divider,
 .nav-menu-search,
@@ -547,6 +657,584 @@ input:focus-visible {
 .btn-secondary:hover {
     border-color: var(--white);
     transform: translateY(-3px);
+}
+
+/* ============================================
+   HIGHLIGHTS — INSTAGRAM-STYLE STORY BUBBLES
+   ============================================ */
+.highlights {
+    position: relative;
+    background: var(--black);
+    padding: 60px 0 48px;
+    border-top: 1px solid var(--line);
+    overflow: hidden;
+}
+
+/* Soft gradient glow behind the header, echoing the story-ring colors
+   so the header feels tied to the bubbles below it rather than a
+   generic section title dropped on top. */
+.highlights::before {
+    content: '';
+    position: absolute;
+    top: -140px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 620px;
+    height: 260px;
+    background: radial-gradient(ellipse at center,
+        rgba(238, 42, 123, 0.14) 0%,
+        rgba(98, 40, 215, 0.09) 45%,
+        transparent 72%);
+    pointer-events: none;
+}
+
+.highlights-header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.highlights-eyebrow {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 0.68rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+}
+
+.highlights-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.9rem;
+    letter-spacing: 0.3px;
+    color: var(--white);
+    margin-bottom: 16px;
+}
+
+.highlights-rule {
+    display: block;
+    width: 60px;
+    height: 3px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 45%, #6228d7 100%);
+}
+
+.highlights-track {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding: 4px 2px 8px;
+    scrollbar-width: none;
+}
+
+.highlights-track::-webkit-scrollbar {
+    display: none;
+}
+
+.highlight-item {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 96px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    scroll-snap-align: start;
+}
+
+.highlight-ring {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 45%, #6228d7 100%);
+    transition: var(--transition);
+}
+
+.highlight-item:hover .highlight-ring {
+    transform: scale(1.07);
+    filter: drop-shadow(0 6px 16px rgba(238, 42, 123, 0.35));
+}
+
+/* Once opened, the ring fades to a neutral gray — same "seen" convention
+   Instagram uses, so people can tell at a glance what's left to check out. */
+.highlight-item.viewed .highlight-ring {
+    background: var(--faint);
+}
+
+.highlight-item.viewed:hover .highlight-ring {
+    filter: none;
+}
+
+.highlight-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--black);
+    background: var(--card);
+}
+
+.highlight-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+}
+
+.highlight-item:hover .highlight-avatar img {
+    transform: scale(1.08);
+}
+
+/* Small story-count pip, like a multi-photo indicator — a quiet hint
+   that a bubble holds more than one story before people tap in. */
+.highlight-count {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 50px;
+    background: var(--black);
+    border: 2px solid var(--black);
+    box-shadow: 0 0 0 1px var(--line);
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.highlight-label {
+    font-family: var(--font-body);
+    font-size: 0.74rem;
+    color: var(--off);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.3s ease;
+}
+
+.highlight-item:hover .highlight-label {
+    color: var(--white);
+}
+
+/* ---------- Story viewer overlay ---------- */
+/* Redesigned as an Instagram "long-press peek" style popup: a floating,
+   rounded card centered over a dimmed/blurred backdrop, rather than a
+   full-bleed edge-to-edge Stories takeover. */
+.story-viewer[hidden] {
+    display: none;
+}
+
+.story-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.story-viewer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+}
+
+.story-viewer-panel {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    max-height: 88vh;
+    background: var(--near-black);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    /* Hide the native scrollbar — it was cutting across the footer
+       buttons. Scrolling still works, it just doesn't draw a track. */
+    scrollbar-width: none;
+}
+
+.story-viewer-panel::-webkit-scrollbar {
+    display: none;
+}
+
+/* Progress segments now overlay just the photo (see .story-media), the
+   way Instagram Stories do it, rather than spanning the whole card. */
+.story-progress {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 5;
+    display: flex;
+    gap: 5px;
+}
+
+.story-progress-seg {
+    flex: 1;
+    height: 2.5px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.32);
+    overflow: hidden;
+}
+
+.story-progress-seg-fill {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--white);
+}
+
+.story-progress-seg-fill.complete {
+    width: 100%;
+}
+
+.story-progress-seg-fill.animating {
+    transition: width linear;
+}
+
+/* Solid header bar (not an overlay) — like the header on a real post card. */
+.story-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--near-black);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+
+.story-header-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+}
+
+.story-header-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.story-header-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    color: var(--white);
+    flex: 1;
+}
+
+.story-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    color: var(--white);
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.story-close:hover {
+    background: var(--white);
+    color: var(--black);
+}
+
+.story-media {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    max-height: 58vh;
+    background: #000;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.story-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Gradient scrims give the progress bar (top) and the image-to-footer
+   seam (bottom) contrast regardless of what's in the photo, instead of
+   the bar/edge floating on top of an arbitrary image. */
+.story-media-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.story-media-scrim--top {
+    top: 0;
+    height: 84px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+}
+
+.story-media-scrim--bottom {
+    bottom: 0;
+    height: 64px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent);
+}
+
+.story-nav {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 2;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.story-nav--prev { left: 0; }
+.story-nav--next { right: 0; }
+
+/* Floating like action — sits on the photo like a reel/story action
+   button, rather than crowding the footer's button row. */
+.story-like-btn {
+    position: absolute;
+    right: 12px;
+    bottom: 14px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 9px 10px 8px;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 20px;
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 0.66rem;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.story-like-btn i {
+    font-size: 1rem;
+}
+
+.story-like-btn:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.32);
+    transform: translateY(-2px);
+}
+
+/* Liked state reuses the pink already present in the highlight-ring
+   gradient, so it reads as on-brand rather than a generic Instagram red. */
+.story-like-btn.liked {
+    border-color: #ee2a7b;
+    color: #ee2a7b;
+}
+
+.story-like-btn.liked i {
+    color: #ee2a7b;
+}
+
+/* Solid footer (not a gradient-over-photo overlay) — caption plus a
+   two-button CTA row. The like action now floats on the photo instead
+   of living here, so this stays uncluttered. */
+.story-footer {
+    padding: 16px 18px 18px;
+    background: var(--near-black);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.story-caption {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--off);
+    line-height: 1.5;
+}
+
+.story-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.story-cta {
+    padding: 13px 22px;
+    font-size: 0.75rem;
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.story-see-more {
+    padding: 13px 20px;
+    font-size: 0.75rem;
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+@media (max-width: 640px) {
+    .highlights { padding: 40px 0 32px; }
+    .highlights-header { margin-bottom: 24px; }
+    .highlights-title { font-size: 1.5rem; }
+    .highlight-item { width: 86px; }
+    .highlight-ring { width: 78px; height: 78px; }
+    .story-viewer { padding: 12px; }
+    .story-viewer-panel { max-width: 100%; max-height: 92vh; }
+    .story-like-btn { right: 10px; bottom: 12px; padding: 8px 9px 7px; }
+    .story-actions { gap: 8px; }
+    .story-cta, .story-see-more { flex: 1 1 auto; min-width: 40%; }
+}
+
+/* ============================================
+   AUTH GATE MODAL
+   Shown when a signed-out visitor tries to add a
+   product to their cart — prompts login/signup
+   instead of silently adding the item.
+   ============================================ */
+.auth-gate[hidden] {
+    display: none;
+}
+
+.auth-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 3200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.auth-gate-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+}
+
+.auth-gate-panel {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    background: var(--near-black);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 40px 32px 32px;
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.auth-gate-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    color: var(--white);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.auth-gate-close:hover {
+    background: var(--white);
+    color: var(--black);
+}
+
+.auth-gate-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--white);
+}
+
+.auth-gate-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.3rem;
+    letter-spacing: 0.3px;
+    color: var(--white);
+    margin-bottom: 12px;
+}
+
+.auth-gate-text {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--off);
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+.auth-gate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.auth-gate-actions .btn-primary,
+.auth-gate-actions .btn-secondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+}
+
+@media (max-width: 480px) {
+    .auth-gate-panel { padding: 32px 24px 26px; }
 }
 
 /* ============================================
@@ -1208,6 +1896,44 @@ input:focus-visible {
     background: var(--white);
     color: var(--black);
     border-color: var(--white);
+    transform: translateY(-2px);
+}
+
+/* Optional second action alongside "Add to Cart" — used on the full
+   products page where cards offer both, not just on the homepage teaser
+   grid (which keeps its single centered button as before). */
+.product-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 180px;
+}
+
+.product-card-actions .product-btn {
+    max-width: none;
+}
+
+.product-buy-btn {
+    display: inline-block;
+    padding: 10px 28px;
+    border: 1px solid var(--white);
+    border-radius: 50px;
+    font-size: 0.65rem;
+    font-family: var(--font-display);
+    letter-spacing: 1.5px;
+    color: var(--black);
+    background: var(--white);
+    transition: var(--transition);
+    text-transform: uppercase;
+    width: 100%;
+    cursor: pointer;
+}
+
+.product-buy-btn:hover {
+    background: var(--steel);
+    border-color: var(--steel);
+    color: var(--white);
     transform: translateY(-2px);
 }
 
