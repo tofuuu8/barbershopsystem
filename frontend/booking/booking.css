@@ -625,6 +625,19 @@
     gap: 14px;
 }
 
+/* "Random" card — distinct from the named barber cards so it reads
+   as a system choice, not a person. */
+.booking-barber-card--random .booking-barber-none-icon {
+    background: rgba(216, 210, 196, 0.1);
+    border-color: rgba(216, 210, 196, 0.3);
+    color: var(--steel);
+}
+
+.booking-barber-card--random.selected {
+    border-color: var(--steel);
+    background: rgba(216, 210, 196, 0.1);
+}
+
 .booking-barber-card {
     display: flex;
     flex-direction: column;
@@ -925,6 +938,121 @@
 }
 
 /* ============================================
+   CONTACT METHOD TOGGLE (Step 5)
+   Two card-style buttons side by side — phone (SMS/call) or email.
+   ============================================ */
+.booking-contact-method {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.booking-contact-method-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--off);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: left;
+}
+
+.booking-contact-method-btn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--white);
+}
+
+.booking-contact-method-btn.active {
+    border-color: var(--steel);
+    background: rgba(216, 210, 196, 0.08);
+    color: var(--white);
+}
+
+.booking-contact-method-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--dim);
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.booking-contact-method-btn.active .booking-contact-method-icon {
+    background: rgba(216, 210, 196, 0.15);
+    border-color: rgba(216, 210, 196, 0.35);
+    color: var(--steel);
+}
+
+.booking-contact-method-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.booking-contact-method-label {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+}
+
+.booking-contact-method-sub {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--dim);
+}
+
+.booking-contact-method-btn.active .booking-contact-method-sub {
+    color: var(--off);
+}
+
+/* ============================================
+   DESIGN IMPROVEMENTS — step indicators, card polish
+   ============================================ */
+
+/* Step number badges — slightly larger, with a subtle glow on the
+   active step, giving the form more of a guided-flow feel. */
+.booking-step-number {
+    transition: var(--transition);
+}
+
+.booking-card:hover .booking-step-number {
+    box-shadow: 0 0 0 4px rgba(216, 210, 196, 0.12);
+}
+
+/* Cards — subtle lift on hover for a more interactive feel */
+.booking-card {
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.booking-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* Summary panel — slightly richer surface */
+.booking-summary {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Confirm button — fuller, more prominent */
+.booking-confirm-btn {
+    padding: 15px 24px;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 1024px) {
@@ -944,6 +1072,7 @@
     .booking-title { font-size: 2.4rem; }
     .booking-service-grid { grid-template-columns: repeat(2, 1fr); }
     .booking-datetime-row { grid-template-columns: 1fr; }
+    .booking-contact-method { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {

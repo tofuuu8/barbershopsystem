@@ -61,6 +61,19 @@ function findBookingArea(name) {
     return BOOKING_HOME_AREAS.find(a => a.name === name) || null;
 }
 
+// --------------------------------------------
+// BARBER ROSTER — used for random assignment when
+// "No Preference" is selected. Women's haircuts are only done by
+// Barber Klark, so the random pool for women's is just him.
+// --------------------------------------------
+const BOOKING_BARBERS = [
+    { id: 'barber-russel', name: 'Barber Russel' },
+    { id: 'klark-dizon',  name: 'Barber Klark' },
+    { id: 'barber-jon',   name: 'Barber Jon' }
+];
+
+const WOMENS_BARBER_IDS = ['klark-dizon'];
+
 function areaLabel(area) {
     return area.label || area.name.replace(/\b\w/g, c => c.toUpperCase());
 }
@@ -120,8 +133,9 @@ function rangesOverlap(startA, durA, startB, durB) {
 let currentGender = 'men';
 let currentLocation = 'studio'; // 'studio' | 'home'
 let selectedServiceId = null;
-let selectedBarberId = null;    // null = No Preference
-let selectedBarberName = 'No Preference';
+let selectedBarberId = null;    // null = Random
+let selectedBarberName = 'Random';
+let contactMethod = 'phone';     // 'phone' | 'email'
 let selectedAreaName = null;
 let currentTravelFee = 0;
 // Booked [time, duration] pairs for the selected barber + date, used to
@@ -157,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     readInitialStateFromUrl();
     initLocationToggle();
     initGenderTabs();
+    initContactMethodToggle();
     initNotesCounter();
     initBookingForm();
     initResetButton();
@@ -165,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     renderServiceCard();
     initBarberCards();
     await initPhoneField();
+    await initEmailField();
     await initDateTimeInputs();
     updateSummary();
     loadUpcomingBookings();
@@ -347,7 +363,7 @@ function initBarberCards() {
         selectedBarberId = card.dataset.barberId || null;
         selectedBarberName = card.querySelector('.booking-barber-name')
             ? card.querySelector('.booking-barber-name').textContent
-            : 'No Preference';
+            : 'Random';
         // Availability is per-barber — a slot that's free for "No
         // Preference" might be taken for this specific barber, and vice
         // versa, so the time list has to be recomputed on every switch.
@@ -401,6 +417,50 @@ async function initPhoneField() {
 // two stay consistent for the visitor.
 function isValidBookingPhone(phone) {
     return /^[0-9+()\-.\s]{7,20}$/.test(phone);
+}
+
+function isValidBookingEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ============================================
+// CONTACT METHOD TOGGLE (Step 5)
+// Lets the visitor choose how they want to be reached — phone
+// (SMS/call) or email notification — and shows the matching input.
+// ============================================
+function applyContactMethodToUI() {
+    document.querySelectorAll('.booking-contact-method-btn').forEach(btn => {
+        const active = btn.dataset.method === contactMethod;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', String(active));
+    });
+
+    const phoneField = document.getElementById('bookingPhoneField');
+    const emailField = document.getElementById('bookingEmailField');
+    if (phoneField) phoneField.hidden = contactMethod !== 'phone';
+    if (emailField) emailField.hidden = contactMethod !== 'email';
+}
+
+function initContactMethodToggle() {
+    document.querySelectorAll('.booking-contact-method-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            contactMethod = this.dataset.method;
+            applyContactMethodToUI();
+            updateSummary();
+        });
+    });
+}
+
+// Prefills the email field from the signed-in user's auth email so
+// most people don't have to type anything.
+async function initEmailField() {
+    const input = document.getElementById('bookingEmailInput');
+    if (!input) return;
+
+    const user = getCurrentUser();
+    if (!user) return;
+
+    if (user.email) input.value = user.email;
 }
 
 // ============================================
@@ -558,6 +618,8 @@ function currentSelection() {
         timeLabel: timeSelect && timeSelect.selectedOptions[0] ? timeSelect.selectedOptions[0].textContent : '',
         address: addressInput ? addressInput.value.trim() : '',
         phone: phoneInput ? phoneInput.value.trim() : '',
+        email: document.getElementById('bookingEmailInput') ? document.getElementById('bookingEmailInput').value.trim() : '',
+        contactMethod,
         notes: (document.getElementById('bookingNotesInput') || {}).value || ''
     };
 }
@@ -575,6 +637,10 @@ function updateSummary() {
         ? `${formatDateLabel(sel.date)} at ${sel.timeLabel}`
         : 'Not selected yet');
 
+    const contactValue = contactMethod === 'phone' ? sel.phone : sel.email;
+    const contactLabel = contactMethod === 'phone' ? 'Phone' : 'Email';
+    setText('bookingSummaryContact', contactValue ? `${contactLabel}: ${contactValue}` : 'Not entered yet');
+
     const feeRow = document.getElementById('bookingSummaryFeeRow');
     if (feeRow) feeRow.hidden = currentLocation !== 'home' || !currentTravelFee;
     setText('bookingSummaryFee', `PHP ${currentTravelFee.toLocaleString()}`);
@@ -590,7 +656,8 @@ const MIN_ADDRESS_LENGTH = 10;
 
 function isSelectionComplete(sel) {
     if (!sel.service || !sel.date || !sel.time) return false;
-    if (!sel.phone || !isValidBookingPhone(sel.phone)) return false;
+    if (contactMethod === 'phone' && (!sel.phone || !isValidBookingPhone(sel.phone))) return false;
+    if (contactMethod === 'email' && (!sel.email || !isValidBookingEmail(sel.email))) return false;
     if (currentLocation === 'home' && (!selectedAreaName || sel.address.length < MIN_ADDRESS_LENGTH)) return false;
     return true;
 }
@@ -629,8 +696,12 @@ function initBookingForm() {
             showBookingError('Please fill in every required field before confirming.');
             return;
         }
-        if (!sel.phone || !isValidBookingPhone(sel.phone)) {
+        if (contactMethod === 'phone' && (!sel.phone || !isValidBookingPhone(sel.phone))) {
             showBookingError('Please enter a valid contact number so your barber can reach you.');
+            return;
+        }
+        if (contactMethod === 'email' && (!sel.email || !isValidBookingEmail(sel.email))) {
+            showBookingError('Please enter a valid email address so we can notify you.');
             return;
         }
         if (currentLocation === 'home' && !selectedAreaName) {
@@ -655,16 +726,17 @@ function initBookingForm() {
         if (btnText) btnText.textContent = 'Booking...';
         if (spinner) spinner.hidden = false;
 
-        // Last-moment re-check against a specific barber's calendar —
-        // refreshTimeSlots() already filters the dropdown, but someone
-        // else could book the same barber+slot in the gap between that
-        // fetch and this submit. This is the real backstop; the dropdown
-        // filtering is just there to avoid offering a doomed slot in the
-        // first place.
+        // Last-moment availability check. For a specific barber this is a
+        // re-check (refreshTimeSlots already filters the dropdown, but
+        // someone else could book in the gap). For "Random" (no barber
+        // selected) this is also where we assign a barber — we try each
+        // candidate in random order and pick the first one whose calendar
+        // is clear at the chosen time.
+        const durationMinutes = parseDurationMinutes(sel.service.duration);
+        const [h, m] = sel.time.split(':').map(Number);
+        const startMinutes = h * 60 + m;
+
         if (selectedBarberId) {
-            const durationMinutes = parseDurationMinutes(sel.service.duration);
-            const [h, m] = sel.time.split(':').map(Number);
-            const startMinutes = h * 60 + m;
             const freshRanges = await fetchBarberBookedRanges(selectedBarberId, sel.date);
             const conflict = freshRanges.some(b => rangesOverlap(startMinutes, durationMinutes, b.start, b.duration));
 
@@ -676,6 +748,32 @@ function initBookingForm() {
                 await refreshTimeSlots();
                 return;
             }
+        } else {
+            // Random assignment — women's haircuts are only done by
+            // Barber Klark, so the pool is just him; men's rotates
+            // through all three barbers.
+            const candidates = currentGender === 'women'
+                ? BOOKING_BARBERS.filter(b => WOMENS_BARBER_IDS.includes(b.id))
+                : BOOKING_BARBERS;
+            const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+            let assignedBarber = null;
+
+            for (const barber of shuffled) {
+                const freshRanges = await fetchBarberBookedRanges(barber.id, sel.date);
+                const conflict = freshRanges.some(b => rangesOverlap(startMinutes, durationMinutes, b.start, b.duration));
+                if (!conflict) { assignedBarber = barber; break; }
+            }
+
+            if (!assignedBarber) {
+                confirmBtn.disabled = false;
+                if (btnText) btnText.textContent = 'Confirm Booking';
+                if (spinner) spinner.hidden = true;
+                showBookingError('All our barbers are booked at that time — please pick another slot.');
+                return;
+            }
+
+            selectedBarberId = assignedBarber.id;
+            selectedBarberName = assignedBarber.name;
         }
 
         const total = sel.service.price + (currentLocation === 'home' ? currentTravelFee : 0);
@@ -698,7 +796,9 @@ function initBookingForm() {
                 total_price: total,
                 booking_date: sel.date,
                 booking_time: sel.time,
-                contact_phone: sel.phone,
+                contact_phone: contactMethod === 'phone' ? sel.phone : null,
+                contact_method: contactMethod,
+                contact_email: contactMethod === 'email' ? sel.email : null,
                 notes: sel.notes.trim() || null
             })
             .select()
@@ -714,6 +814,8 @@ function initBookingForm() {
                     ? 'The bookings table isn\u2019t set up yet — run bookings_setup.sql in the Supabase SQL Editor first.'
                     : /column .*contact_phone/i.test(error.message || '')
                         ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_phone text;'
+                    : /column .*contact_email|column .*contact_method/i.test(error.message || '')
+                        ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_method text, add column if not exists contact_email text;'
                         : (error.message || 'Something went wrong. Please try again.')
             );
             return;
@@ -735,11 +837,14 @@ function showBookingSuccess(booking, sel) {
     if (success) success.hidden = false;
 
     setText('bookingSuccessService', `${booking.service_name} — PHP ${booking.service_price.toLocaleString()}`);
-    setText('bookingSuccessBarber', booking.barber_name || 'No Preference');
+    setText('bookingSuccessBarber', booking.barber_name || 'Random');
     setText('bookingSuccessLocation', booking.location_type === 'home'
         ? `Home Service${booking.area ? ' — ' + areaLabel(findBookingArea(booking.area) || { name: booking.area }) : ''} (${booking.address})`
         : 'In-Studio');
     setText('bookingSuccessDateTime', `${formatDateLabel(booking.booking_date)} at ${sel.timeLabel}`);
+    setText('bookingSuccessContact', booking.contact_method === 'email'
+        ? `Email: ${booking.contact_email || sel.email}`
+        : `Phone: ${booking.contact_phone || sel.phone}`);
 
     success.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -753,10 +858,11 @@ function initResetButton() {
     btn.addEventListener('click', async function () {
         selectedServiceId = null;
         selectedBarberId = null;
-        selectedBarberName = 'No Preference';
+        selectedBarberName = 'Random';
         currentLocation = 'studio';
         selectedAreaName = null;
         currentTravelFee = 0;
+        contactMethod = 'phone';
         barberBookedRanges = [];
 
         const form = document.getElementById('bookingForm');
@@ -772,7 +878,9 @@ function initResetButton() {
         applyLocationToUI();
         renderServiceCard();
         initBarberCards();
+        applyContactMethodToUI();
         await initPhoneField();
+        await initEmailField();
         await refreshTimeSlots();
         updateSummary();
         initNotesCounter();
@@ -845,7 +953,7 @@ async function loadUpcomingBookings() {
                 <p class="booking-history-meta">
                     ${formatDateLabel(b.booking_date)} at ${formatTimeLabel(b.booking_time)}
                     &middot; ${b.location_type === 'home' ? 'Home Service' : 'In-Studio'}
-                    &middot; ${b.barber_name || 'No Preference'}
+                    &middot; ${b.barber_name || 'Random'}
                     ${b.contact_phone ? `&middot; ${b.contact_phone}` : ''}
                 </p>
             </div>
