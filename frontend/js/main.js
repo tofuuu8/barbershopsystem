@@ -935,10 +935,25 @@ async function logOut() {
     window.location.href = SITE_BASE + 'index.html';
 }
 
-// Swaps the header's Log In / Sign Up links for a Log Out link once
-// someone is signed in. Runs on load (after authReadyPromise resolves)
-// and again on every auth state change. Only touches text/behavior, not
-// the original href, so it works unmodified at any folder depth.
+// Header avatar's initial — first letter of the account's display name
+// (set at signup, editable on account.html) falling back to the first
+// letter of their email if they haven't set one. account.js's profile
+// summary card uses this exact same rule, so the header and the
+// account page always agree.
+function getAvatarInitial(user) {
+    if (!user) return '';
+    const name = user.user_metadata && user.user_metadata.name;
+    const source = (name && name.trim()) || user.email || '';
+    return source.trim().charAt(0).toUpperCase() || '?';
+}
+
+// Swaps the header's Log In / Sign Up links for a Log Out link, and
+// reveals the account avatar icon, once someone is signed in. Runs on
+// load (after authReadyPromise resolves) and again on every auth state
+// change — including right after account.js saves a new name, so the
+// header's initial stays in sync without a page reload. Only touches
+// text/behavior, not the original href, so it works unmodified at any
+// folder depth.
 function updateAuthUI() {
     const user = getCurrentUser();
 
@@ -959,10 +974,20 @@ function updateAuthUI() {
     });
 
     // Sign Up only makes sense while signed out — hide it instead of
-    // repurposing it, so we don't have to guess at an "account page" URL
-    // that doesn't exist yet.
+    // repurposing it.
     document.querySelectorAll('.nav-auth-btn').forEach(function (btn) {
         btn.style.display = user ? 'none' : '';
+    });
+
+    // Account avatar — hidden while signed out (Log In / Sign Up already
+    // cover that case); shown with the visitor's initial once signed in.
+    document.querySelectorAll('.account-icon').forEach(function (link) {
+        link.hidden = !user;
+        if (user) {
+            link.setAttribute('aria-label', 'View account');
+            const avatar = link.querySelector('.account-icon-avatar');
+            if (avatar) avatar.textContent = getAvatarInitial(user);
+        }
     });
 }
 
@@ -1049,8 +1074,8 @@ function openAuthGate(item) {
     const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
     const loginBtn = document.getElementById('authGateLoginBtn');
     const signupBtn = document.getElementById('authGateSignupBtn');
-    if (loginBtn) loginBtn.href = `login.html?redirect=${returnTo}`;
-    if (signupBtn) signupBtn.href = `signup.html?redirect=${returnTo}`;
+    if (loginBtn) loginBtn.href = `${SITE_BASE}login/login.html?redirect=${returnTo}`;
+    if (signupBtn) signupBtn.href = `${SITE_BASE}login/signup.html?redirect=${returnTo}`;
 
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -1128,14 +1153,31 @@ function isValidEmail(email) {
 // along to each other so a visitor gated into login/signup (or sent
 // through the whole forgot -> recovery -> reset chain) lands back where
 // they started instead of just dropping onto the homepage.
+//
+// Only same-site relative paths are accepted — anything that looks like
+// an absolute URL (a scheme like "https:"/"javascript:", or a
+// protocol-relative "//evil.com") is rejected. Without this check, a
+// crafted link like "login.html?redirect=https://evil-lookalike.com"
+// would silently send a visitor off-site immediately after they log in —
+// a classic open-redirect phishing setup — since every auth page does
+// `window.location.href = redirect` with whatever this function returns.
+function isSafeRedirectPath(path) {
+    if (!path) return false;
+    if (path.startsWith('//') || path.startsWith('\\')) return false; // protocol-relative
+    if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return false; // has a scheme, e.g. "https:", "javascript:"
+    return true;
+}
+
 function getRedirectParam() {
     const redirect = new URLSearchParams(window.location.search).get('redirect');
     if (!redirect) return null;
+    let decoded;
     try {
-        return decodeURIComponent(redirect);
+        decoded = decodeURIComponent(redirect);
     } catch (e) {
         return null;
     }
+    return isSafeRedirectPath(decoded) ? decoded : null;
 }
 
 // Appends the current page's redirect param (if any) onto a target URL,
@@ -1183,7 +1225,7 @@ function initPasswordToggles() {
 
 // Password strength rules shared by signup.html and reset.html.
 const PASSWORD_RULES = [
-    { key: 'length', label: 'At least 6 characters', test: pw => pw.length >= 6 },
+    { key: 'length', label: 'At least 8 characters', test: pw => pw.length >= 8 },
     { key: 'letter', label: 'One letter', test: pw => /[a-zA-Z]/.test(pw) },
     { key: 'number', label: 'One number', test: pw => /[0-9]/.test(pw) },
     { key: 'special', label: 'One symbol (! $ @ %)', test: pw => /[!$@%]/.test(pw) }

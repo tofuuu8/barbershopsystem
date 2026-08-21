@@ -78,6 +78,10 @@
                             <span class="cart-count">0</span>
                         </a>
 
+                        <a href="../account/account.html" class="account-icon" id="accountIcon" aria-label="View account" hidden>
+                            <span class="account-icon-avatar" id="accountIconAvatar" aria-hidden="true">A</span>
+                        </a>
+
                         <div class="nav-auth">
                             <a href="login.html" class="nav-auth-link">Log In</a>
                             <a href="signup.html" class="nav-auth-btn">Sign Up</a>
@@ -106,22 +110,31 @@
     </div>
 
     <!-- ==========================================
-    HERO
+    SIGNUP — SPLIT SHELL (editorial panel + unboxed form)
     ========================================== -->
-    <section class="login-hero">
-        <div class="container">
-            <span class="section-badge">JOIN TOUGHCUTS</span>
-            <h1 class="login-title">CREATE YOUR <span class="highlight">ACCOUNT</span></h1>
-            <p class="login-subtitle">Sign up to book appointments, save your details, and check out faster.</p>
-        </div>
-    </section>
+    <section class="auth-split">
 
-    <!-- ==========================================
-    SIGNUP FORM
-    ========================================== -->
-    <section class="login-section">
-        <div class="container">
-            <div class="login-card">
+        <div class="auth-split-panel">
+            <div class="auth-split-panel-inner">
+                <span class="auth-split-eyebrow">Join Toughcuts</span>
+                <h1 class="auth-split-title">CREATE YOUR <span class="highlight">ACCOUNT</span></h1>
+                <p class="auth-split-sub">Sign up to book appointments, save your details, and check out faster.</p>
+
+                <div class="auth-split-chips">
+                    <span class="auth-split-chip"><i class="fas fa-calendar-check" aria-hidden="true"></i> Faster booking</span>
+                    <span class="auth-split-chip"><i class="fas fa-receipt" aria-hidden="true"></i> Order history</span>
+                    <span class="auth-split-chip"><i class="fas fa-tag" aria-hidden="true"></i> Member perks</span>
+                </div>
+
+                <div class="auth-split-meta">
+                    <p class="auth-split-meta-row"><i class="fas fa-location-dot" aria-hidden="true"></i> Eastwind Homes, San Isidro, Rodriguez, Rizal</p>
+                    <p class="auth-split-meta-row"><i class="fas fa-clock" aria-hidden="true"></i> Mon–Fri 9AM–8PM · Sat 9AM–6PM</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-split-form">
+            <div class="auth-split-form-inner">
 
                 <!-- Shown only when the visitor was sent here to finish another
                      action (e.g. adding to cart), via ?redirect=... in the URL. -->
@@ -132,13 +145,6 @@
 
                 <!-- Inline error banner, shown by signup.js on failed validation. -->
                 <div class="login-error" id="signupError" role="alert" hidden></div>
-
-                <!-- Shown instead of the form when the Supabase project requires
-                     email confirmation (see signup.js's showCheckEmailState). -->
-                <div class="recovery-resent-note" id="signupCheckEmailNote" hidden>
-                    <i class="fas fa-circle-check" aria-hidden="true"></i>
-                    <span>Almost there — we sent a confirmation link to <strong data-email-slot></strong>. Click it, then come back and log in.</span>
-                </div>
 
                 <form id="signupForm" class="login-form" novalidate>
                     <div class="login-field">
@@ -159,7 +165,7 @@
                                 <i class="fas fa-eye" aria-hidden="true"></i>
                             </button>
                         </div>
-                        <p class="signup-password-hint">At least 6 characters, with a letter, a number, and one of <code>! $ @ %</code>.</p>
+                        <p class="signup-password-hint">At least 8 characters, with a letter, a number, and one of <code>! $ @ %</code>.</p>
                         <ul class="password-checklist" id="signupPasswordChecklist"></ul>
                     </div>
 
@@ -175,7 +181,7 @@
 
                     <label class="signup-terms">
                         <input type="checkbox" id="signupTerms" name="signupTerms" />
-                        <span>I agree to the <a href="../terms.html">Terms of Service</a> and <a href="../privacy.html">Privacy Policy</a>.</span>
+                        <span>I agree to the <a href="../terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="../privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</span>
                     </label>
 
                     <button type="submit" class="btn-primary login-submit" id="signupSubmitBtn">
@@ -188,12 +194,16 @@
 
                 <a href="login.html" class="btn-secondary login-signup-btn" data-preserve-redirect>Log In Instead</a>
             </div>
+        </div>
+    </section>
 
+    <div class="auth-split-continue-wrap">
+        <div class="container">
             <a href="../products/products.html" class="login-continue-link">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Continue browsing as guest
             </a>
         </div>
-    </section>
+    </div>
 
     <!-- ==========================================
     FOOTER

@@ -77,6 +77,10 @@
                             <span class="cart-count">0</span>
                         </a>
 
+                        <a href="../account/account.html" class="account-icon" id="accountIcon" aria-label="View account" hidden>
+                            <span class="account-icon-avatar" id="accountIconAvatar" aria-hidden="true">A</span>
+                        </a>
+
                         <div class="nav-auth">
                             <a href="login.html" class="nav-auth-link">Log In</a>
                             <a href="signup.html" class="nav-auth-btn">Sign Up</a>
@@ -123,7 +127,7 @@
             <div class="login-card recovery-card--narrow">
 
                 <div class="login-error" id="recoveryError" role="alert" hidden></div>
-                <div class="recovery-resent-note" id="recoveryResentNote" hidden>
+                <div class="recovery-resent-note" id="recoveryResentNote" role="status" aria-live="polite" hidden>
                     <i class="fas fa-circle-check" aria-hidden="true"></i>
                     <span>A new code has been sent.</span>
                 </div>

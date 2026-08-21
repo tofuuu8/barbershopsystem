@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initResetSuccessNote();
     initRedirectNote();
     initLoginForm();
+    initLoginResend();
 });
 
 // --------------------------------------------
@@ -64,16 +65,70 @@ function hideLoginError() {
     if (el) el.hidden = true;
 }
 
+// Shown only alongside the "email not confirmed" error — see
+// friendlyAuthError() below and initLoginResend() further down.
+function showLoginResendRow(email) {
+    const row = document.getElementById('loginResendRow');
+    if (row) {
+        row.hidden = false;
+        row.dataset.email = email;
+    }
+}
+
+function hideLoginResendRow() {
+    const row = document.getElementById('loginResendRow');
+    if (row) row.hidden = true;
+}
+
+// --------------------------------------------
+// Resend confirmation code
+// --------------------------------------------
+// Shown only when login fails because the account is unconfirmed (see
+// friendlyAuthError() below). Sends a fresh code, then hands the visitor
+// off to confirm.html to type it in — login.html has nowhere to enter a
+// code itself, so resending in place and leaving them here isn't useful.
+function initLoginResend() {
+    const btn = document.getElementById('loginResendBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function () {
+        if (btn.disabled) return;
+
+        const row = document.getElementById('loginResendRow');
+        const email = row && row.dataset.email;
+        if (!email) return;
+
+        btn.disabled = true;
+
+        const { error } = await supabaseClient.auth.resend({ type: 'signup', email: email });
+
+        if (error && !/rate limit/i.test(error.message || '')) {
+            showLoginError(error.message || 'Could not resend the confirmation email. Please try again.');
+            btn.disabled = false;
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('email', email);
+        const redirect = getRedirectParam();
+        if (redirect) params.set('redirect', encodeURIComponent(redirect));
+
+        window.location.href = 'confirm.html?' + params.toString();
+    });
+}
+
+// --------------------------------------------
 // Supabase's raw error messages are written for developers, not
 // visitors — map the common ones to friendlier copy and fall back to
 // the raw message for anything unexpected.
+// --------------------------------------------
 function friendlyAuthError(error) {
     const msg = (error && error.message) || 'Something went wrong. Please try again.';
     if (/invalid login credentials/i.test(msg)) {
         return 'Incorrect email or password. Please try again.';
     }
     if (/email not confirmed/i.test(msg)) {
-        return 'Please confirm your email address before logging in — check your inbox for the confirmation link.';
+        return 'Please confirm your email address before logging in — check your inbox for the confirmation code.';
     }
     return msg;
 }
@@ -102,6 +157,7 @@ function initLoginForm() {
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         hideLoginError();
+        hideLoginResendRow();
 
         const email = emailInput.value.trim();
         const password = passwordInput.value;
@@ -134,6 +190,9 @@ function initLoginForm() {
             submitText.textContent = 'Log In';
             spinner.hidden = true;
             showLoginError(friendlyAuthError(error));
+            if (/email not confirmed/i.test(error.message || '')) {
+                showLoginResendRow(email);
+            }
             return;
         }
 

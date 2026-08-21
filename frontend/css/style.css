@@ -355,6 +355,40 @@ input:focus-visible {
     transition: var(--transition);
 }
 
+/* Header avatar — links to account/account.html. Hidden by default in the
+   markup ([hidden] below); main.js's updateAuthUI() reveals it (and fills
+   in the initial) once someone is signed in, same trigger that swaps
+   Log In -> Log Out. Deliberately not hidden at the mobile breakpoint,
+   same as .cart-icon, so signed-in visitors keep one-tap profile access
+   on mobile too. */
+.account-icon[hidden] {
+    display: none;
+}
+
+.account-icon {
+    display: flex;
+    transition: var(--transition);
+}
+
+.account-icon-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--steel);
+    color: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    transition: var(--transition);
+}
+
+.account-icon:hover .account-icon-avatar {
+    background: var(--white);
+    transform: translateY(-2px);
+}
+
 .icon-btn:hover,
 .icon-btn.active {
     background: var(--white);

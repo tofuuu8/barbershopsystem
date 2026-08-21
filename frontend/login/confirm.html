@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reset Password - Toughcuts Barbershop &amp; Grooming Studio</title>
-    <meta name="description" content="Set a new password for your Toughcuts account." />
+    <title>Confirm Your Email - Toughcuts Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="Enter the confirmation code sent to your email to activate your new Toughcuts account." />
 
     <link rel="icon" type="image/png" href="../images/toughcutslogo.png" />
     <link rel="apple-touch-icon" href="../images/toughcutslogo.png" />
@@ -17,7 +17,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="login.css" />
-    <link rel="stylesheet" href="signup.css" />
     <link rel="stylesheet" href="recovery.css" />
 </head>
 <body>
@@ -114,53 +113,45 @@
     ========================================== -->
     <section class="login-hero">
         <div class="container">
-            <span class="section-badge">ACCOUNT RECOVERY</span>
-            <h1 class="login-title">RESET YOUR <span class="highlight">PASSWORD</span></h1>
-            <p class="login-subtitle">Choose a new password for your account.</p>
+            <span class="section-badge">ONE LAST STEP</span>
+            <h1 class="login-title">CONFIRM YOUR <span class="highlight">EMAIL</span></h1>
+            <p class="login-subtitle" id="confirmSubtitle">We sent an 8-digit code to your email. Enter it below to activate your account.</p>
         </div>
     </section>
 
     <!-- ==========================================
-    RESET PASSWORD FORM
+    CODE VERIFICATION FORM
     ========================================== -->
     <section class="login-section">
         <div class="container">
             <div class="login-card recovery-card--narrow">
 
-                <div class="login-error" id="resetError" role="alert" hidden></div>
+                <div class="login-error" id="confirmError" role="alert" hidden></div>
+                <div class="recovery-resent-note" id="confirmResentNote" role="status" aria-live="polite" hidden>
+                    <i class="fas fa-circle-check" aria-hidden="true"></i>
+                    <span>A new code has been sent.</span>
+                </div>
 
-                <form id="resetForm" class="login-form" novalidate>
+                <form id="confirmForm" class="login-form" novalidate>
                     <div class="login-field">
-                        <label for="newPassword">New Password</label>
-                        <div class="login-input-wrap">
-                            <input type="password" id="newPassword" name="newPassword" class="login-input" placeholder="Create a new password" autocomplete="new-password" autofocus />
-                            <button type="button" class="login-toggle-pass" data-toggle-target="newPassword" aria-label="Show password">
-                                <i class="fas fa-eye" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <p class="signup-password-hint">At least 8 characters, with a letter, a number, and one of <code>! $ @ %</code>.</p>
-                        <ul class="password-checklist" id="resetPasswordChecklist"></ul>
+                        <label for="confirmCode">Confirmation Code</label>
+                        <input type="text" id="confirmCode" name="confirmCode" class="login-input recovery-code-input" placeholder="••••••••" inputmode="numeric" maxlength="8" autocomplete="one-time-code" autofocus />
                     </div>
 
-                    <div class="login-field">
-                        <label for="confirmPassword">Confirm New Password</label>
-                        <div class="login-input-wrap">
-                            <input type="password" id="confirmPassword" name="confirmPassword" class="login-input" placeholder="Re-enter your new password" autocomplete="new-password" />
-                            <button type="button" class="login-toggle-pass" data-toggle-target="confirmPassword" aria-label="Show password">
-                                <i class="fas fa-eye" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-primary login-submit" id="resetSubmitBtn">
-                        <span class="login-submit-text">Reset Password</span>
+                    <button type="submit" class="btn-primary login-submit" id="confirmSubmitBtn">
+                        <span class="login-submit-text">Confirm Account</span>
                         <i class="fas fa-circle-notch fa-spin login-submit-spinner" aria-hidden="true" hidden></i>
                     </button>
                 </form>
+
+                <p class="recovery-resend-row">
+                    Didn't get a code?
+                    <button type="button" class="recovery-resend-btn" id="confirmResendBtn">Resend code</button>
+                </p>
             </div>
 
-            <a href="login.html" class="login-continue-link" data-preserve-redirect>
-                <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Log In
+            <a href="signup.html" class="login-continue-link" data-preserve-redirect>
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Use a Different Email
             </a>
         </div>
     </section>
@@ -264,6 +255,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/main.js"></script>
-    <script src="reset.js"></script>
+    <script src="confirm.js"></script>
 </body>
 </html>

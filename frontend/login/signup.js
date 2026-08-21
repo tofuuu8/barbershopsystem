@@ -9,14 +9,22 @@
 // initPasswordChecklist() / initPasswordToggles() all live in main.js,
 // shared with login.js / reset.js / forgot.js / recovery.js.
 //
+// --------------------------------------------
 // NOTE on email confirmation: whether supabase.auth.signUp() logs the
 // visitor straight in or not depends on a project setting — Supabase
 // Dashboard -> Authentication -> Providers -> Email -> "Confirm email".
 //   - OFF: signUp() returns an active session immediately, same feel as
 //     the old localStorage version of this page (create account -> signed in).
-//   - ON (the default for new projects): signUp() returns a user but no
-//     session until they click the link in the confirmation email. This
-//     file handles both cases below.
+//   - ON: signUp() returns a user but no session. This file sends the
+//     visitor to confirm.html to enter the 8-digit code from their email
+//     and finish creating the account there — see confirm.js.
+//
+// REQUIRED SUPABASE DASHBOARD SETUP for the code (not link) to work:
+// Authentication -> Email Templates -> "Confirm signup" -> change the
+// body so it renders {{ .Token }} (the 8-digit OTP) instead of / in
+// addition to {{ .ConfirmationURL }}. Same idea as the note in forgot.js
+// for the password-reset email.
+// --------------------------------------------
 
 document.addEventListener('DOMContentLoaded', async function () {
     await authReadyPromise;
@@ -71,23 +79,9 @@ function friendlyAuthError(error) {
         return 'An account with that email already exists. Try logging in instead.';
     }
     if (/password should be at least/i.test(msg)) {
-        return 'Password must be at least 6 characters and include a letter, a number, and one of ! $ @ %.';
+        return 'Password must be at least 8 characters and include a letter, a number, and one of ! $ @ %.';
     }
     return msg;
-}
-
-// Shown instead of redirecting when the project requires email
-// confirmation (signUp() succeeded but returned no session).
-function showCheckEmailState(email) {
-    const form = document.getElementById('signupForm');
-    const divider = document.querySelector('.login-divider');
-    const note = document.getElementById('signupCheckEmailNote');
-    if (form) form.hidden = true;
-    if (divider) divider.hidden = true;
-    if (note) {
-        note.querySelector('[data-email-slot]').textContent = email;
-        note.hidden = false;
-    }
 }
 
 // --------------------------------------------
@@ -143,7 +137,7 @@ function initSignupForm() {
             return;
         }
         if (!passwordMeetsRequirements(password)) {
-            showSignupError('Password must be at least 6 characters and include a letter, a number, and one of ! $ @ %.');
+            showSignupError('Password must be at least 8 characters and include a letter, a number, and one of ! $ @ %.');
             return;
         }
         if (password !== confirm) {
@@ -161,7 +155,13 @@ function initSignupForm() {
             options: {
                 // Stored as user_metadata — readable via
                 // getCurrentUser().user_metadata.name anywhere on the site.
-                data: { name: name }
+                // terms_accepted_at is captured here (rather than directly
+                // in the profiles table) because no profiles row exists yet
+                // when email confirmation is required — there's no session
+                // to satisfy RLS until the visitor confirms. account.js
+                // copies this value into profiles.terms_accepted_at the
+                // first time it creates that row.
+                data: { name: name, terms_accepted_at: new Date().toISOString() }
             }
         });
 
@@ -181,11 +181,16 @@ function initSignupForm() {
             return;
         }
 
-        // Email confirmation is ON — account was created but there's no
-        // session yet. Show a "check your email" state instead of an error.
-        submitBtn.disabled = false;
-        submitText.textContent = 'Create Account';
-        spinner.hidden = true;
-        showCheckEmailState(email);
+        // Email confirmation is ON — the account exists in Supabase but is
+        // unconfirmed, and has no session yet. Send the visitor to
+        // confirm.html to enter the 8-digit code and finish activating it,
+        // carrying their email and any ?redirect= the same way
+        // forgot.js -> recovery.html does.
+        const params = new URLSearchParams();
+        params.set('email', email);
+        const redirect = getRedirectParam();
+        if (redirect) params.set('redirect', encodeURIComponent(redirect));
+
+        window.location.href = 'confirm.html?' + params.toString();
     });
 }

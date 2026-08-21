@@ -80,8 +80,11 @@ function initRecoveryForm() {
             showRecoveryError('Please enter the code we sent you.');
             return;
         }
-        if (code.length < 4) {
-            showRecoveryError('That code looks too short — double-check and try again.');
+        // The code is always exactly 8 digits (see codeInput's maxlength
+        // and the digit-only filter above) — reject anything shorter
+        // locally instead of round-tripping a doomed request to Supabase.
+        if (code.length !== 8) {
+            showRecoveryError('That code should be 8 digits — double-check and try again.');
             return;
         }
 

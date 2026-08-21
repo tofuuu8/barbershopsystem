@@ -77,6 +77,10 @@
                             <span class="cart-count">0</span>
                         </a>
 
+                        <a href="../account/account.html" class="account-icon" id="accountIcon" aria-label="View account" hidden>
+                            <span class="account-icon-avatar" id="accountIconAvatar" aria-hidden="true">A</span>
+                        </a>
+
                         <div class="nav-auth">
                             <a href="login.html" class="nav-auth-link">Log In</a>
                             <a href="signup.html" class="nav-auth-btn">Sign Up</a>
@@ -105,39 +109,51 @@
     </div>
 
     <!-- ==========================================
-    HERO
+    LOGIN — SPLIT SHELL (editorial panel + unboxed form)
     ========================================== -->
-    <section class="login-hero">
-        <div class="container">
-            <span class="section-badge">WELCOME BACK</span>
-            <h1 class="login-title">LOG IN TO YOUR <span class="highlight">ACCOUNT</span></h1>
-            <p class="login-subtitle">Sign in to book appointments, track orders, and check out faster.</p>
-        </div>
-    </section>
+    <section class="auth-split">
 
-    <!-- ==========================================
-    LOGIN FORM
-    ========================================== -->
-    <section class="login-section">
-        <div class="container">
-            <div class="login-card">
+        <div class="auth-split-panel">
+            <div class="auth-split-panel-inner">
+                <span class="auth-split-eyebrow">Welcome Back</span>
+                <h1 class="auth-split-title">LOG IN TO YOUR <span class="highlight">ACCOUNT</span></h1>
+                <p class="auth-split-sub">Sign in to book appointments, track orders, and check out faster.</p>
+
+                <div class="auth-split-meta">
+                    <p class="auth-split-meta-row"><i class="fas fa-location-dot" aria-hidden="true"></i> Eastwind Homes, San Isidro, Rodriguez, Rizal</p>
+                    <p class="auth-split-meta-row"><i class="fas fa-clock" aria-hidden="true"></i> Mon–Fri 9AM–8PM · Sat 9AM–6PM</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-split-form">
+            <div class="auth-split-form-inner">
 
                 <!-- Shown only after a successful password reset, via
                      ?reset=success in the URL (see reset.js). -->
-                <div class="recovery-resent-note" id="loginResetSuccessNote" hidden>
+                <div class="recovery-resent-note" id="loginResetSuccessNote" role="status" aria-live="polite" hidden>
                     <i class="fas fa-circle-check" aria-hidden="true"></i>
                     <span>Password reset! Log in with your new password.</span>
                 </div>
 
                 <!-- Shown only when the visitor was sent here to finish another
                      action (e.g. adding to cart), via ?redirect=... in the URL. -->
-                <div class="login-redirect-note" id="loginRedirectNote" hidden>
+                <div class="login-redirect-note" id="loginRedirectNote" role="status" aria-live="polite" hidden>
                     <i class="fas fa-circle-info" aria-hidden="true"></i>
                     <span>Log in to continue where you left off.</span>
                 </div>
 
                 <!-- Inline error banner, shown by login.js on failed validation. -->
                 <div class="login-error" id="loginError" role="alert" hidden></div>
+
+                <!-- Shown only when login fails because the account's email
+                     hasn't been confirmed yet — lets the visitor re-send the
+                     confirmation email without leaving this page. Reuses
+                     signup.html's resend pattern / recovery.css's styles. -->
+                <p class="recovery-resend-row" id="loginResendRow" hidden>
+                    Didn't get the confirmation email?
+                    <button type="button" class="recovery-resend-btn" id="loginResendBtn">Resend confirmation email</button>
+                </p>
 
                 <form id="loginForm" class="login-form" novalidate>
                     <div class="login-field">
@@ -173,12 +189,16 @@
 
                 <a href="signup.html" class="btn-secondary login-signup-btn" data-preserve-redirect>Create an Account</a>
             </div>
+        </div>
+    </section>
 
+    <div class="auth-split-continue-wrap">
+        <div class="container">
             <a href="../products/products.html" class="login-continue-link">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Continue browsing as guest
             </a>
         </div>
-    </section>
+    </div>
 
     <!-- ==========================================
     FOOTER

@@ -92,7 +92,7 @@ function initResetForm() {
             return;
         }
         if (!passwordMeetsRequirements(newPassword)) {
-            showResetError('Password must be at least 6 characters and include a letter, a number, and one of ! $ @ %.');
+            showResetError('Password must be at least 8 characters and include a letter, a number, and one of ! $ @ %.');
             return;
         }
         if (newPassword !== confirmPassword) {

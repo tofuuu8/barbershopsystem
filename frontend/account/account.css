@@ -1,0 +1,425 @@
+/* ============================================
+   ACCOUNT / PROFILE SETTINGS PAGE
+   Builds on login.css (.login-card, .login-field, .login-input,
+   .login-submit, ...), signup.css (.password-checklist), and
+   recovery.css (.recovery-resent-note) so the settings forms match the
+   rest of the auth flow exactly. This file only adds what's unique to
+   this page: the signed-out gate and the profile summary / settings
+   layout.
+   ============================================ */
+
+/* --------------------------------------------
+   Address field — reuses .login-input's pill styling (background,
+   border, color, font) but as a resizable textarea instead of a
+   single-line 50px-radius input, since a full address needs more
+   than one line.
+   -------------------------------------------- */
+.account-address-input {
+    border-radius: var(--radius);
+    resize: vertical;
+    min-height: 76px;
+    line-height: 1.5;
+    font-family: var(--font-body);
+}
+
+.account-field-optional {
+    text-transform: none;
+    letter-spacing: normal;
+    font-family: var(--font-body);
+    font-style: italic;
+    color: var(--dim);
+    font-weight: 400;
+}
+
+/* ============================================
+   SIGNED-OUT GATE
+   Same recipe as cart.css's .cart-gate — a full-page centered card
+   instead of an overlay, since it's this page's only content for a
+   signed-out visitor.
+   ============================================ */
+.account-gate[hidden] {
+    display: none;
+}
+
+.account-gate {
+    padding: 12px 0 110px;
+    background: var(--black);
+}
+
+.account-gate-panel {
+    max-width: 440px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 48px 40px 40px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.account-gate-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 22px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--white);
+}
+
+.account-gate-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.6rem;
+    letter-spacing: 0.3px;
+    color: var(--white);
+    margin-bottom: 14px;
+}
+
+.account-gate-text {
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--off);
+    line-height: 1.7;
+    margin-bottom: 30px;
+    max-width: 340px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.account-gate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.account-gate-actions .btn-primary,
+.account-gate-actions .btn-secondary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+}
+
+.account-gate-continue {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 26px;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dim);
+    transition: var(--transition);
+}
+
+.account-gate-continue:hover {
+    color: var(--white);
+}
+
+/* ============================================
+   SIGNED-IN CONTENT
+   ============================================ */
+.account-page[hidden] {
+    display: none;
+}
+
+.account-page {
+    padding: 12px 0 110px;
+    background: var(--black);
+}
+
+/* --------------------------------------------
+   Profile summary — avatar, name, email, member-since
+   -------------------------------------------- */
+/* --------------------------------------------
+   Member card — styled like a laminated shop ID/membership card
+   rather than a generic "avatar + name" profile block. The top edge
+   carries the same barber-pole stripe used on the login/signup split
+   shell, so this page reads as part of the same system.
+   -------------------------------------------- */
+.account-summary {
+    position: relative;
+    max-width: 720px;
+    margin: 0 auto 32px;
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    background:
+        radial-gradient(ellipse 140% 100% at 100% 0%, rgba(216, 210, 196, 0.06), transparent 60%),
+        var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 30px 34px;
+    overflow: hidden;
+}
+
+.account-summary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--steel) 0px, var(--steel) 3px,
+        transparent 3px, transparent 15px
+    );
+}
+
+.account-avatar-large {
+    flex-shrink: 0;
+    width: 76px;
+    height: 76px;
+    border-radius: 16px;
+    background: var(--steel);
+    color: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.account-summary-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.account-summary-label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 6px;
+}
+
+.account-summary-name {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.5rem;
+    color: var(--white);
+    margin-bottom: 4px;
+    overflow-wrap: anywhere;
+}
+
+.account-summary-email {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--off);
+    margin-bottom: 8px;
+    overflow-wrap: anywhere;
+}
+
+.account-summary-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-body);
+    font-size: 0.76rem;
+    font-style: italic;
+    color: var(--dim);
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+}
+
+.account-summary-meta i {
+    color: var(--steel);
+    font-style: normal;
+    font-size: 0.72rem;
+}
+
+/* --------------------------------------------
+   Settings cards — Edit Profile / Change Password / Sign Out.
+   Each form card reuses .login-card, but centered/full-width layout
+   doesn't apply here, so max-width and centering are overridden.
+   -------------------------------------------- */
+/* Two-column at desktop widths: profile on the left (taller form),
+   password + sign-out stacked on the right — cuts the page's vertical
+   scroll roughly in half versus the old single stacked column. */
+.account-settings-grid {
+    max-width: 720px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.account-settings-grid .login-card {
+    max-width: none;
+    margin: 0;
+    text-align: left;
+}
+
+@media (min-width: 860px) {
+    .account-settings-grid {
+        max-width: 940px;
+        grid-template-columns: 1fr 1fr;
+    }
+    .account-settings-col {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+}
+
+.account-section-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    color: var(--white);
+    margin-bottom: 6px;
+}
+
+.account-section-sub {
+    font-family: var(--font-body);
+    font-size: 0.84rem;
+    color: var(--dim);
+    line-height: 1.6;
+    margin-bottom: 22px;
+}
+
+.account-email-static {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: 50px;
+    padding: 13px 20px;
+    color: var(--off);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+}
+
+.account-email-static i {
+    color: var(--dim);
+    font-size: 0.85rem;
+}
+
+.account-field-note {
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 0.76rem;
+    color: var(--dim);
+    line-height: 1.5;
+}
+
+/* --------------------------------------------
+   Danger zone — sign out
+   -------------------------------------------- */
+.account-danger-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.account-danger-card p {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--dim);
+    max-width: 380px;
+    line-height: 1.6;
+}
+
+.account-logout-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 26px;
+    border: 1px solid rgba(224, 90, 90, 0.4);
+    border-radius: 50px;
+    background: transparent;
+    color: #f2a6a1;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.account-logout-btn:hover {
+    background: rgba(224, 90, 90, 0.12);
+    border-color: #e05a5a;
+    color: #ffffff;
+}
+
+/* ============================================
+   SKELETON / LOADING STATE
+   Toggled by account.js (setAccountLoading()) while loadProfile()
+   is in flight, so the summary card and settings forms show a
+   shimmer instead of blank/placeholder text for a beat.
+   ============================================ */
+@keyframes accountShimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
+}
+
+.account-summary.is-loading .account-summary-name,
+.account-summary.is-loading .account-summary-email,
+.account-summary.is-loading .account-summary-meta,
+.account-settings-grid.is-loading .login-input,
+.account-settings-grid.is-loading .account-email-static {
+    color: transparent !important;
+    border-radius: 6px;
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.06) 0px,
+        rgba(255, 255, 255, 0.14) 40px,
+        rgba(255, 255, 255, 0.06) 80px
+    );
+    background-size: 400px 100%;
+    animation: accountShimmer 1.4s ease-in-out infinite;
+    pointer-events: none;
+    user-select: none;
+}
+
+.account-summary.is-loading .account-avatar-large {
+    background: rgba(255, 255, 255, 0.08);
+    color: transparent;
+    animation: accountShimmer 1.4s ease-in-out infinite;
+}
+
+.account-settings-grid.is-loading .login-submit,
+.account-settings-grid.is-loading .account-logout-btn {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 640px) {
+    .account-gate-panel { padding: 36px 24px 30px; }
+    .account-gate-title { font-size: 1.35rem; }
+
+    .account-summary {
+        flex-direction: column;
+        text-align: center;
+        padding: 28px 22px;
+    }
+
+    .account-danger-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .account-logout-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
