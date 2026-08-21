@@ -395,7 +395,7 @@ function renderHaircutGallery(gender) {
             : 'Starting At';
     }
     if (bookBtn) {
-        bookBtn.href = `../booking.html?type=${currentType}&gender=${gender}`;
+        bookBtn.href = `../booking/booking.html?type=${currentType}&gender=${gender}`;
     }
 }
 

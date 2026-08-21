@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book an Appointment - Toughcuts Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="Book your next haircut, fade, color, or home service appointment at Toughcuts." />
+
+    <link rel="icon" type="image/png" href="../images/toughcutslogo.png" />
+    <link rel="apple-touch-icon" href="../images/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="booking.css" />
+</head>
+<body>
+
+    <!-- ==========================================
+    ANNOUNCEMENT BAR + HEADER
+    ========================================== -->
+    <div class="site-header-group">
+
+        <div class="announce-bar" id="announceBar">
+            <div class="container announce-bar-inner">
+                <p class="announce-bar-text">
+                    <i class="fas fa-scissors" aria-hidden="true"></i>
+                    New client special — 20% off your first cut.
+                </p>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="container">
+                <nav class="navbar">
+                    <div class="logo">
+                        <a href="../index.html">
+                            <img src="../images/toughcutslogo.png" alt="Toughcuts Logo" />
+                        </a>
+                    </div>
+
+                    <ul class="nav-menu" id="navMenu">
+                        <li><a href="../index.html">HOME</a></li>
+                        <li><a href="../studio/studio.html">STUDIO</a></li>
+                        <li><a href="../products/products.html">PRODUCTS</a></li>
+                        <li><a href="../services/services.html">SERVICES</a></li>
+                        <li><a href="../aboutus/about.html">ABOUT US</a></li>
+
+                        <li class="nav-menu-divider" aria-hidden="true"></li>
+                        <li class="nav-menu-search">
+                            <form class="mobile-search-form" role="search" onsubmit="return false;">
+                                <i class="fas fa-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search styles, products..." aria-label="Search" />
+                            </form>
+                        </li>
+                        <li class="nav-menu-auth">
+                            <a href="../login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="../login/signup.html" class="nav-auth-btn">Sign Up</a>
+                        </li>
+                        <li>
+                            <a href="booking.html" class="btn-book nav-menu-book">Book Appointment</a>
+                        </li>
+                    </ul>
+
+                    <div class="nav-actions">
+                        <button class="icon-btn" id="searchToggle" aria-label="Search" aria-expanded="false">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+
+                        <a href="../cart/cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
+                            <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                            <span class="cart-count">0</span>
+                        </a>
+
+                        <a href="../account/account.html" class="account-icon" id="accountIcon" aria-label="View account" hidden>
+                            <span class="account-icon-avatar" id="accountIconAvatar" aria-hidden="true">A</span>
+                        </a>
+
+                        <div class="nav-auth">
+                            <a href="../login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="../login/signup.html" class="nav-auth-btn">Sign Up</a>
+                        </div>
+
+                        <a href="booking.html" class="btn-book">Book Appointment</a>
+
+                        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
+                            <i class="fas fa-bars" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
+
+                <div class="header-search-panel" id="headerSearchPanel">
+                    <form class="header-search-form" role="search" onsubmit="return false;">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="headerSearchInput" placeholder="Search styles, products, services..." aria-label="Search" />
+                        <button type="button" class="header-search-close" id="headerSearchClose" aria-label="Close search">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+    </div>
+
+    <!-- ==========================================
+    HERO
+    ========================================== -->
+    <section class="booking-hero">
+        <div class="container">
+            <span class="section-badge">BOOK YOUR APPOINTMENT</span>
+            <h1 class="booking-title">RESERVE YOUR <span class="highlight">SEAT</span></h1>
+            <p class="booking-subtitle">Pick a service, a barber, and a time that works for you — in the studio or at home.</p>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    LOGIN-REQUIRED GATE
+    ========================================== -->
+    <section class="booking-gate" id="bookingGate" hidden>
+        <div class="container">
+            <div class="booking-gate-panel">
+                <div class="booking-gate-icon"><i class="fas fa-lock" aria-hidden="true"></i></div>
+                <h2 class="booking-gate-title">Log in to book an appointment</h2>
+                <p class="booking-gate-text">Create a free account or log in so we know who to expect — and so you can manage your appointments afterward.</p>
+                <div class="booking-gate-actions">
+                    <a href="../login/login.html" class="btn-primary" id="bookingGateLoginBtn">Log In</a>
+                    <a href="../login/signup.html" class="btn-secondary" id="bookingGateSignupBtn">Create Account</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    BOOKING CONTENT (signed-in visitors)
+    ========================================== -->
+    <section class="booking-page" id="bookingContent" hidden>
+        <div class="container">
+
+            <!-- ============ SUCCESS STATE ============ -->
+            <div class="booking-success" id="bookingSuccess" hidden>
+                <div class="booking-success-panel">
+                    <div class="booking-success-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+                    <h2 class="booking-success-title">Booking Confirmed!</h2>
+                    <p class="booking-success-text">We've got you down — you'll see this appointment under "Your Upcoming Appointments" below.</p>
+
+                    <div class="booking-success-details">
+                        <div class="booking-success-row"><span>Service</span><span id="bookingSuccessService"></span></div>
+                        <div class="booking-success-row"><span>Barber</span><span id="bookingSuccessBarber"></span></div>
+                        <div class="booking-success-row"><span>Location</span><span id="bookingSuccessLocation"></span></div>
+                        <div class="booking-success-row"><span>Date &amp; Time</span><span id="bookingSuccessDateTime"></span></div>
+                    </div>
+
+                    <div class="booking-success-actions">
+                        <button type="button" class="btn-primary" id="bookingSuccessReset">Book Another Appointment</button>
+                        <a href="../index.html" class="btn-secondary">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ BOOKING FORM ============ -->
+            <div class="booking-form-wrap" id="bookingFormWrap">
+                <div class="booking-error" id="bookingError" role="alert" hidden></div>
+
+                <form id="bookingForm" novalidate>
+                    <div class="booking-layout">
+
+                        <div class="booking-steps">
+
+                            <!-- STEP 1 — LOCATION -->
+                            <div class="booking-card">
+                                <h2 class="booking-card-title"><span class="booking-step-number">1</span> Where's Your Appointment?</h2>
+
+                                <div class="booking-location-toggle" role="tablist">
+                                    <button type="button" class="booking-location-btn active" data-location="studio" role="tab" aria-selected="true">
+                                        <i class="fas fa-store" aria-hidden="true"></i> In-Studio
+                                    </button>
+                                    <button type="button" class="booking-location-btn" data-location="home" role="tab" aria-selected="false">
+                                        <i class="fas fa-house" aria-hidden="true"></i> Home Service
+                                    </button>
+                                </div>
+
+                                <div class="booking-home-fields" id="bookingHomeFields" hidden>
+                                    <div class="booking-field">
+                                        <label for="bookingAreaSelect">Your Area</label>
+                                        <select id="bookingAreaSelect" class="booking-select">
+                                            <option value="">Select your area</option>
+                                        </select>
+                                        <div class="booking-fee-note" id="bookingTravelFeeNote" hidden></div>
+                                    </div>
+
+                                    <div class="booking-coverage-chips">
+                                        <span class="booking-coverage-chip">San Isidro</span>
+                                        <span class="booking-coverage-chip">Rodriguez (Montalban)</span>
+                                        <span class="booking-coverage-chip">San Mateo</span>
+                                        <span class="booking-coverage-chip">Marikina</span>
+                                        <span class="booking-coverage-chip">Antipolo</span>
+                                        <span class="booking-coverage-chip">Cainta</span>
+                                        <span class="booking-coverage-chip">Taytay</span>
+                                        <span class="booking-coverage-chip">Quezon City</span>
+                                    </div>
+
+                                    <div class="booking-field">
+                                        <label for="bookingAddressInput">Street Address</label>
+                                        <textarea id="bookingAddressInput" class="booking-textarea" placeholder="House/unit no., street, barangay" maxlength="200"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- STEP 2 — SERVICE -->
+                            <div class="booking-card">
+                                <h2 class="booking-card-title"><span class="booking-step-number">2</span> Your Service</h2>
+
+                                <div class="booking-gender-tabs" role="tablist">
+                                    <button type="button" class="booking-gender-tab active" data-gender="men" role="tab" aria-selected="true">
+                                        <i class="fas fa-mars" aria-hidden="true"></i> Men's
+                                    </button>
+                                    <button type="button" class="booking-gender-tab" data-gender="women" role="tab" aria-selected="false">
+                                        <i class="fas fa-venus" aria-hidden="true"></i> Women's
+                                    </button>
+                                </div>
+
+                                <div class="booking-service-grid" id="bookingServiceGrid"></div>
+                            </div>
+
+                            <!-- STEP 3 — BARBER -->
+                            <div class="booking-card">
+                                <h2 class="booking-card-title"><span class="booking-step-number">3</span> Pick a Barber</h2>
+
+                                <div class="booking-barber-grid" id="bookingBarberGrid">
+                                    <button type="button" class="booking-barber-card" data-barber-id="">
+                                        <span class="booking-barber-none-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
+                                        <span class="booking-barber-name">No Preference</span>
+                                        <span class="booking-barber-role">Next available barber</span>
+                                    </button>
+
+                                    <button type="button" class="booking-barber-card" data-barber-id="barber-russel">
+                                        <img src="../images/team.jpg" alt="" class="booking-barber-photo" loading="lazy" onerror="this.src='https://placehold.co/56x56/232323/666?text=%20'" />
+                                        <span class="booking-barber-name">Barber Russel</span>
+                                        <span class="booking-barber-role">Barber and Stylist</span>
+                                        <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.9</span>
+                                    </button>
+
+                                    <button type="button" class="booking-barber-card" data-barber-id="klark-dizon">
+                                        <img src="../images/team1.jpg" alt="" class="booking-barber-photo" loading="lazy" onerror="this.src='https://placehold.co/56x56/232323/666?text=%20'" />
+                                        <span class="booking-barber-name">Barber Klark</span>
+                                        <span class="booking-barber-role">Owner and Master Barber</span>
+                                        <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.8</span>
+                                    </button>
+
+                                    <button type="button" class="booking-barber-card" data-barber-id="barber-jon">
+                                        <img src="../images/team1.jpg" alt="" class="booking-barber-photo" loading="lazy" onerror="this.src='https://placehold.co/56x56/232323/666?text=%20'" />
+                                        <span class="booking-barber-name">Barber Jon</span>
+                                        <span class="booking-barber-role">Barber and Stylist</span>
+                                        <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.9</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 4 — DATE & TIME -->
+                            <div class="booking-card">
+                                <h2 class="booking-card-title"><span class="booking-step-number">4</span> Pick a Date &amp; Time</h2>
+
+                                <div class="booking-datetime-row">
+                                    <div class="booking-field">
+                                        <label for="bookingDateInput">Date</label>
+                                        <input type="date" id="bookingDateInput" class="booking-input" />
+                                    </div>
+                                    <div class="booking-field">
+                                        <label for="bookingTimeSelect">Time</label>
+                                        <select id="bookingTimeSelect" class="booking-select" disabled>
+                                            <option value="">Select a time</option>
+                                        </select>
+                                    </div>
+                                    <p class="booking-closed-note" id="bookingClosedNote" hidden>We're closed Sundays — please pick another day.</p>
+                                </div>
+                            </div>
+
+                            <!-- STEP 5 — CONTACT NUMBER -->
+                            <div class="booking-card">
+                                <h2 class="booking-card-title"><span class="booking-step-number">5</span> Contact Number</h2>
+                                <div class="booking-field">
+                                    <label for="bookingPhoneInput">Where should your barber reach you?</label>
+                                    <input type="tel" id="bookingPhoneInput" class="booking-input" placeholder="e.g. 0917 123 4567" autocomplete="tel" inputmode="tel" />
+                                    <p class="booking-field-note" id="bookingPhoneNote" hidden>We couldn't load a saved number — please enter one.</p>
+                                </div>
+                            </div>
+
+                            <!-- STEP 6 — NOTES -->
+                            <div class="booking-card">
+                                <h2 class="booking-card-title"><span class="booking-step-number">6</span> Anything Else? <span class="account-field-optional">(optional)</span></h2>
+                                <div class="booking-field">
+                                    <label for="bookingNotesInput">Notes for your barber</label>
+                                    <textarea id="bookingNotesInput" class="booking-textarea" placeholder="Reference photos in mind, allergies, parking instructions, etc." maxlength="300"></textarea>
+                                    <span class="booking-notes-count" id="bookingNotesCount">0/300</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- SUMMARY -->
+                        <aside class="booking-summary">
+                            <h3>Booking Summary</h3>
+
+                            <div class="booking-summary-row">
+                                <span>Service</span>
+                                <span id="bookingSummaryService">Not selected yet</span>
+                            </div>
+                            <div class="booking-summary-row">
+                                <span>Barber</span>
+                                <span id="bookingSummaryBarber">No Preference</span>
+                            </div>
+                            <div class="booking-summary-row">
+                                <span>Location</span>
+                                <span id="bookingSummaryLocation">In-Studio</span>
+                            </div>
+                            <div class="booking-summary-row">
+                                <span>Date &amp; Time</span>
+                                <span id="bookingSummaryDateTime">Not selected yet</span>
+                            </div>
+                            <div class="booking-summary-row booking-summary-fee-row" id="bookingSummaryFeeRow" hidden>
+                                <span>Travel Fee</span>
+                                <span id="bookingSummaryFee">PHP 0</span>
+                            </div>
+                            <div class="booking-summary-row booking-summary-row--total">
+                                <span>Total</span>
+                                <span id="bookingSummaryTotal">PHP 0</span>
+                            </div>
+
+                            <button type="submit" class="btn-primary booking-confirm-btn" id="bookingConfirmBtn" disabled>
+                                <span class="booking-confirm-text">Confirm Booking</span>
+                                <i class="fas fa-circle-notch fa-spin booking-confirm-spinner" aria-hidden="true" hidden></i>
+                            </button>
+                        </aside>
+
+                    </div>
+                </form>
+            </div>
+
+            <!-- ============ YOUR UPCOMING APPOINTMENTS ============ -->
+            <div class="booking-history" id="bookingHistorySection">
+                <h2>Your Upcoming Appointments</h2>
+                <p class="booking-history-empty" id="bookingHistoryEmpty" hidden>No upcoming appointments yet — book one above.</p>
+                <div class="booking-history-list" id="bookingHistoryList"></div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==========================================
+    FOOTER
+    ========================================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+
+                <div class="footer-brand">
+                    <img class="footer-logo" src="../images/toughcutslogo.png" alt="Toughcuts Logo" loading="lazy" />
+                    <p>Precision cuts, premium style, pure confidence. Modern craftsmanship in a classic atmosphere.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/_toughcuts/" class="footer-social-link" aria-label="Toughcuts on Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on TikTok">
+                            <i class="fab fa-tiktok" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <h4>QUICK LINKS</h4>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="../studio/studio.html">Studio</a></li>
+                        <li><a href="../products/products.html">Products</a></li>
+                        <li><a href="../services/services.html">Services</a></li>
+                        <li><a href="../aboutus/about.html">About Us</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-hours">
+                    <h4>BUSINESS HOURS</h4>
+                    <div class="footer-hours-row">
+                        <span>Mon — Fri</span>
+                        <span>9:00 AM – 8:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Saturday</span>
+                        <span>9:00 AM – 6:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Sunday</span>
+                        <span>Closed</span>
+                    </div>
+                </div>
+
+                <div class="footer-contact">
+                    <h4>TALK TO US</h4>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> 04 398 3985 2092</p>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> +76 209 1092 4095</p>
+                    <p class="footer-email"><i class="fas fa-envelope" aria-hidden="true"></i> info@toughcuts.com</p>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 <strong>Toughcuts</strong>. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="../privacy.html">Privacy Policy</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="../terms.html">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+    AI CHAT WIDGET
+    ========================================== -->
+    <div class="chat-widget" id="chatWidget">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+            <i class="fas fa-comment-dots" aria-hidden="true"></i>
+        </button>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <i class="fas fa-robot" aria-hidden="true"></i>
+                <span>Toughcuts AI</span>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <small>Ask about services, booking, or products</small>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message..." aria-label="Type your message" />
+                <button id="chatSend" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="booking.js"></script>
+</body>
+</html>

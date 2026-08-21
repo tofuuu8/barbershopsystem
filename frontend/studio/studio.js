@@ -177,7 +177,7 @@ function initBarberModal() {
             barber.specialties.map(s => `<span class="barber-tag">${s}</span>`).join('');
         document.getElementById('barberModalExperience').textContent = barber.experience;
         document.getElementById('barberModalReviews').textContent = barber.reviews;
-        if (bookLink) bookLink.href = `../booking.html?barber=${barber.id}`;
+        if (bookLink) bookLink.href = `../booking/booking.html?barber=${barber.id}`;
 
         lastFocused = document.activeElement;
         modal.hidden = false;

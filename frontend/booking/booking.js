@@ -1,0 +1,885 @@
+// ============================================
+// BOOKING PAGE
+// ============================================
+// Login-gated the same way cart.html is — signed-out visitors see
+// #bookingGate instead of the form. isLoggedIn() / getCurrentUser() /
+// authReadyPromise / getRedirectParam() all live in js/main.js, loaded
+// before this file.
+//
+// Writes to the `bookings` table in Supabase — see bookings_setup.sql
+// for the table definition + required RLS policies. Nothing here will
+// work until that SQL has been run once in the Supabase SQL Editor.
+//
+// This file also reads/writes `profiles.phone` (to prefill Step 5's
+// contact number) and — as of this version — `bookings.contact_phone`.
+// Run this once in the SQL Editor if it hasn't been added yet:
+//
+//   alter table public.bookings add column if not exists contact_phone text;
+//
+// Older rows will just have a null contact_phone — nothing else depends
+// on it being backfilled.
+
+// --------------------------------------------
+// SERVICE CATALOG
+// --------------------------------------------
+// Toughcuts only offers one haircut service per gender right now — kept
+// as a one-item-per-gender array (rather than two bare objects) so
+// visibleServices()/findService() below don't need special-casing, and
+// so adding a service back later is a one-line change.
+const BOOKING_SERVICES = [
+    // ---------------- MEN'S ----------------
+    { id: 'classic-haircut', gender: 'men', name: 'Classic Haircut', icon: 'fa-scissors', price: 280, duration: '30 min', blurb: 'A timeless, all-purpose cut — clean and sharp.' },
+    // ---------------- WOMEN'S ----------------
+    { id: 'haircut-style', gender: 'women', name: 'Haircut & Style', icon: 'fa-scissors', price: 450, duration: '45 min', blurb: 'Cut, shape, and blow-dry finish.' }
+];
+
+// Haircut is the only service offered, in-studio or Home Service alike —
+// nothing to filter out here anymore, but kept as the single source of
+// truth in case Home Service coverage ever needs to differ from In-Studio
+// again.
+const HAIRCUT_SERVICE_IDS = {
+    men: ['classic-haircut'],
+    women: ['haircut-style']
+};
+
+// Same coverage list as services.js's HOME_SERVICE_AREAS, trimmed to just
+// what booking needs (name + flat travel fee) — no geolocation shortcut
+// here since booking's own area <select> is a simpler, self-contained
+// pick-and-go rather than a full availability check.
+const BOOKING_HOME_AREAS = [
+    { name: 'san isidro', fee: 80 },
+    { name: 'rodriguez', label: 'Rodriguez (Montalban)', fee: 100 },
+    { name: 'san mateo', fee: 150 },
+    { name: 'marikina', fee: 180 },
+    { name: 'antipolo', fee: 200 },
+    { name: 'cainta', fee: 200 },
+    { name: 'taytay', fee: 220 },
+    { name: 'quezon city', fee: 250 }
+];
+
+function findBookingArea(name) {
+    return BOOKING_HOME_AREAS.find(a => a.name === name) || null;
+}
+
+function areaLabel(area) {
+    return area.label || area.name.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// --------------------------------------------
+// BUSINESS HOURS -> TIME SLOTS
+// Matches the footer's posted hours: Mon-Fri 9am-8pm, Sat 9am-6pm, Sun closed.
+// --------------------------------------------
+function hoursForDate(dateStr) {
+    const day = new Date(dateStr + 'T00:00:00').getDay(); // 0 = Sunday
+    if (day === 0) return null;
+    if (day === 6) return { open: 9 * 60, close: 18 * 60 };
+    return { open: 9 * 60, close: 20 * 60 };
+}
+
+// How far ahead someone can book — keeps the date picker from being
+// scrolled through years of empty availability.
+const MAX_BOOKING_DAYS_AHEAD = 60;
+
+// Slots are offered on the hour (9:00, 10:00, 11:00, ...), not every 30
+// minutes — matches how the shop actually schedules appointments.
+const SLOT_INCREMENT_MINUTES = 60;
+
+function minutesToLabel(mins) {
+    const h24 = Math.floor(mins / 60);
+    const m = mins % 60;
+    const period = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+function minutesTo24h(mins) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+// Services store duration as a display string ("30 min", "45 min") —
+// pull the leading number out of it for slot-fit / overlap math. Falls
+// back to a conservative 60 minutes if a duration string is ever missing
+// or unparseable, so a bad value fails safe (blocks a slot) rather than
+// silently double-booking.
+function parseDurationMinutes(durationStr) {
+    const match = /(\d+)/.exec(durationStr || '');
+    return match ? parseInt(match[1], 10) : 60;
+}
+
+// Two [start, start+duration) ranges (all in minutes-since-midnight) overlap
+// if one starts before the other ends, both ways.
+function rangesOverlap(startA, durA, startB, durB) {
+    return startA < startB + durB && startB < startA + durA;
+}
+
+// --------------------------------------------
+// STATE
+// --------------------------------------------
+let currentGender = 'men';
+let currentLocation = 'studio'; // 'studio' | 'home'
+let selectedServiceId = null;
+let selectedBarberId = null;    // null = No Preference
+let selectedBarberName = 'No Preference';
+let selectedAreaName = null;
+let currentTravelFee = 0;
+// Booked [time, duration] pairs for the selected barber + date, used to
+// grey out conflicting slots. Empty whenever "No Preference" is selected,
+// since that isn't tied to one barber's calendar.
+let barberBookedRanges = [];
+
+function visibleServices() {
+    const byGender = BOOKING_SERVICES.filter(s => s.gender === currentGender);
+    if (currentLocation === 'home') {
+        const allowedIds = HAIRCUT_SERVICE_IDS[currentGender] || [];
+        return byGender.filter(s => allowedIds.includes(s.id));
+    }
+    return byGender;
+}
+
+function findService(id) {
+    return BOOKING_SERVICES.find(s => s.id === id) || null;
+}
+
+// ============================================
+// INIT
+// ============================================
+document.addEventListener('DOMContentLoaded', async function () {
+    await authReadyPromise;
+
+    if (!isLoggedIn()) {
+        showBookingGate();
+        return;
+    }
+
+    showBookingContent();
+    readInitialStateFromUrl();
+    initLocationToggle();
+    initGenderTabs();
+    initNotesCounter();
+    initBookingForm();
+    initResetButton();
+    applyLocationToUI();
+    applyGenderToUI();
+    renderServiceCard();
+    initBarberCards();
+    await initPhoneField();
+    await initDateTimeInputs();
+    updateSummary();
+    loadUpcomingBookings();
+
+    // Keep the gate/content split in sync if auth state changes after
+    // load too (e.g. logging out in another tab) — same pattern as
+    // cart.js's onAuthStateChange listener.
+    if (typeof supabaseClient !== 'undefined') {
+        supabaseClient.auth.onAuthStateChange(function () {
+            if (!isLoggedIn()) {
+                showBookingGate();
+            } else {
+                showBookingContent();
+                loadUpcomingBookings();
+            }
+        });
+    }
+});
+
+function showBookingGate() {
+    const gate = document.getElementById('bookingGate');
+    const content = document.getElementById('bookingContent');
+    if (gate) gate.hidden = false;
+    if (content) content.hidden = true;
+
+    // Carry the visitor straight back to whatever they were trying to
+    // book (including ?barber=/?type=/?gender= deep links) after they
+    // log in or sign up.
+    const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+    const loginBtn = document.getElementById('bookingGateLoginBtn');
+    const signupBtn = document.getElementById('bookingGateSignupBtn');
+    if (loginBtn) loginBtn.href = `../login/login.html?redirect=${returnTo}`;
+    if (signupBtn) signupBtn.href = `../login/signup.html?redirect=${returnTo}`;
+}
+
+function showBookingContent() {
+    const gate = document.getElementById('bookingGate');
+    const content = document.getElementById('bookingContent');
+    if (gate) gate.hidden = true;
+    if (content) content.hidden = false;
+}
+
+// ============================================
+// DEEP-LINKING (?type=home&gender=women&barber=barber-russel)
+// Matches the query params services.js / about.js / studio.js already
+// send here from their own "Book Now" / "Book with This Barber" links.
+// ============================================
+function readInitialStateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type');
+    const gender = params.get('gender');
+    const barber = params.get('barber');
+
+    if (type === 'home' || type === 'studio') currentLocation = type;
+    if (gender === 'men' || gender === 'women') currentGender = gender;
+    if (barber) {
+        selectedBarberId = barber;
+        // Name gets filled in once initBarberCards() reads it off the
+        // matching card's markup — see there.
+    }
+}
+
+// ============================================
+// LOCATION TOGGLE (In-Studio / Home Service)
+// ============================================
+function applyLocationToUI() {
+    document.querySelectorAll('.booking-location-btn').forEach(btn => {
+        const active = btn.dataset.location === currentLocation;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', String(active));
+    });
+
+    const homeFields = document.getElementById('bookingHomeFields');
+    if (homeFields) homeFields.hidden = currentLocation !== 'home';
+}
+
+function initLocationToggle() {
+    document.querySelectorAll('.booking-location-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            currentLocation = this.dataset.location;
+            applyLocationToUI();
+            renderServiceCard();
+            refreshTimeSlots();
+            updateSummary();
+        });
+    });
+
+    populateAreaSelect();
+
+    const areaSelect = document.getElementById('bookingAreaSelect');
+    if (areaSelect) {
+        areaSelect.addEventListener('change', function () {
+            const area = findBookingArea(areaSelect.value);
+            selectedAreaName = area ? area.name : null;
+            currentTravelFee = area ? area.fee : 0;
+            const feeNote = document.getElementById('bookingTravelFeeNote');
+            if (feeNote) {
+                feeNote.hidden = !area;
+                if (area) feeNote.textContent = `+ PHP ${area.fee} travel fee`;
+            }
+            updateSummary();
+        });
+    }
+}
+
+function populateAreaSelect() {
+    const select = document.getElementById('bookingAreaSelect');
+    if (!select) return;
+    BOOKING_HOME_AREAS.forEach(area => {
+        const option = document.createElement('option');
+        option.value = area.name;
+        option.textContent = areaLabel(area);
+        select.appendChild(option);
+    });
+}
+
+// ============================================
+// GENDER TABS
+// ============================================
+function applyGenderToUI() {
+    document.querySelectorAll('.booking-gender-tab').forEach(tab => {
+        const active = tab.dataset.gender === currentGender;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+    });
+}
+
+function initGenderTabs() {
+    document.querySelectorAll('.booking-gender-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            currentGender = this.dataset.gender;
+            applyGenderToUI();
+            renderServiceCard();
+            // The two haircuts run different durations (30 vs 45 min),
+            // which changes which end-of-day slots still fit — recompute.
+            refreshTimeSlots();
+            updateSummary();
+        });
+    });
+}
+
+// ============================================
+// SERVICE — read-only display, not a choice
+// ============================================
+// There's exactly one service per gender, so there's nothing to pick
+// here anymore. This renders a static (non-button) card and keeps
+// selectedServiceId in sync with the current gender automatically —
+// no click handlers, no "selected" state to manage.
+function renderServiceCard() {
+    const grid = document.getElementById('bookingServiceGrid');
+    if (!grid) return;
+
+    const service = visibleServices()[0] || null;
+    selectedServiceId = service ? service.id : null;
+
+    grid.innerHTML = service ? `
+        <div class="booking-service-card booking-service-card--fixed" aria-live="polite">
+            <span class="booking-service-icon"><i class="fas ${service.icon}" aria-hidden="true"></i></span>
+            <span class="booking-service-name">${service.name}</span>
+            <span class="booking-service-blurb">${service.blurb}</span>
+            <span class="booking-service-meta">
+                <span class="booking-service-price">PHP ${service.price.toLocaleString()}</span>
+                <span class="booking-service-duration">${service.duration}</span>
+            </span>
+        </div>
+    ` : '<p class="booking-service-empty">No service available for this selection.</p>';
+}
+
+// ============================================
+// BARBER CARDS (static markup in booking.html — this just wires
+// selection behavior and applies any ?barber= deep link)
+// ============================================
+function initBarberCards() {
+    const grid = document.getElementById('bookingBarberGrid');
+    if (!grid) return;
+
+    function selectCard(card) {
+        grid.querySelectorAll('.booking-barber-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedBarberId = card.dataset.barberId || null;
+        selectedBarberName = card.querySelector('.booking-barber-name')
+            ? card.querySelector('.booking-barber-name').textContent
+            : 'No Preference';
+        // Availability is per-barber — a slot that's free for "No
+        // Preference" might be taken for this specific barber, and vice
+        // versa, so the time list has to be recomputed on every switch.
+        refreshTimeSlots();
+        updateSummary();
+    }
+
+    grid.querySelectorAll('.booking-barber-card').forEach(card => {
+        card.addEventListener('click', function () { selectCard(card); });
+    });
+
+    // Apply a ?barber= deep link once the cards exist to select from.
+    if (selectedBarberId) {
+        const match = grid.querySelector(`.booking-barber-card[data-barber-id="${selectedBarberId}"]`);
+        if (match) selectCard(match);
+    } else {
+        const noPref = grid.querySelector('.booking-barber-card[data-barber-id=""]');
+        if (noPref) selectCard(noPref);
+    }
+}
+
+// ============================================
+// CONTACT NUMBER (Step 5)
+// Prefills from profiles.phone when available so most people don't have
+// to type anything — still editable in case they want the barber to
+// reach a different number for this appointment specifically.
+// ============================================
+async function initPhoneField() {
+    const input = document.getElementById('bookingPhoneInput');
+    const note = document.getElementById('bookingPhoneNote');
+    if (!input) return;
+
+    const user = getCurrentUser();
+    if (!user || typeof supabaseClient === 'undefined') return;
+
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('phone')
+        .eq('id', user.id)
+        .maybeSingle();
+
+    if (error || !data || !data.phone) {
+        if (note) note.hidden = false;
+        return;
+    }
+
+    input.value = data.phone;
+}
+
+// Same loose phone check account.js uses for the profile form, so the
+// two stay consistent for the visitor.
+function isValidBookingPhone(phone) {
+    return /^[0-9+()\-.\s]{7,20}$/.test(phone);
+}
+
+// ============================================
+// DATE & TIME
+// ============================================
+// Fetches every non-cancelled booking for a specific barber on a specific
+// date, so refreshTimeSlots() can hide/disable slots that would overlap.
+// Returns [] for "No Preference" (selectedBarberId === null) since that
+// isn't pinned to one person's calendar — with three barbers on staff,
+// checking capacity properly would need a real schedule/roster model,
+// which is out of scope here. Skipping the check for "No Preference" is
+// a deliberate, documented trade-off, not an oversight.
+async function fetchBarberBookedRanges(barberId, dateStr) {
+    if (!barberId || !dateStr || typeof supabaseClient === 'undefined') return [];
+
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .select('booking_time, service_duration')
+        .eq('barber_id', barberId)
+        .eq('booking_date', dateStr)
+        .neq('status', 'cancelled');
+
+    if (error) {
+        console.error(error);
+        // Fail safe: if we can't confirm availability, don't pretend
+        // every slot is open — but don't hard-block the whole day either.
+        // The final insert-time re-check (see initBookingForm) is the
+        // real backstop against a double-booking slipping through here.
+        return [];
+    }
+
+    return (data || []).map(b => {
+        const [h, m] = (b.booking_time || '0:0').split(':').map(Number);
+        return { start: h * 60 + m, duration: parseDurationMinutes(b.service_duration) };
+    });
+}
+
+async function initDateTimeInputs() {
+    const dateInput = document.getElementById('bookingDateInput');
+    if (!dateInput) return;
+
+    const today = new Date();
+    dateInput.min = today.toISOString().slice(0, 10);
+
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + MAX_BOOKING_DAYS_AHEAD);
+    dateInput.max = maxDate.toISOString().slice(0, 10);
+
+    dateInput.addEventListener('change', refreshTimeSlots);
+    document.getElementById('bookingTimeSelect') &&
+        document.getElementById('bookingTimeSelect').addEventListener('change', updateSummary);
+
+    await refreshTimeSlots();
+}
+
+// Rebuilds the time <select> from scratch: business hours for the chosen
+// date, minus slots too close to closing to fit the current service's
+// duration, minus slots already booked for the selected barber. Async
+// because the barber-conflict check is a network call.
+async function refreshTimeSlots() {
+    const dateInput = document.getElementById('bookingDateInput');
+    const timeSelect = document.getElementById('bookingTimeSelect');
+    const closedNote = document.getElementById('bookingClosedNote');
+    if (!dateInput || !timeSelect) return;
+
+    const dateStr = dateInput.value;
+    const previousValue = timeSelect.value;
+    timeSelect.innerHTML = '<option value="">Select a time</option>';
+    timeSelect.disabled = true;
+    if (closedNote) closedNote.hidden = true;
+
+    if (!dateStr) { updateSummary(); return; }
+
+    const hours = hoursForDate(dateStr);
+    if (!hours) {
+        if (closedNote) {
+            closedNote.hidden = false;
+            closedNote.textContent = 'We\u2019re closed Sundays — please pick another day.';
+        }
+        updateSummary();
+        return;
+    }
+
+    const service = selectedServiceId ? findService(selectedServiceId) : null;
+    const durationMinutes = service ? parseDurationMinutes(service.duration) : 60;
+
+    // If the chosen date is today, don't offer times already in the past.
+    const today = new Date();
+    const isToday = dateStr === today.toISOString().slice(0, 10);
+    const nowMinutes = today.getHours() * 60 + today.getMinutes();
+
+    barberBookedRanges = await fetchBarberBookedRanges(selectedBarberId, dateStr);
+
+    for (let mins = hours.open; mins + durationMinutes <= hours.close; mins += SLOT_INCREMENT_MINUTES) {
+        if (isToday && mins <= nowMinutes) continue;
+
+        const conflict = barberBookedRanges.some(b => rangesOverlap(mins, durationMinutes, b.start, b.duration));
+        if (conflict) continue;
+
+        const option = document.createElement('option');
+        option.value = minutesTo24h(mins);
+        option.textContent = minutesToLabel(mins);
+        timeSelect.appendChild(option);
+    }
+
+    timeSelect.disabled = timeSelect.options.length <= 1;
+    if (timeSelect.disabled && closedNote) {
+        closedNote.hidden = false;
+        closedNote.textContent = selectedBarberId
+            ? 'No open times with this barber on that date — try another date or barber.'
+            : 'No remaining time slots today — please pick another date.';
+    } else if (previousValue) {
+        // Keep the previously chosen time selected across a
+        // gender/barber/location switch if it's still available.
+        const stillThere = Array.from(timeSelect.options).some(o => o.value === previousValue);
+        if (stillThere) timeSelect.value = previousValue;
+    }
+
+    updateSummary();
+}
+
+// ============================================
+// NOTES CHARACTER COUNTER
+// ============================================
+function initNotesCounter() {
+    const input = document.getElementById('bookingNotesInput');
+    const counter = document.getElementById('bookingNotesCount');
+    if (!input || !counter) return;
+    const max = input.getAttribute('maxlength') || 300;
+    function update() { counter.textContent = `${input.value.length}/${max}`; }
+    input.addEventListener('input', update);
+    update();
+}
+
+// ============================================
+// SUMMARY PANEL + VALIDATION
+// ============================================
+function formatDateLabel(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function currentSelection() {
+    const service = selectedServiceId ? findService(selectedServiceId) : null;
+    const dateInput = document.getElementById('bookingDateInput');
+    const timeSelect = document.getElementById('bookingTimeSelect');
+    const addressInput = document.getElementById('bookingAddressInput');
+    const phoneInput = document.getElementById('bookingPhoneInput');
+
+    return {
+        service,
+        date: dateInput ? dateInput.value : '',
+        time: timeSelect ? timeSelect.value : '',
+        timeLabel: timeSelect && timeSelect.selectedOptions[0] ? timeSelect.selectedOptions[0].textContent : '',
+        address: addressInput ? addressInput.value.trim() : '',
+        phone: phoneInput ? phoneInput.value.trim() : '',
+        notes: (document.getElementById('bookingNotesInput') || {}).value || ''
+    };
+}
+
+function updateSummary() {
+    const sel = currentSelection();
+    const total = (sel.service ? sel.service.price : 0) + (currentLocation === 'home' ? currentTravelFee : 0);
+
+    setText('bookingSummaryService', sel.service ? `${sel.service.name} — PHP ${sel.service.price.toLocaleString()}` : 'Not selected yet');
+    setText('bookingSummaryBarber', selectedBarberName);
+    setText('bookingSummaryLocation', currentLocation === 'home'
+        ? `Home Service${selectedAreaName ? ' — ' + areaLabel(findBookingArea(selectedAreaName) || { name: selectedAreaName }) : ''}`
+        : 'In-Studio');
+    setText('bookingSummaryDateTime', sel.date && sel.time
+        ? `${formatDateLabel(sel.date)} at ${sel.timeLabel}`
+        : 'Not selected yet');
+
+    const feeRow = document.getElementById('bookingSummaryFeeRow');
+    if (feeRow) feeRow.hidden = currentLocation !== 'home' || !currentTravelFee;
+    setText('bookingSummaryFee', `PHP ${currentTravelFee.toLocaleString()}`);
+    setText('bookingSummaryTotal', `PHP ${total.toLocaleString()}`);
+
+    const confirmBtn = document.getElementById('bookingConfirmBtn');
+    if (confirmBtn) confirmBtn.disabled = !isSelectionComplete(sel);
+}
+
+// Address needs to be more than just "not blank" — a single space or a
+// couple of characters isn't an actual address a barber could travel to.
+const MIN_ADDRESS_LENGTH = 10;
+
+function isSelectionComplete(sel) {
+    if (!sel.service || !sel.date || !sel.time) return false;
+    if (!sel.phone || !isValidBookingPhone(sel.phone)) return false;
+    if (currentLocation === 'home' && (!selectedAreaName || sel.address.length < MIN_ADDRESS_LENGTH)) return false;
+    return true;
+}
+
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+// ============================================
+// FORM SUBMISSION
+// ============================================
+function showBookingError(message) {
+    const el = document.getElementById('bookingError');
+    if (!el) return;
+    el.innerHTML = `<i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>${message}</span>`;
+    el.hidden = false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideBookingError() {
+    const el = document.getElementById('bookingError');
+    if (el) el.hidden = true;
+}
+
+function initBookingForm() {
+    const form = document.getElementById('bookingForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        hideBookingError();
+
+        const sel = currentSelection();
+        if (!sel.service || !sel.date || !sel.time) {
+            showBookingError('Please fill in every required field before confirming.');
+            return;
+        }
+        if (!sel.phone || !isValidBookingPhone(sel.phone)) {
+            showBookingError('Please enter a valid contact number so your barber can reach you.');
+            return;
+        }
+        if (currentLocation === 'home' && !selectedAreaName) {
+            showBookingError('Please select your area for Home Service.');
+            return;
+        }
+        if (currentLocation === 'home' && sel.address.length < MIN_ADDRESS_LENGTH) {
+            showBookingError('Please enter a complete street address so your barber can find you.');
+            return;
+        }
+
+        const user = getCurrentUser();
+        if (!user) {
+            showBookingError('Your session expired — please log in again.');
+            return;
+        }
+
+        const confirmBtn = document.getElementById('bookingConfirmBtn');
+        const btnText = confirmBtn.querySelector('.booking-confirm-text');
+        const spinner = confirmBtn.querySelector('.booking-confirm-spinner');
+        confirmBtn.disabled = true;
+        if (btnText) btnText.textContent = 'Booking...';
+        if (spinner) spinner.hidden = false;
+
+        // Last-moment re-check against a specific barber's calendar —
+        // refreshTimeSlots() already filters the dropdown, but someone
+        // else could book the same barber+slot in the gap between that
+        // fetch and this submit. This is the real backstop; the dropdown
+        // filtering is just there to avoid offering a doomed slot in the
+        // first place.
+        if (selectedBarberId) {
+            const durationMinutes = parseDurationMinutes(sel.service.duration);
+            const [h, m] = sel.time.split(':').map(Number);
+            const startMinutes = h * 60 + m;
+            const freshRanges = await fetchBarberBookedRanges(selectedBarberId, sel.date);
+            const conflict = freshRanges.some(b => rangesOverlap(startMinutes, durationMinutes, b.start, b.duration));
+
+            if (conflict) {
+                confirmBtn.disabled = false;
+                if (btnText) btnText.textContent = 'Confirm Booking';
+                if (spinner) spinner.hidden = true;
+                showBookingError('That time was just booked with this barber — please pick another slot.');
+                await refreshTimeSlots();
+                return;
+            }
+        }
+
+        const total = sel.service.price + (currentLocation === 'home' ? currentTravelFee : 0);
+
+        const { data, error } = await supabaseClient
+            .from('bookings')
+            .insert({
+                user_id: user.id,
+                gender: currentGender,
+                service_id: sel.service.id,
+                service_name: sel.service.name,
+                service_price: sel.service.price,
+                service_duration: sel.service.duration,
+                barber_id: selectedBarberId,
+                barber_name: selectedBarberId ? selectedBarberName : null,
+                location_type: currentLocation,
+                area: currentLocation === 'home' ? selectedAreaName : null,
+                address: currentLocation === 'home' ? sel.address : null,
+                travel_fee: currentLocation === 'home' ? currentTravelFee : 0,
+                total_price: total,
+                booking_date: sel.date,
+                booking_time: sel.time,
+                contact_phone: sel.phone,
+                notes: sel.notes.trim() || null
+            })
+            .select()
+            .single();
+
+        if (error) {
+            confirmBtn.disabled = false;
+            if (btnText) btnText.textContent = 'Confirm Booking';
+            if (spinner) spinner.hidden = true;
+            console.error(error);
+            showBookingError(
+                /row-level security/i.test(error.message || '')
+                    ? 'The bookings table isn\u2019t set up yet — run bookings_setup.sql in the Supabase SQL Editor first.'
+                    : /column .*contact_phone/i.test(error.message || '')
+                        ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_phone text;'
+                        : (error.message || 'Something went wrong. Please try again.')
+            );
+            return;
+        }
+
+        confirmBtn.disabled = false;
+        if (btnText) btnText.textContent = 'Confirm Booking';
+        if (spinner) spinner.hidden = true;
+
+        showBookingSuccess(data, sel);
+        loadUpcomingBookings();
+    });
+}
+
+function showBookingSuccess(booking, sel) {
+    const formWrap = document.getElementById('bookingFormWrap');
+    const success = document.getElementById('bookingSuccess');
+    if (formWrap) formWrap.hidden = true;
+    if (success) success.hidden = false;
+
+    setText('bookingSuccessService', `${booking.service_name} — PHP ${booking.service_price.toLocaleString()}`);
+    setText('bookingSuccessBarber', booking.barber_name || 'No Preference');
+    setText('bookingSuccessLocation', booking.location_type === 'home'
+        ? `Home Service${booking.area ? ' — ' + areaLabel(findBookingArea(booking.area) || { name: booking.area }) : ''} (${booking.address})`
+        : 'In-Studio');
+    setText('bookingSuccessDateTime', `${formatDateLabel(booking.booking_date)} at ${sel.timeLabel}`);
+
+    success.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// "Book Another Appointment" — resets the form back to its defaults
+// instead of a full page reload, so the visitor doesn't lose their place
+// on the page or have to re-scroll past the header.
+function initResetButton() {
+    const btn = document.getElementById('bookingSuccessReset');
+    if (!btn) return;
+    btn.addEventListener('click', async function () {
+        selectedServiceId = null;
+        selectedBarberId = null;
+        selectedBarberName = 'No Preference';
+        currentLocation = 'studio';
+        selectedAreaName = null;
+        currentTravelFee = 0;
+        barberBookedRanges = [];
+
+        const form = document.getElementById('bookingForm');
+        if (form) form.reset();
+
+        const areaSelect = document.getElementById('bookingAreaSelect');
+        if (areaSelect) areaSelect.value = '';
+        const feeNote = document.getElementById('bookingTravelFeeNote');
+        if (feeNote) feeNote.hidden = true;
+        const timeSelect = document.getElementById('bookingTimeSelect');
+        if (timeSelect) { timeSelect.innerHTML = '<option value="">Select a time</option>'; timeSelect.disabled = true; }
+
+        applyLocationToUI();
+        renderServiceCard();
+        initBarberCards();
+        await initPhoneField();
+        await refreshTimeSlots();
+        updateSummary();
+        initNotesCounter();
+
+        document.getElementById('bookingSuccess').hidden = true;
+        document.getElementById('bookingFormWrap').hidden = false;
+        document.getElementById('bookingFormWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
+// ============================================
+// YOUR UPCOMING APPOINTMENTS
+// ============================================
+function formatTimeLabel(timeStr) {
+    // timeStr comes back from Postgres as "HH:MM:SS" — reuse the same
+    // minutes-since-midnight formatter the slot picker uses.
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    return minutesToLabel(h * 60 + m);
+}
+
+function statusBadgeClass(status) {
+    return `booking-history-status booking-history-status--${status}`;
+}
+
+async function loadUpcomingBookings() {
+    const list = document.getElementById('bookingHistoryList');
+    const empty = document.getElementById('bookingHistoryEmpty');
+    if (!list) return;
+
+    const user = getCurrentUser();
+    if (!user) return;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .select('*')
+        .eq('user_id', user.id)
+        .neq('status', 'cancelled')
+        .gte('booking_date', today)
+        .order('booking_date', { ascending: true })
+        .order('booking_time', { ascending: true });
+
+    if (error) {
+        console.error(error);
+        list.innerHTML = '';
+        if (empty) {
+            empty.hidden = false;
+            empty.textContent = 'Couldn\u2019t load your appointments right now — please refresh.';
+        }
+        return;
+    }
+
+    if (!data || !data.length) {
+        list.innerHTML = '';
+        if (empty) {
+            empty.hidden = false;
+            empty.textContent = 'No upcoming appointments yet — book one above.';
+        }
+        return;
+    }
+
+    if (empty) empty.hidden = true;
+
+    list.innerHTML = data.map(b => `
+        <div class="booking-history-item" data-id="${b.id}">
+            <div class="booking-history-main">
+                <h3>${b.service_name}</h3>
+                <p class="booking-history-meta">
+                    ${formatDateLabel(b.booking_date)} at ${formatTimeLabel(b.booking_time)}
+                    &middot; ${b.location_type === 'home' ? 'Home Service' : 'In-Studio'}
+                    &middot; ${b.barber_name || 'No Preference'}
+                    ${b.contact_phone ? `&middot; ${b.contact_phone}` : ''}
+                </p>
+            </div>
+            <div class="booking-history-aside">
+                <span class="${statusBadgeClass(b.status)}">${b.status}</span>
+                ${b.status === 'pending' || b.status === 'confirmed'
+                    ? `<button type="button" class="booking-history-cancel" data-id="${b.id}">Cancel</button>`
+                    : ''}
+            </div>
+        </div>
+    `).join('');
+
+    list.querySelectorAll('.booking-history-cancel').forEach(btn => {
+        btn.addEventListener('click', function () { cancelBooking(this.dataset.id); });
+    });
+}
+
+async function cancelBooking(id) {
+    if (!window.confirm('Cancel this appointment?')) return;
+
+    const { error } = await supabaseClient
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
+
+    if (error) {
+        console.error(error);
+        alert('Could not cancel that appointment — please try again.');
+        return;
+    }
+
+    loadUpcomingBookings();
+    // A cancellation frees up that barber's slot — refresh the dropdown
+    // in case the visitor is mid-way through booking another appointment
+    // with the same barber/date.
+    refreshTimeSlots();
+}

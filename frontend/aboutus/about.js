@@ -69,7 +69,7 @@ function renderBarberCards() {
                     <span class="barber-card-rating">${starRatingHtml(barber.rating)} ${barber.rating}</span>
                 </div>
                 <div class="barber-card-actions">
-                    <a href="../booking.html?barber=${barber.id}" class="btn-primary">Book with This Barber</a>
+                    <a href="../booking/booking.html?barber=${barber.id}" class="btn-primary">Book with This Barber</a>
                     <button class="barber-view-more" type="button" data-barber-id="${barber.id}">View Full Profile</button>
                 </div>
             </div>
@@ -98,7 +98,7 @@ function initBarberModal() {
             barber.specialties.map(s => `<span class="barber-tag">${s}</span>`).join('');
         document.getElementById('barberModalExperience').textContent = barber.experience;
         document.getElementById('barberModalReviews').textContent = barber.reviews;
-        document.getElementById('barberModalBook').href = `../booking.html?barber=${barber.id}`;
+        document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${barber.id}`;
 
         lastFocused = document.activeElement;
         modal.hidden = false;
