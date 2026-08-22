@@ -1,4 +1,18 @@
 /* ============================================
+   BOOKING PAGE — TYPE SYSTEM
+   Anton (--font-display, from style.css) is built for one job: big,
+   loud, single-weight headline moments — hero titles, card titles,
+   the total price. At small sizes (buttons, pills, tags, labels) its
+   weight fights legibility instead of helping it. Oswald is a proper
+   condensed grotesk with real weight range, so functional UI chrome
+   gets its own voice instead of borrowing the headline font.
+   Scoped here (not in style.css) so it only affects this page.
+   ============================================ */
+:root {
+    --font-ui: 'Oswald', 'Arial Narrow', sans-serif;
+}
+
+/* ============================================
    BOOKING PAGE — HERO
    ============================================ */
 .booking-hero {
@@ -32,7 +46,7 @@
 }
 
 /* ============================================
-   LOGIN-REQUIRED GATE (same recipe as cart.css's .cart-gate)
+   LOGIN-REQUIRED GATE
    ============================================ */
 .booking-gate[hidden] {
     display: none;
@@ -114,7 +128,7 @@
 }
 
 /* --------------------------------------------
-   Inline error banner — same look as login-error
+   Inline error banner
    -------------------------------------------- */
 .booking-error[hidden] {
     display: none;
@@ -148,6 +162,8 @@
 }
 
 .booking-success-panel {
+    position: relative;
+    overflow: hidden;
     max-width: 560px;
     margin: 0 auto;
     background: var(--card);
@@ -157,6 +173,46 @@
     text-align: center;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
+
+/* Barber-pole edge — same signature stripe used on the account
+   summary card and the login/signup split shell, so a confirmed
+   booking reads as part of the same visual system. */
+.booking-success-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--steel) 0px, var(--steel) 3px,
+        transparent 3px, transparent 15px
+    );
+}
+
+/* Ticket-stub perforation between the confirmation message and
+   the appointment details, like a tear-off receipt. */
+.booking-ticket-divider {
+    position: relative;
+    height: 0;
+    border-top: 1px dashed var(--line);
+    margin: 0 -40px 28px;
+}
+
+.booking-ticket-divider::before,
+.booking-ticket-divider::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--black);
+}
+
+.booking-ticket-divider::before { left: -10px; }
+.booking-ticket-divider::after { right: -10px; }
 
 .booking-success-icon {
     width: 68px;
@@ -231,8 +287,7 @@
 }
 
 /* ============================================
-   FORM LAYOUT — mirrors cart.css's .cart-layout
-   (steps on the left, sticky summary on the right)
+   FORM LAYOUT
    ============================================ */
 .booking-form-wrap[hidden] {
     display: none;
@@ -256,6 +311,12 @@
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 26px 26px 28px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.booking-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
 
 .booking-card-title {
@@ -270,8 +331,8 @@
 }
 
 .booking-card-title .booking-step-number {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: var(--steel);
     color: var(--black);
@@ -281,11 +342,89 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    transition: box-shadow 0.25s ease;
+}
+
+.booking-card:hover .booking-step-number {
+    box-shadow: 0 0 0 4px rgba(216, 210, 196, 0.12);
 }
 
 /* --------------------------------------------
-   Location toggle (In-Studio / Home Service) —
-   same visual language as services.css's .service-type-btn
+   Step completion — the number swaps for a check once
+   that step's own answer is valid, so the form reads at
+   a glance instead of only at the sticky summary.
+   -------------------------------------------- */
+.booking-step-check {
+    display: none;
+    font-size: 0.7rem;
+}
+
+.booking-card.is-done {
+    border-color: rgba(76, 175, 125, 0.3);
+}
+
+.booking-card.is-done .booking-step-number {
+    background: #4caf7d;
+}
+
+.booking-card.is-done .booking-step-num {
+    display: none;
+}
+
+.booking-card.is-done .booking-step-check {
+    display: block;
+}
+
+/* --------------------------------------------
+   Step cards ease in on load, staggered — same fade+rise
+   pattern used for the haircut gallery on services.html.
+   -------------------------------------------- */
+@keyframes bookingStepIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.booking-steps .booking-card {
+    animation: bookingStepIn 0.4s ease forwards;
+    opacity: 0;
+}
+
+.booking-steps .booking-card:nth-child(1) { animation-delay: 0.02s; }
+.booking-steps .booking-card:nth-child(2) { animation-delay: 0.07s; }
+.booking-steps .booking-card:nth-child(3) { animation-delay: 0.12s; }
+.booking-steps .booking-card:nth-child(4) { animation-delay: 0.17s; }
+.booking-steps .booking-card:nth-child(5) { animation-delay: 0.22s; }
+.booking-steps .booking-card:nth-child(6) { animation-delay: 0.27s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .booking-steps .booking-card {
+        animation: none;
+        opacity: 1;
+    }
+}
+
+/* --------------------------------------------
+   Overall progress bar
+   -------------------------------------------- */
+.booking-progress {
+    height: 4px;
+    border-radius: 50px;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    margin-bottom: 22px;
+}
+
+.booking-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--steel), #efe9dc);
+    border-radius: 50px;
+    transition: width 0.4s ease;
+}
+
+/* --------------------------------------------
+   Location toggle
    -------------------------------------------- */
 .booking-location-toggle {
     display: flex;
@@ -302,9 +441,10 @@
     border: 1px solid var(--line);
     border-radius: 50px;
     color: var(--off);
-    font-family: var(--font-display);
-    font-size: 0.74rem;
-    letter-spacing: 1px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
     cursor: pointer;
     transition: var(--transition);
@@ -333,7 +473,7 @@
 }
 
 /* --------------------------------------------
-   Home Service fields — area select, coverage chips, address
+   Home Service fields
    -------------------------------------------- */
 .booking-home-fields[hidden] {
     display: none;
@@ -350,9 +490,10 @@
 
 .booking-field label {
     display: block;
-    font-family: var(--font-display);
-    font-size: 0.65rem;
-    letter-spacing: 1.5px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 1.8px;
     text-transform: uppercase;
     color: var(--dim);
     margin-bottom: 10px;
@@ -405,8 +546,6 @@
     line-height: 1.5;
 }
 
-/* Native date input needs its calendar icon inverted to read on a dark
-   background — the browser otherwise renders it near-black-on-near-black. */
 .booking-input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
@@ -440,8 +579,6 @@
     color: var(--steel);
 }
 
-/* Generic small note under a field — used by the Contact Number step
-   when a saved phone number couldn't be prefilled. */
 .booking-field-note[hidden] {
     display: none;
 }
@@ -455,7 +592,7 @@
 }
 
 /* --------------------------------------------
-   Gender tabs — same visual language as services.css's .gender-tab
+   Gender tabs
    -------------------------------------------- */
 .booking-gender-tabs {
     display: flex;
@@ -473,9 +610,10 @@
     border: 1px solid var(--line);
     border-radius: 50px;
     color: var(--dim);
-    font-family: var(--font-display);
-    font-size: 0.68rem;
-    letter-spacing: 1.5px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.74rem;
+    letter-spacing: 1.8px;
     text-transform: uppercase;
     cursor: pointer;
     transition: var(--transition);
@@ -493,12 +631,7 @@
 }
 
 /* --------------------------------------------
-   Service grid — Toughcuts only offers one haircut per gender, so this
-   now renders a single, non-interactive card rather than a set of
-   clickable options. Grid stays in place (rather than switching to a
-   plain block) so the card still lines up with the page's card rhythm
-   and so a second service could be dropped back in later without a
-   layout rework.
+   Service grid
    -------------------------------------------- */
 .booking-service-grid {
     display: grid;
@@ -530,11 +663,6 @@
     background: rgba(216, 210, 196, 0.08);
 }
 
-/* Read-only variant — the single haircut option. No hover lift, no
-   pointer cursor, and it always reads as "included" (steel border)
-   rather than "selected", since there's no alternative to select
-   against. Spans the full grid width instead of sitting alone in a
-   3-column row. */
 .booking-service-card--fixed {
     grid-column: 1 / -1;
     flex-direction: row;
@@ -625,7 +753,19 @@
     gap: 14px;
 }
 
+.booking-barber-card--random .booking-barber-none-icon {
+    background: rgba(216, 210, 196, 0.1);
+    border-color: rgba(216, 210, 196, 0.3);
+    color: var(--steel);
+}
+
+.booking-barber-card--random.selected {
+    border-color: var(--steel);
+    background: rgba(216, 210, 196, 0.1);
+}
+
 .booking-barber-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -647,6 +787,53 @@
 .booking-barber-card.selected {
     border-color: var(--steel);
     background: rgba(216, 210, 196, 0.08);
+}
+
+/* --------------------------------------------
+   Unavailable barber (e.g. women's cuts — Klark only)
+   Dimmed in place with a reason, rather than vanishing —
+   so the roster doesn't visibly shrink/reflow when
+   switching gender tabs.
+   -------------------------------------------- */
+.booking-barber-card.is-unavailable {
+    cursor: not-allowed;
+    pointer-events: none;
+    border-style: dashed;
+}
+
+.booking-barber-card.is-unavailable:hover {
+    transform: none;
+}
+
+.booking-barber-card.is-unavailable .booking-barber-photo,
+.booking-barber-card.is-unavailable .booking-barber-none-icon,
+.booking-barber-card.is-unavailable .booking-barber-name,
+.booking-barber-card.is-unavailable .booking-barber-role,
+.booking-barber-card.is-unavailable .booking-barber-rating {
+    opacity: 0.35;
+}
+
+.booking-barber-badge {
+    display: none;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: 0.6rem;
+    line-height: 1.3;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--off);
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 3px 6px;
+}
+
+.booking-barber-card.is-unavailable .booking-barber-badge {
+    display: block;
 }
 
 .booking-barber-photo {
@@ -720,6 +907,84 @@
 }
 
 /* --------------------------------------------
+   Contact method toggle
+   -------------------------------------------- */
+.booking-contact-method {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.booking-contact-method-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--off);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: left;
+}
+
+.booking-contact-method-btn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--white);
+}
+
+.booking-contact-method-btn.active {
+    border-color: var(--steel);
+    background: rgba(216, 210, 196, 0.08);
+    color: var(--white);
+}
+
+.booking-contact-method-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--dim);
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.booking-contact-method-btn.active .booking-contact-method-icon {
+    background: rgba(216, 210, 196, 0.15);
+    border-color: rgba(216, 210, 196, 0.35);
+    color: var(--steel);
+}
+
+.booking-contact-method-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.booking-contact-method-label {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+}
+
+.booking-contact-method-sub {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--dim);
+}
+
+.booking-contact-method-btn.active .booking-contact-method-sub {
+    color: var(--off);
+}
+
+/* --------------------------------------------
    Notes
    -------------------------------------------- */
 .booking-notes-count {
@@ -732,15 +997,31 @@
 }
 
 /* ============================================
-   SUMMARY (sticky aside) — mirrors cart.css's .cart-summary
+   SUMMARY (sticky aside)
    ============================================ */
 .booking-summary {
     position: sticky;
     top: 100px;
+    overflow: hidden;
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 26px 24px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.booking-summary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: repeating-linear-gradient(
+        135deg,
+        var(--steel) 0px, var(--steel) 3px,
+        transparent 3px, transparent 15px
+    );
 }
 
 .booking-summary h3 {
@@ -787,6 +1068,12 @@
     color: var(--white) !important;
 }
 
+.booking-summary-row--total span:last-child {
+    font-size: 1.4rem;
+    color: var(--steel) !important;
+    letter-spacing: 0.3px;
+}
+
 .booking-summary-fee-row[hidden] {
     display: none;
 }
@@ -799,6 +1086,9 @@
     gap: 8px;
     border: none;
     margin-top: 18px;
+    padding: 15px 24px;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
 }
 
 .booking-confirm-btn:disabled {
@@ -878,9 +1168,10 @@
 }
 
 .booking-history-status {
-    font-family: var(--font-display);
-    font-size: 0.62rem;
-    letter-spacing: 1px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.66rem;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
     padding: 6px 14px;
     border-radius: 50px;
@@ -909,9 +1200,10 @@
     border: 1px solid rgba(224, 90, 90, 0.4);
     border-radius: 50px;
     color: #f2a6a1;
-    font-family: var(--font-display);
-    font-size: 0.65rem;
-    letter-spacing: 0.5px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.68rem;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
     padding: 8px 18px;
     cursor: pointer;
@@ -922,6 +1214,21 @@
     background: rgba(224, 90, 90, 0.12);
     border-color: #e05a5a;
     color: #ffffff;
+}
+
+/* --------------------------------------------
+   Keyboard focus — selection controls only show a hover
+   affordance by default; this makes tabbing through the
+   6 steps actually visible.
+   -------------------------------------------- */
+.booking-barber-card:focus-visible,
+.booking-service-card:focus-visible,
+.booking-location-btn:focus-visible,
+.booking-gender-tab:focus-visible,
+.booking-contact-method-btn:focus-visible,
+.booking-history-cancel:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
 }
 
 /* ============================================
@@ -944,6 +1251,7 @@
     .booking-title { font-size: 2.4rem; }
     .booking-service-grid { grid-template-columns: repeat(2, 1fr); }
     .booking-datetime-row { grid-template-columns: 1fr; }
+    .booking-contact-method { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -958,6 +1266,8 @@
     .booking-history-aside { width: 100%; justify-content: space-between; }
     .booking-gate-panel,
     .booking-success-panel { padding: 36px 24px 30px; }
+    .booking-ticket-divider { margin: 0 -24px 24px; }
+    .booking-barber-badge { font-size: 0.56rem; }
 }
 
 @media (max-width: 420px) {

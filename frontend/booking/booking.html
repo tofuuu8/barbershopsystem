@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="booking.css" />
 </head>
@@ -148,11 +148,14 @@
                     <h2 class="booking-success-title">Booking Confirmed!</h2>
                     <p class="booking-success-text">We've got you down — you'll see this appointment under "Your Upcoming Appointments" below.</p>
 
+                    <div class="booking-ticket-divider" aria-hidden="true"></div>
+
                     <div class="booking-success-details">
                         <div class="booking-success-row"><span>Service</span><span id="bookingSuccessService"></span></div>
                         <div class="booking-success-row"><span>Barber</span><span id="bookingSuccessBarber"></span></div>
                         <div class="booking-success-row"><span>Location</span><span id="bookingSuccessLocation"></span></div>
                         <div class="booking-success-row"><span>Date &amp; Time</span><span id="bookingSuccessDateTime"></span></div>
+                        <div class="booking-success-row"><span>Contact</span><span id="bookingSuccessContact"></span></div>
                     </div>
 
                     <div class="booking-success-actions">
@@ -166,14 +169,18 @@
             <div class="booking-form-wrap" id="bookingFormWrap">
                 <div class="booking-error" id="bookingError" role="alert" hidden></div>
 
+                <div class="booking-progress" role="progressbar" aria-label="Booking form progress" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="bookingProgress">
+                    <div class="booking-progress-fill" id="bookingProgressFill"></div>
+                </div>
+
                 <form id="bookingForm" novalidate>
                     <div class="booking-layout">
 
                         <div class="booking-steps">
 
                             <!-- STEP 1 — LOCATION -->
-                            <div class="booking-card">
-                                <h2 class="booking-card-title"><span class="booking-step-number">1</span> Where's Your Appointment?</h2>
+                            <div class="booking-card" data-step="1">
+                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">1</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Where's Your Appointment?</h2>
 
                                 <div class="booking-location-toggle" role="tablist">
                                     <button type="button" class="booking-location-btn active" data-location="studio" role="tab" aria-selected="true">
@@ -212,8 +219,8 @@
                             </div>
 
                             <!-- STEP 2 — SERVICE -->
-                            <div class="booking-card">
-                                <h2 class="booking-card-title"><span class="booking-step-number">2</span> Your Service</h2>
+                            <div class="booking-card" data-step="2">
+                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">2</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Your Service</h2>
 
                                 <div class="booking-gender-tabs" role="tablist">
                                     <button type="button" class="booking-gender-tab active" data-gender="men" role="tab" aria-selected="true">
@@ -228,14 +235,14 @@
                             </div>
 
                             <!-- STEP 3 — BARBER -->
-                            <div class="booking-card">
-                                <h2 class="booking-card-title"><span class="booking-step-number">3</span> Pick a Barber</h2>
+                            <div class="booking-card" data-step="3">
+                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">3</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Pick a Barber</h2>
 
                                 <div class="booking-barber-grid" id="bookingBarberGrid">
-                                    <button type="button" class="booking-barber-card" data-barber-id="">
-                                        <span class="booking-barber-none-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
-                                        <span class="booking-barber-name">No Preference</span>
-                                        <span class="booking-barber-role">Next available barber</span>
+                                    <button type="button" class="booking-barber-card booking-barber-card--random" data-barber-id="">
+                                        <span class="booking-barber-none-icon"><i class="fas fa-shuffle" aria-hidden="true"></i></span>
+                                        <span class="booking-barber-name">Random</span>
+                                        <span class="booking-barber-role">We'll pick for you</span>
                                     </button>
 
                                     <button type="button" class="booking-barber-card" data-barber-id="barber-russel">
@@ -243,6 +250,7 @@
                                         <span class="booking-barber-name">Barber Russel</span>
                                         <span class="booking-barber-role">Barber and Stylist</span>
                                         <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.9</span>
+                                        <span class="booking-barber-badge">Women's: Klark only</span>
                                     </button>
 
                                     <button type="button" class="booking-barber-card" data-barber-id="klark-dizon">
@@ -257,13 +265,14 @@
                                         <span class="booking-barber-name">Barber Jon</span>
                                         <span class="booking-barber-role">Barber and Stylist</span>
                                         <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.9</span>
+                                        <span class="booking-barber-badge">Women's: Klark only</span>
                                     </button>
                                 </div>
                             </div>
 
                             <!-- STEP 4 — DATE & TIME -->
-                            <div class="booking-card">
-                                <h2 class="booking-card-title"><span class="booking-step-number">4</span> Pick a Date &amp; Time</h2>
+                            <div class="booking-card" data-step="4">
+                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">4</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Pick a Date &amp; Time</h2>
 
                                 <div class="booking-datetime-row">
                                     <div class="booking-field">
@@ -280,19 +289,43 @@
                                 </div>
                             </div>
 
-                            <!-- STEP 5 — CONTACT NUMBER -->
-                            <div class="booking-card">
-                                <h2 class="booking-card-title"><span class="booking-step-number">5</span> Contact Number</h2>
-                                <div class="booking-field">
-                                    <label for="bookingPhoneInput">Where should your barber reach you?</label>
+                            <!-- STEP 5 — CONTACT METHOD -->
+                            <div class="booking-card" data-step="5">
+                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">5</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Where Should We Reach You?</h2>
+
+                                <div class="booking-contact-method" role="tablist">
+                                    <button type="button" class="booking-contact-method-btn active" data-method="phone" role="tab" aria-selected="true">
+                                        <span class="booking-contact-method-icon"><i class="fas fa-phone" aria-hidden="true"></i></span>
+                                        <span class="booking-contact-method-text">
+                                            <span class="booking-contact-method-label">Phone</span>
+                                            <span class="booking-contact-method-sub">SMS / Call</span>
+                                        </span>
+                                    </button>
+                                    <button type="button" class="booking-contact-method-btn" data-method="email" role="tab" aria-selected="false">
+                                        <span class="booking-contact-method-icon"><i class="fas fa-envelope" aria-hidden="true"></i></span>
+                                        <span class="booking-contact-method-text">
+                                            <span class="booking-contact-method-label">Email</span>
+                                            <span class="booking-contact-method-sub">Notification</span>
+                                        </span>
+                                    </button>
+                                </div>
+
+                                <div class="booking-field" id="bookingPhoneField">
+                                    <label for="bookingPhoneInput">Contact Number</label>
                                     <input type="tel" id="bookingPhoneInput" class="booking-input" placeholder="e.g. 0917 123 4567" autocomplete="tel" inputmode="tel" />
                                     <p class="booking-field-note" id="bookingPhoneNote" hidden>We couldn't load a saved number — please enter one.</p>
+                                </div>
+
+                                <div class="booking-field" id="bookingEmailField" hidden>
+                                    <label for="bookingEmailInput">Email Address</label>
+                                    <input type="email" id="bookingEmailInput" class="booking-input" placeholder="e.g. you@email.com" autocomplete="email" inputmode="email" />
+                                    <p class="booking-field-note" id="bookingEmailNote" hidden>We couldn't load a saved email — please enter one.</p>
                                 </div>
                             </div>
 
                             <!-- STEP 6 — NOTES -->
-                            <div class="booking-card">
-                                <h2 class="booking-card-title"><span class="booking-step-number">6</span> Anything Else? <span class="account-field-optional">(optional)</span></h2>
+                            <div class="booking-card" data-step="6">
+                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">6</span></span> Anything Else? <span class="account-field-optional">(optional)</span></h2>
                                 <div class="booking-field">
                                     <label for="bookingNotesInput">Notes for your barber</label>
                                     <textarea id="bookingNotesInput" class="booking-textarea" placeholder="Reference photos in mind, allergies, parking instructions, etc." maxlength="300"></textarea>
@@ -312,7 +345,7 @@
                             </div>
                             <div class="booking-summary-row">
                                 <span>Barber</span>
-                                <span id="bookingSummaryBarber">No Preference</span>
+                                <span id="bookingSummaryBarber">Random</span>
                             </div>
                             <div class="booking-summary-row">
                                 <span>Location</span>
@@ -321,6 +354,10 @@
                             <div class="booking-summary-row">
                                 <span>Date &amp; Time</span>
                                 <span id="bookingSummaryDateTime">Not selected yet</span>
+                            </div>
+                            <div class="booking-summary-row">
+                                <span>Contact</span>
+                                <span id="bookingSummaryContact">Not entered yet</span>
                             </div>
                             <div class="booking-summary-row booking-summary-fee-row" id="bookingSummaryFeeRow" hidden>
                                 <span>Travel Fee</span>
