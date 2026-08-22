@@ -1,0 +1,408 @@
+// ============================================================
+// ADMIN — BOOKINGS PAGE
+// ============================================================
+// Reads `bookings` directly through the anon-key client, same pattern
+// as users.js reads `profiles` — admin-only visibility comes from the
+// is_admin() RLS policies, not a special key here.
+//
+// `bookings.user_id` references auth.users.id, not profiles directly,
+// so client names/emails/phones are joined client-side against a
+// profiles map fetched alongside the bookings (same "look up by id in
+// a small map" pattern cart.js uses for product images).
+
+let allBookings = [];
+let profilesById = {};
+let currentAdmin = null;
+let activeStatusFilter = 'all';
+let activeBookingId = null; // whoever the detail modal is currently open for
+
+document.addEventListener('DOMContentLoaded', async function () {
+    currentAdmin = await requireAdminOrRedirect();
+    if (!currentAdmin) return; // already redirected
+
+    const emailEl = document.getElementById('adminSidebarEmail');
+    if (emailEl) emailEl.textContent = currentAdmin.email;
+
+    initLogout();
+    initSearch();
+    initStatusPills();
+    initBookingModal();
+    await loadBookings();
+});
+
+function initLogout() {
+    const btn = document.getElementById('adminLogoutBtn');
+    if (btn) btn.addEventListener('click', adminLogOut);
+}
+
+// --------------------------------------------
+// Load
+// --------------------------------------------
+async function loadBookings() {
+    const tbody = document.getElementById('bookingsTableBody');
+
+    const [bookingsRes, profilesRes] = await Promise.all([
+        supabaseClient
+            .from('bookings')
+            .select('*')
+            .order('booking_date', { ascending: false })
+            .order('booking_time', { ascending: false })
+            .limit(1000), // plenty for a first version; add real pagination if this ever gets clipped
+        supabaseClient
+            .from('profiles')
+            .select('id, full_name, email, phone')
+    ]);
+
+    if (bookingsRes.error) {
+        console.error(bookingsRes.error);
+        tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="8">Couldn\u2019t load bookings — ${escapeHtml(bookingsRes.error.message || 'please refresh.')}</td></tr>`;
+        return;
+    }
+
+    profilesById = {};
+    (profilesRes.data || []).forEach(function (p) { profilesById[p.id] = p; });
+
+    allBookings = bookingsRes.data || [];
+
+    renderStats();
+    applyFilters();
+}
+
+// --------------------------------------------
+// Stats
+// --------------------------------------------
+function renderStats() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    const today = allBookings.filter(b => b.booking_date === todayStr && b.status !== 'cancelled').length;
+    const pending = allBookings.filter(b => b.status === 'pending').length;
+    const revenue = allBookings
+        .filter(b => b.status === 'confirmed' || b.status === 'completed')
+        .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
+    setText('statTotalBookings', allBookings.length);
+    setText('statTodayBookings', today);
+    setText('statPendingBookings', pending);
+    setText('statRevenueBookings', formatPHP(revenue));
+}
+
+// --------------------------------------------
+// Filters — search + status pills combined
+// --------------------------------------------
+function initSearch() {
+    const input = document.getElementById('bookingSearchInput');
+    if (!input) return;
+    input.addEventListener('input', applyFilters);
+}
+
+function initStatusPills() {
+    const wrap = document.getElementById('statusFilterPills');
+    if (!wrap) return;
+    wrap.addEventListener('click', function (e) {
+        const btn = e.target.closest('.admin-filter-pill');
+        if (!btn) return;
+        wrap.querySelectorAll('.admin-filter-pill').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        activeStatusFilter = btn.dataset.status;
+        applyFilters();
+    });
+}
+
+function applyFilters() {
+    const input = document.getElementById('bookingSearchInput');
+    const q = input ? input.value.trim().toLowerCase() : '';
+
+    let filtered = allBookings;
+
+    if (activeStatusFilter !== 'all') {
+        filtered = filtered.filter(b => b.status === activeStatusFilter);
+    }
+
+    if (q) {
+        filtered = filtered.filter(function (b) {
+            const client = profilesById[b.user_id] || {};
+            return (client.full_name || '').toLowerCase().includes(q) ||
+                (client.email || '').toLowerCase().includes(q) ||
+                (client.phone || '').toLowerCase().includes(q) ||
+                (b.barber_name || '').toLowerCase().includes(q) ||
+                (b.service_name || '').toLowerCase().includes(q);
+        });
+    }
+
+    renderTable(filtered);
+}
+
+// --------------------------------------------
+// Table
+// --------------------------------------------
+function renderTable(bookings) {
+    const tbody = document.getElementById('bookingsTableBody');
+    const countEl = document.getElementById('bookingResultsCount');
+
+    if (countEl) {
+        countEl.textContent = `${bookings.length} of ${allBookings.length}`;
+    }
+
+    if (!bookings.length) {
+        tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="8">No bookings match that filter.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = bookings.map(function (b) {
+        const client = profilesById[b.user_id] || {};
+        const clientName = client.full_name || 'Unnamed';
+        const clientSub = client.email || client.phone || '';
+
+        return `
+        <tr data-id="${b.id}">
+            <td>
+                <span class="admin-cell-primary">${escapeHtml(clientName)}</span>
+                ${clientSub ? `<span class="admin-cell-sub">${escapeHtml(clientSub)}</span>` : ''}
+            </td>
+            <td>
+                ${escapeHtml(b.service_name || '\u2014')}
+                <span class="admin-cell-tag">${b.gender === 'women' ? 'Women' : 'Men'}</span>
+            </td>
+            <td>${escapeHtml(b.barber_name || '\u2014')}</td>
+            <td>${formatDateTime(b.booking_date, b.booking_time)}</td>
+            <td>${b.location_type === 'home' ? 'Home Service' : 'In-Studio'}</td>
+            <td>${formatPHP(b.total_price)}</td>
+            <td>${getStatusBadge(b.status)}</td>
+            <td>
+                <div class="admin-action-btns">
+                    <button type="button" class="admin-action-btn admin-action-edit" data-id="${b.id}" title="View / Update">
+                        <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `;
+    }).join('');
+
+    tbody.querySelectorAll('.admin-action-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            openBookingModal(btn.dataset.id);
+        });
+    });
+}
+
+// --------------------------------------------
+// Status badge
+// --------------------------------------------
+function getStatusBadge(status) {
+    const labels = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+    const label = labels[status] || status || 'Unknown';
+    return `<span class="admin-status-badge admin-status-${status}">${label}</span>`;
+}
+
+// --------------------------------------------
+// Detail / status-update modal
+// --------------------------------------------
+function initBookingModal() {
+    const backdrop = document.getElementById('bookingModalBackdrop');
+    const closeBtn = document.getElementById('bookingModalCloseBtn');
+    const saveBtn = document.getElementById('bookingSaveBtn');
+    const cancelBtn = document.getElementById('bookingCancelBtn');
+
+    if (backdrop) backdrop.addEventListener('click', closeBookingModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeBookingModal);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeBookingModal();
+    });
+    if (saveBtn) saveBtn.addEventListener('click', saveBookingStatus);
+    if (cancelBtn) cancelBtn.addEventListener('click', cancelBookingFromModal);
+}
+
+function openBookingModal(bookingId) {
+    const booking = allBookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    activeBookingId = bookingId;
+    const client = profilesById[booking.user_id] || {};
+
+    setText('bookingModalSub', `Booked ${formatCreatedAt(booking.created_at)}`);
+    setText('detailClientName', client.full_name || 'Unnamed');
+
+    const contactLine = booking.contact_preference === 'email'
+        ? `Email \u2014 ${client.email || '\u2014'}`
+        : `Phone (SMS/Call) \u2014 ${booking.contact_phone || client.phone || '\u2014'}`;
+    setText('detailContact', contactLine);
+
+    setText('detailService', `${booking.service_name || '\u2014'} (${booking.service_duration || '\u2014'})`);
+    setText('detailBarber', booking.barber_name || '\u2014');
+    setText('detailDateTime', formatDateTime(booking.booking_date, booking.booking_time));
+
+    const locationText = booking.location_type === 'home'
+        ? `Home Service \u2014 ${booking.area || ''}${booking.address ? ', ' + booking.address : ''}`
+        : 'In-Studio';
+    setText('detailLocation', locationText);
+
+    let totalText = formatPHP(booking.total_price);
+    if (booking.location_type === 'home' && booking.travel_fee) {
+        totalText += ` (incl. ${formatPHP(booking.travel_fee)} travel fee)`;
+    }
+    setText('detailTotal', totalText);
+
+    const notesWrap = document.getElementById('detailNotesWrap');
+    if (booking.notes) {
+        notesWrap.hidden = false;
+        setText('detailNotes', booking.notes);
+    } else {
+        notesWrap.hidden = true;
+    }
+
+    const select = document.getElementById('bookingStatusSelect');
+    if (select) select.value = booking.status || 'pending';
+
+    const cancelBtn = document.getElementById('bookingCancelBtn');
+    if (cancelBtn) cancelBtn.disabled = booking.status === 'cancelled';
+
+    setText('bookingSaveStatus', '');
+
+    document.getElementById('bookingModalBackdrop').hidden = false;
+    document.getElementById('bookingModal').hidden = false;
+}
+
+function closeBookingModal() {
+    document.getElementById('bookingModalBackdrop').hidden = true;
+    document.getElementById('bookingModal').hidden = true;
+    activeBookingId = null;
+}
+
+async function updateBookingStatus(newStatus) {
+    if (!activeBookingId) return;
+
+    const { error } = await supabaseClient
+        .from('bookings')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', activeBookingId);
+
+    if (error) throw error;
+
+    const booking = allBookings.find(b => b.id === activeBookingId);
+    if (booking) booking.status = newStatus;
+}
+
+async function saveBookingStatus() {
+    if (!activeBookingId) return;
+
+    const btn = document.getElementById('bookingSaveBtn');
+    const status = document.getElementById('bookingSaveStatus');
+    const select = document.getElementById('bookingStatusSelect');
+    const newStatus = select.value;
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        await updateBookingStatus(newStatus);
+        renderStats();
+        applyFilters();
+        status.style.color = 'var(--good)';
+        status.textContent = 'Status updated.';
+        showToast('Booking status updated!');
+    } catch (error) {
+        console.error(error);
+        status.style.color = 'var(--bad)';
+        status.textContent = error.message || 'Could not update status.';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Status';
+    }
+}
+
+async function cancelBookingFromModal() {
+    if (!activeBookingId) return;
+    if (!confirm('Cancel this booking? The client will see it as cancelled.')) return;
+
+    const btn = document.getElementById('bookingCancelBtn');
+    btn.disabled = true;
+
+    try {
+        await updateBookingStatus('cancelled');
+        const select = document.getElementById('bookingStatusSelect');
+        if (select) select.value = 'cancelled';
+        renderStats();
+        applyFilters();
+        showToast('Booking cancelled.');
+    } catch (error) {
+        console.error(error);
+        showToast('Error cancelling booking', 'error');
+        btn.disabled = false;
+    }
+}
+
+// --------------------------------------------
+// Formatting helpers
+// --------------------------------------------
+function formatPHP(amount) {
+    return 'PHP ' + (Number(amount) || 0).toLocaleString('en-PH');
+}
+
+function formatDateTime(dateStr, timeStr) {
+    if (!dateStr) return '\u2014';
+    const d = new Date(dateStr + 'T00:00:00');
+    const dateLabel = d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+    if (!timeStr) return dateLabel;
+    const [h, m] = timeStr.split(':').map(Number);
+    const t = new Date();
+    t.setHours(h, m, 0, 0);
+    const timeLabel = t.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+    return `${dateLabel} \u00b7 ${timeLabel}`;
+}
+
+function formatCreatedAt(iso) {
+    if (!iso) return '\u2014';
+    return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+// --------------------------------------------
+// Toast — same look/behavior as users.js's, duplicated here since
+// each admin page's script is loaded standalone (no shared bundle).
+// --------------------------------------------
+function showToast(message, type = 'success') {
+    let toast = document.getElementById('adminToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'adminToast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            transform: translateY(100px);
+            opacity: 0;
+        `;
+        document.body.appendChild(toast);
+    }
+
+    const colors = { success: '#16a34a', error: '#dc2626', warning: '#d97706' };
+
+    toast.textContent = message;
+    toast.style.backgroundColor = colors[type] || colors.success;
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+        toast.style.transform = 'translateY(100px)';
+        toast.style.opacity = '0';
+    }, 3000);
+}

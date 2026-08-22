@@ -11,13 +11,17 @@
 // work until that SQL has been run once in the Supabase SQL Editor.
 //
 // This file also reads/writes `profiles.phone` (to prefill Step 5's
-// contact number) and — as of this version — `bookings.contact_phone`.
-// Run this once in the SQL Editor if it hasn't been added yet:
+// contact number) and `bookings.contact_phone` / `bookings.contact_preference`.
+// Run this once in the SQL Editor if either hasn't been added yet:
 //
 //   alter table public.bookings add column if not exists contact_phone text;
+//   alter table public.bookings add column if not exists contact_preference text;
 //
-// Older rows will just have a null contact_phone — nothing else depends
-// on it being backfilled.
+// Older rows will just have both columns null — nothing else depends on
+// them being backfilled. There's deliberately no bookings.contact_email
+// column — when contact_preference is 'email', the email is just
+// profiles.email for whoever's signed in, so it isn't duplicated onto
+// every booking row.
 
 // --------------------------------------------
 // SERVICE CATALOG
@@ -819,8 +823,7 @@ function initBookingForm() {
                 booking_date: sel.date,
                 booking_time: sel.time,
                 contact_phone: contactMethod === 'phone' ? sel.phone : null,
-                contact_method: contactMethod,
-                contact_email: contactMethod === 'email' ? sel.email : null,
+                contact_preference: contactMethod,
                 notes: sel.notes.trim() || null
             })
             .select()
@@ -836,8 +839,8 @@ function initBookingForm() {
                     ? 'The bookings table isn\u2019t set up yet — run bookings_setup.sql in the Supabase SQL Editor first.'
                     : /column .*contact_phone/i.test(error.message || '')
                         ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_phone text;'
-                    : /column .*contact_email|column .*contact_method/i.test(error.message || '')
-                        ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_method text, add column if not exists contact_email text;'
+                    : /column .*contact_preference/i.test(error.message || '')
+                        ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_preference text;'
                         : (error.message || 'Something went wrong. Please try again.')
             );
             return;
@@ -864,8 +867,8 @@ function showBookingSuccess(booking, sel) {
         ? `Home Service${booking.area ? ' — ' + areaLabel(findBookingArea(booking.area) || { name: booking.area }) : ''} (${booking.address})`
         : 'In-Studio');
     setText('bookingSuccessDateTime', `${formatDateLabel(booking.booking_date)} at ${sel.timeLabel}`);
-    setText('bookingSuccessContact', booking.contact_method === 'email'
-        ? `Email: ${booking.contact_email || sel.email}`
+    setText('bookingSuccessContact', booking.contact_preference === 'email'
+        ? `Email: ${sel.email}`
         : `Phone: ${booking.contact_phone || sel.phone}`);
 
     success.scrollIntoView({ behavior: 'smooth', block: 'start' });

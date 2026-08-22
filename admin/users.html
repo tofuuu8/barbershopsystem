@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Users - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="../frontend/images/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- ========================================
+        SIDEBAR
+        ======================================== -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors" aria-hidden="true"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link active"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                <span class="admin-nav-link disabled"><i class="fas fa-user-tie" aria-hidden="true"></i> Barbers <span class="admin-nav-soon">Soon</span></span>
+                <span class="admin-nav-link disabled"><i class="fas fa-tags" aria-hidden="true"></i> Services <span class="admin-nav-soon">Soon</span></span>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- ========================================
+        MAIN
+        ======================================== -->
+        <main class="admin-main">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Users</h1>
+                    <p class="admin-page-sub">Everyone with a Toughcuts account.</p>
+                </div>
+
+                <div class="admin-notif-wrap">
+                    <button type="button" class="admin-notif-btn" id="notifBtn" aria-label="Notifications">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span class="admin-notif-badge" id="notifBadge" hidden>0</span>
+                    </button>
+                    <div class="admin-notif-panel" id="notifPanel" hidden>
+                        <div class="admin-notif-panel-header">Notifications</div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-user-plus" aria-hidden="true"></i> Accounts</div>
+                            <div class="admin-notif-list" id="notifAccounts">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</div>
+                            <div class="admin-notif-list" id="notifBookings">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
+                            <div class="admin-notif-list">
+                                <div class="admin-notif-empty">No product alerts yet — coming soon.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-stat-row">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statTotalUsers">—</div>
+                    <div class="admin-stat-label">Total Users</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statNewThisMonth">—</div>
+                    <div class="admin-stat-label">Joined This Month</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statAdmins">—</div>
+                    <div class="admin-stat-label">Admin Accounts</div>
+                </div>
+            </div>
+
+            <div class="admin-toolbar">
+                <div class="admin-search">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <input type="search" id="userSearchInput" placeholder="Search by name, email, or phone..." />
+                </div>
+                <span class="admin-toolbar-count" id="userResultsCount"></span>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Address</th>
+                            <th>Date Registered</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr class="admin-empty-row"><td colspan="7">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================
+    EDIT USER MODAL — name / email only, per spec
+    ======================================== -->
+    <div class="admin-modal-backdrop" id="editModalBackdrop" hidden></div>
+    <div class="admin-modal" id="editUserModal" hidden role="dialog" aria-label="Edit user">
+        <button type="button" class="admin-drawer-close" id="editModalCloseBtn" aria-label="Close">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+
+        <h3 class="admin-modal-title">Edit User</h3>
+        <p class="admin-modal-sub">Update this account's name or email.</p>
+
+        <div class="admin-drawer-field">
+            <label for="editFullName">Full Name</label>
+            <input type="text" id="editFullName" class="admin-input" placeholder="Full name" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="editEmail">Email</label>
+            <input type="email" id="editEmail" class="admin-input" placeholder="Email address" />
+        </div>
+
+        <button type="button" class="admin-drawer-save" id="editSaveBtn">Save Changes</button>
+        <p class="admin-drawer-save-status" id="editSaveStatus"></p>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../frontend/js/supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="users.js"></script>
+</body>
+</html>

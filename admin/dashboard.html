@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="../frontend/images/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- ========================================
+        SIDEBAR
+        ======================================== -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors" aria-hidden="true"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link active"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                <span class="admin-nav-link disabled"><i class="fas fa-user-tie" aria-hidden="true"></i> Barbers <span class="admin-nav-soon">Soon</span></span>
+                <span class="admin-nav-link disabled"><i class="fas fa-tags" aria-hidden="true"></i> Services <span class="admin-nav-soon">Soon</span></span>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- ========================================
+        MAIN
+        ======================================== -->
+        <main class="admin-main admin-main-wide">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Dashboard</h1>
+                    <p class="admin-page-sub">Overview of your Toughcuts business.</p>
+                </div>
+
+                <div class="admin-notif-wrap">
+                    <button type="button" class="admin-notif-btn" id="notifBtn" aria-label="Notifications">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span class="admin-notif-badge" id="notifBadge" hidden>0</span>
+                    </button>
+                    <div class="admin-notif-panel" id="notifPanel" hidden>
+                        <div class="admin-notif-panel-header">Notifications</div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-user-plus" aria-hidden="true"></i> Accounts</div>
+                            <div class="admin-notif-list" id="notifAccounts">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</div>
+                            <div class="admin-notif-list" id="notifBookings">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
+                            <div class="admin-notif-list">
+                                <div class="admin-notif-empty">No product alerts yet — coming soon.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================
+            STAT CARDS
+            ======================================== -->
+            <div class="admin-stat-row admin-dash-stat-row">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-card-top">
+                        <span class="admin-stat-icon"><i class="fas fa-peso-sign" aria-hidden="true"></i></span>
+                    </div>
+                    <div class="admin-stat-value" id="statRevenueToday">—</div>
+                    <div class="admin-stat-label">Total Revenue Today</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-card-top">
+                        <span class="admin-stat-icon"><i class="fas fa-calendar-day" aria-hidden="true"></i></span>
+                    </div>
+                    <div class="admin-stat-value" id="statAppointmentsToday">—</div>
+                    <div class="admin-stat-label">Total Appointments Today</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-card-top">
+                        <span class="admin-stat-icon"><i class="fas fa-hourglass-half" aria-hidden="true"></i></span>
+                    </div>
+                    <div class="admin-stat-value" id="statPendingAppointments">—</div>
+                    <div class="admin-stat-label">Pending Appointments</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-card-top">
+                        <span class="admin-stat-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
+                    </div>
+                    <div class="admin-stat-value" id="statTotalUsers">—</div>
+                    <div class="admin-stat-label">Total Registered Users</div>
+                </div>
+                <div class="admin-stat-card admin-stat-card-alert">
+                    <div class="admin-stat-card-top">
+                        <span class="admin-stat-icon"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i></span>
+                    </div>
+                    <div class="admin-stat-value" id="statLowStock">—</div>
+                    <div class="admin-stat-label">Low Stock Alerts</div>
+                </div>
+            </div>
+
+            <!-- ========================================
+            GRAPH + RECENT BOOKINGS
+            ======================================== -->
+            <div class="admin-dash-grid">
+
+                <!-- Weekly Revenue Graph -->
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>Weekly Revenue</h3>
+                        <span class="admin-panel-sub">Last 7 days</span>
+                    </div>
+
+                    <div class="admin-chart" id="weeklyRevenueChart">
+                        <div class="admin-chart-bars">
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Mon</span></div>
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Tue</span></div>
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Wed</span></div>
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Thu</span></div>
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Fri</span></div>
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Sat</span></div>
+                            <div class="admin-chart-bar-col"><div class="admin-chart-bar" style="height: 4%;"></div><span>Sun</span></div>
+                        </div>
+                        <div class="admin-chart-empty">
+                            <i class="fas fa-chart-column" aria-hidden="true"></i>
+                            <p>No revenue data yet</p>
+                            <span>This fills in once bookings &amp; payments go live.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Bookings -->
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>Recent Bookings</h3>
+                        <span class="admin-panel-sub">Latest activity</span>
+                    </div>
+
+                    <div class="admin-recent-list" id="recentBookingsList">
+                        <div class="admin-recent-empty">
+                            <i class="fas fa-calendar-xmark" aria-hidden="true"></i>
+                            <p>No bookings yet</p>
+                            <span>Bookings will show up here once the booking system is live.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../frontend/js/supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
