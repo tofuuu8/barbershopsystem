@@ -9,6 +9,14 @@
 // so client names/emails/phones are joined client-side against a
 // profiles map fetched alongside the bookings (same "look up by id in
 // a small map" pattern cart.js uses for product images).
+//
+// DELETE — once a booking's status is 'cancelled', its row gets a
+// Delete action (same icon-button convention as users.js's row
+// actions) alongside the existing View/Update eye button. This is a
+// real DELETE, not a status change, so it removes the row outright —
+// same table the customer's My Appointments page reads, so a booking
+// deleted here (or self-deleted by the customer once it's cancelled)
+// disappears from both places at once.
 
 let allBookings = [];
 let profilesById = {};
@@ -173,15 +181,25 @@ function renderTable(bookings) {
                     <button type="button" class="admin-action-btn admin-action-edit" data-id="${b.id}" title="View / Update">
                         <i class="fas fa-eye" aria-hidden="true"></i>
                     </button>
+                    ${b.status === 'cancelled' ? `
+                    <button type="button" class="admin-action-btn admin-action-delete" data-action="delete" data-id="${b.id}" title="Delete">
+                        <i class="fas fa-trash" aria-hidden="true"></i>
+                    </button>` : ''}
                 </div>
             </td>
         </tr>
     `;
     }).join('');
 
-    tbody.querySelectorAll('.admin-action-btn').forEach(btn => {
+    tbody.querySelectorAll('.admin-action-edit').forEach(btn => {
         btn.addEventListener('click', function () {
             openBookingModal(btn.dataset.id);
+        });
+    });
+
+    tbody.querySelectorAll('.admin-action-delete').forEach(btn => {
+        btn.addEventListener('click', function () {
+            handleDeleteBooking(btn.dataset.id);
         });
     });
 }
@@ -330,6 +348,51 @@ async function cancelBookingFromModal() {
         showToast('Error cancelling booking', 'error');
         btn.disabled = false;
     }
+}
+
+// --------------------------------------------
+// Delete (only ever offered for cancelled bookings)
+// --------------------------------------------
+async function handleDeleteBooking(bookingId) {
+    if (!bookingId) return;
+    if (!confirm('Delete this booking for good? This removes it completely \u2014 the client will no longer see it either \u2014 and can\u2019t be undone.')) return;
+
+    const btn = document.querySelector(`.admin-action-delete[data-id="${bookingId}"]`);
+    if (btn) btn.disabled = true;
+
+    // Belt-and-suspenders: only ever delete rows that are actually
+    // cancelled, even though the button only renders for those.
+    //
+    // .select() here matters: under RLS, a DELETE that matches zero
+    // rows (policy blocks it) returns error: null and just quietly
+    // deletes nothing. Asking Postgres to return the deleted row lets
+    // us tell "actually deleted" apart from "silently blocked."
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .delete()
+        .eq('id', bookingId)
+        .eq('status', 'cancelled')
+        .select();
+
+    if (error) {
+        console.error(error);
+        if (btn) btn.disabled = false;
+        showToast(error.message || 'Error deleting booking', 'error');
+        return;
+    }
+
+    if (!data || !data.length) {
+        if (btn) btn.disabled = false;
+        showToast('Delete didn\u2019t go through \u2014 likely missing an RLS DELETE policy for admins on bookings.', 'error');
+        return;
+    }
+
+    allBookings = allBookings.filter(b => b.id !== bookingId);
+    if (activeBookingId === bookingId) closeBookingModal();
+
+    renderStats();
+    applyFilters();
+    showToast('Booking deleted.');
 }
 
 // --------------------------------------------

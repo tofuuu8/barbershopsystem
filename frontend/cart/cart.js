@@ -148,10 +148,10 @@ function initCheckoutButton() {
     const btn = document.getElementById('cartCheckoutBtn');
     if (!btn) return;
 
-    // Placeholder — no checkout flow/backend exists yet. Swap this for a
-    // redirect to a real checkout page once one exists.
+    // Hands off to checkout.html — see checkout.js for the actual
+    // pickup/delivery + order-placement flow.
     btn.addEventListener('click', function () {
-        alert('Checkout isn\u2019t connected yet — this button is a placeholder for now.');
+        window.location.href = '../checkout/checkout.html';
     });
 }
 

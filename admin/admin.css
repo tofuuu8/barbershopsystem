@@ -1286,6 +1286,204 @@ input, select, textarea { font: inherit; }
 }
 
 /* ============================================
+   ORDERS PAGE
+   ============================================ */
+
+/* --------------------------------------------
+   Order # + item count in the table's first column
+   -------------------------------------------- */
+.admin-table-name {
+    display: block;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    color: var(--white);
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+}
+
+.admin-table-name + span {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--dim);
+}
+
+/* --------------------------------------------
+   Order status badge variants (pending / preparing / ready /
+   completed / cancelled) — same shape as the base .admin-badge,
+   just swapping the accent color per status.
+   -------------------------------------------- */
+.admin-badge--pending {
+    color: #f2c96b;
+    background: rgba(242, 201, 107, 0.12);
+    border-color: rgba(242, 201, 107, 0.35);
+}
+
+.admin-badge--preparing {
+    color: #7fb8e0;
+    background: rgba(127, 184, 224, 0.12);
+    border-color: rgba(127, 184, 224, 0.35);
+}
+
+.admin-badge--ready {
+    color: var(--good);
+    background: rgba(76, 175, 125, 0.12);
+    border-color: rgba(76, 175, 125, 0.35);
+}
+
+.admin-badge--completed {
+    color: var(--off);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--line);
+}
+
+.admin-badge--cancelled {
+    color: #f2a6a1;
+    background: rgba(224, 90, 90, 0.12);
+    border-color: rgba(224, 90, 90, 0.35);
+}
+
+.admin-badge--unknown {
+    color: var(--dim);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--line);
+}
+
+/* --------------------------------------------
+   Order detail drawer — a right-side sliding panel, distinct from
+   the centered .admin-modal (used by Edit User / Booking Details).
+   Reuses .admin-drawer-close / .admin-drawer-field / .admin-drawer-save
+   / .admin-drawer-save-status, which already exist above for the Edit
+   User modal's field styling.
+   -------------------------------------------- */
+.admin-drawer-backdrop[hidden],
+.admin-drawer[hidden] {
+    display: none;
+}
+
+.admin-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 900;
+}
+
+.admin-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border-left: 1px solid var(--line);
+    z-index: 901;
+    padding: 32px 28px 28px;
+    overflow-y: auto;
+    box-shadow: -24px 0 60px rgba(0, 0, 0, 0.45);
+}
+
+.admin-drawer-name {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--white);
+    margin-bottom: 4px;
+}
+
+.admin-drawer-email {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--dim);
+    margin-bottom: 22px;
+}
+
+.admin-drawer-stat-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.admin-drawer-stat {
+    flex: 1;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+}
+
+.admin-drawer-stat-value {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    color: var(--white);
+}
+
+.admin-drawer-stat-label {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-top: 4px;
+}
+
+.admin-drawer-section {
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+}
+
+.admin-drawer-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.admin-drawer-section h4 {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.66rem;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+}
+
+.admin-drawer-plain {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--white);
+    line-height: 1.5;
+}
+
+.admin-drawer-dim {
+    color: var(--dim);
+    font-size: 0.82rem;
+    margin-top: 4px;
+}
+
+.admin-order-item-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--off);
+    border-bottom: 1px dashed var(--line);
+}
+
+.admin-order-item-row:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 480px) {
+    .admin-drawer { max-width: 100%; }
+}
+
+/* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 900px) {

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - Toughcuts Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="Complete your order — pickup at the studio or delivery to your door, cash on hand." />
+
+    <link rel="icon" type="image/png" href="../images/toughcutslogo.png" />
+    <link rel="apple-touch-icon" href="../images/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="checkout.css" />
+</head>
+<body>
+
+    <!-- ==========================================
+    ANNOUNCEMENT BAR + HEADER
+    ========================================== -->
+    <div class="site-header-group">
+
+        <div class="announce-bar" id="announceBar">
+            <div class="container announce-bar-inner">
+                <p class="announce-bar-text">
+                    <i class="fas fa-scissors" aria-hidden="true"></i>
+                    New client special — 20% off your first cut. <a href="../booking/booking.html">Book now →</a>
+                </p>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="container">
+                <nav class="navbar">
+                    <div class="logo">
+                        <a href="../index.html">
+                            <img src="../images/toughcutslogo.png" alt="Toughcuts Logo" />
+                        </a>
+                    </div>
+
+                    <ul class="nav-menu" id="navMenu">
+                        <li><a href="../index.html">HOME</a></li>
+                        <li><a href="../studio/studio.html">STUDIO</a></li>
+                        <li><a href="../products/products.html">PRODUCTS</a></li>
+                        <li><a href="../services/services.html">SERVICES</a></li>
+                        <li><a href="../aboutus/about.html">ABOUT US</a></li>
+
+                        <li class="nav-menu-divider" aria-hidden="true"></li>
+                        <li class="nav-menu-search">
+                            <form class="mobile-search-form" role="search" onsubmit="return false;">
+                                <i class="fas fa-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search styles, products..." aria-label="Search" />
+                            </form>
+                        </li>
+                        <li class="nav-menu-auth">
+                            <a href="../login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="../login/signup.html" class="nav-auth-btn">Sign Up</a>
+                        </li>
+                        <li>
+                            <a href="../booking/booking.html" class="btn-book nav-menu-book">Book Appointment</a>
+                        </li>
+                    </ul>
+
+                    <div class="nav-actions">
+                        <button class="icon-btn" id="searchToggle" aria-label="Search" aria-expanded="false">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+
+                        <a href="../cart/cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
+                            <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                            <span class="cart-count">0</span>
+                        </a>
+
+                        <a href="../account/account.html" class="account-icon" id="accountIcon" aria-label="View account" hidden>
+                            <span class="account-icon-avatar" id="accountIconAvatar" aria-hidden="true">A</span>
+                        </a>
+
+                        <div class="nav-auth">
+                            <a href="../login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="../login/signup.html" class="nav-auth-btn">Sign Up</a>
+                        </div>
+
+                        <a href="../booking/booking.html" class="btn-book">Book Appointment</a>
+
+                        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
+                            <i class="fas fa-bars" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
+
+                <div class="header-search-panel" id="headerSearchPanel">
+                    <form class="header-search-form" role="search" onsubmit="return false;">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="headerSearchInput" placeholder="Search styles, products, services..." aria-label="Search" />
+                        <button type="button" class="header-search-close" id="headerSearchClose" aria-label="Close search">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+    </div>
+
+    <!-- ==========================================
+    HERO
+    ========================================== -->
+    <section class="checkout-hero">
+        <div class="container">
+            <span class="section-badge">CHECKOUT</span>
+            <h1 class="checkout-title">CONFIRM YOUR <span class="highlight">ORDER</span></h1>
+            <p class="checkout-subtitle">Cash on hand — pay when you pick up or when it arrives at your door.</p>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    LOGIN-REQUIRED GATE
+    ========================================== -->
+    <section class="checkout-gate" id="checkoutGate" hidden>
+        <div class="container">
+            <div class="checkout-gate-panel">
+                <div class="checkout-gate-icon"><i class="fas fa-lock" aria-hidden="true"></i></div>
+                <h2 class="checkout-gate-title">Log in to check out</h2>
+                <p class="checkout-gate-text">Create a free account or log in so we know who's picking up — or where to deliver.</p>
+                <div class="checkout-gate-actions">
+                    <a href="../login/login.html?redirect=checkout.html" class="btn-primary" id="checkoutGateLoginBtn">Log In</a>
+                    <a href="../login/signup.html?redirect=checkout.html" class="btn-secondary" id="checkoutGateSignupBtn">Create Account</a>
+                </div>
+                <a href="../cart/cart.html" class="checkout-gate-continue">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Cart
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    CHECKOUT CONTENT (signed-in visitors)
+    ========================================== -->
+    <section class="checkout-page" id="checkoutContent" hidden>
+        <div class="container">
+
+            <!-- ============ EMPTY CART STATE ============ -->
+            <div class="checkout-empty" id="checkoutEmpty" hidden>
+                <div class="checkout-empty-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></div>
+                <h2 class="checkout-empty-title">Your cart is empty</h2>
+                <p class="checkout-empty-text">There's nothing to check out yet — browse the shop and add something first.</p>
+                <a href="../products/products.html" class="btn-primary">Browse Products</a>
+            </div>
+
+            <!-- ============ SUCCESS STATE ============ -->
+            <div class="checkout-success" id="checkoutSuccess" hidden>
+                <div class="checkout-success-panel">
+                    <div class="checkout-success-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+                    <h2 class="checkout-success-title">Order Placed!</h2>
+                    <p class="checkout-success-text">We've got it down — pay in cash when it's ready or when it arrives.</p>
+
+                    <div class="checkout-success-details">
+                        <div class="checkout-success-row"><span>Order #</span><span id="checkoutSuccessOrderNumber"></span></div>
+                        <div class="checkout-success-row"><span>Name</span><span id="checkoutSuccessName"></span></div>
+                        <div class="checkout-success-row"><span>Fulfillment</span><span id="checkoutSuccessFulfillment"></span></div>
+                        <div class="checkout-success-row"><span>Contact</span><span id="checkoutSuccessContact"></span></div>
+                        <div class="checkout-success-row checkout-success-row--total"><span>Total</span><span id="checkoutSuccessTotal"></span></div>
+                    </div>
+
+                    <div class="checkout-success-actions">
+                        <a href="../myorders/myorders.html" class="btn-primary">View My Orders</a>
+                        <a href="../products/products.html" class="btn-secondary">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ CHECKOUT FORM ============ -->
+            <div class="checkout-form-wrap" id="checkoutFormWrap">
+                <div class="checkout-error" id="checkoutError" role="alert" hidden></div>
+
+                <form id="checkoutForm" novalidate>
+                    <div class="checkout-layout">
+
+                        <div class="checkout-steps">
+
+                            <!-- STEP 1 — FULFILLMENT -->
+                            <div class="checkout-card">
+                                <h2 class="checkout-card-title"><span class="checkout-step-number">1</span> Pickup or Delivery?</h2>
+
+                                <div class="checkout-fulfillment-toggle" role="tablist">
+                                    <button type="button" class="checkout-fulfillment-btn active" data-fulfillment="pickup" role="tab" aria-selected="true">
+                                        <i class="fas fa-store" aria-hidden="true"></i> Pickup at Studio
+                                    </button>
+                                    <button type="button" class="checkout-fulfillment-btn" data-fulfillment="delivery" role="tab" aria-selected="false">
+                                        <i class="fas fa-truck" aria-hidden="true"></i> Delivery
+                                    </button>
+                                </div>
+
+                                <div class="checkout-pickup-info" id="checkoutPickupInfo">
+                                    <i class="fas fa-location-dot" aria-hidden="true"></i>
+                                    <div>
+                                        <strong>Toughcuts Studio</strong>
+                                        <p>Phase 2 Block 11 Lot 16, Eastwind Homes, San Isidro, Rodriguez, 1860 Rizal</p>
+                                        <span>Ready for pickup during business hours — we'll text you once it's set aside.</span>
+                                    </div>
+                                </div>
+
+                                <div class="checkout-delivery-fields" id="checkoutDeliveryFields" hidden>
+                                    <div class="checkout-field">
+                                        <label for="checkoutAddressInput">Delivery Address</label>
+                                        <textarea id="checkoutAddressInput" class="checkout-textarea" placeholder="House/unit no., street, barangay, city" maxlength="200"></textarea>
+                                        <p class="checkout-field-note" id="checkoutAddressNote" hidden>We couldn't load a saved address — please enter one.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- STEP 2 — YOUR DETAILS -->
+                            <div class="checkout-card">
+                                <h2 class="checkout-card-title"><span class="checkout-step-number">2</span> Your Details</h2>
+                                <div class="checkout-field">
+                                    <label for="checkoutNameInput">Full Name</label>
+                                    <input type="text" id="checkoutNameInput" class="checkout-input" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+                                    <p class="checkout-field-note" id="checkoutNameNote" hidden>We couldn't load a saved name — please enter one.</p>
+                                </div>
+                                <div class="checkout-field">
+                                    <label for="checkoutPhoneInput">Where should we reach you about this order?</label>
+                                    <input type="tel" id="checkoutPhoneInput" class="checkout-input" placeholder="e.g. 0917 123 4567" autocomplete="tel" inputmode="tel" />
+                                    <p class="checkout-field-note" id="checkoutPhoneNote" hidden>We couldn't load a saved number — please enter one.</p>
+                                </div>
+                            </div>
+
+                            <!-- STEP 3 — NOTES -->
+                            <div class="checkout-card">
+                                <h2 class="checkout-card-title"><span class="checkout-step-number">3</span> Anything Else? <span class="account-field-optional">(optional)</span></h2>
+                                <div class="checkout-field">
+                                    <label for="checkoutNotesInput">Notes for this order</label>
+                                    <textarea id="checkoutNotesInput" class="checkout-textarea" placeholder="Gate code, preferred pickup time, packaging requests, etc." maxlength="300"></textarea>
+                                    <span class="checkout-notes-count" id="checkoutNotesCount">0/300</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- SUMMARY -->
+                        <aside class="checkout-summary">
+                            <h3>Order Summary</h3>
+
+                            <div class="checkout-summary-items" id="checkoutSummaryItems"></div>
+
+                            <div class="checkout-summary-row">
+                                <span>Subtotal</span>
+                                <span id="checkoutSummarySubtotal">PHP 0</span>
+                            </div>
+                            <div class="checkout-summary-row checkout-summary-row-delivery" id="checkoutDeliveryFeeRow" hidden>
+                                <span>Delivery Fee</span>
+                                <span id="checkoutSummaryDeliveryFee">PHP 0</span>
+                            </div>
+                            <p class="checkout-summary-note">Cash on hand at pickup or delivery — no online payment needed.</p>
+                            <div class="checkout-summary-row checkout-summary-row--total">
+                                <span>Total</span>
+                                <span id="checkoutSummaryTotal">PHP 0</span>
+                            </div>
+
+                            <button type="submit" class="btn-primary checkout-confirm-btn" id="checkoutConfirmBtn" disabled>
+                                <span class="checkout-confirm-text">Place Order</span>
+                                <i class="fas fa-circle-notch fa-spin checkout-confirm-spinner" aria-hidden="true" hidden></i>
+                            </button>
+
+                            <a href="../cart/cart.html" class="checkout-summary-back">
+                                <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Cart
+                            </a>
+                        </aside>
+
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==========================================
+    FOOTER
+    ========================================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+
+                <div class="footer-brand">
+                    <img class="footer-logo" src="../images/toughcutslogo.png" alt="Toughcuts Logo" loading="lazy" />
+                    <p>Precision cuts, premium style, pure confidence. Modern craftsmanship in a classic atmosphere.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/_toughcuts/" class="footer-social-link" aria-label="Toughcuts on Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on TikTok">
+                            <i class="fab fa-tiktok" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <h4>QUICK LINKS</h4>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="../studio/studio.html">Studio</a></li>
+                        <li><a href="../products/products.html">Products</a></li>
+                        <li><a href="../services/services.html">Services</a></li>
+                        <li><a href="../aboutus/about.html">About Us</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-hours">
+                    <h4>BUSINESS HOURS</h4>
+                    <div class="footer-hours-row">
+                        <span>Mon — Fri</span>
+                        <span>9:00 AM – 8:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Saturday</span>
+                        <span>9:00 AM – 6:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Sunday</span>
+                        <span>Closed</span>
+                    </div>
+                </div>
+
+                <div class="footer-contact">
+                    <h4>TALK TO US</h4>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> 04 398 3985 2092</p>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> +76 209 1092 4095</p>
+                    <p class="footer-email"><i class="fas fa-envelope" aria-hidden="true"></i> info@toughcuts.com</p>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 <strong>Toughcuts</strong>. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="../privacy.html">Privacy Policy</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="../terms.html">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+    AI CHAT WIDGET
+    ========================================== -->
+    <div class="chat-widget" id="chatWidget">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+            <i class="fas fa-comment-dots" aria-hidden="true"></i>
+        </button>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <i class="fas fa-robot" aria-hidden="true"></i>
+                <span>Toughcuts AI</span>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <small>Ask about services, booking, or products</small>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message..." aria-label="Type your message" />
+                <button id="chatSend" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../cart/cart.js"></script>
+    <script src="checkout.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Users - Toughcuts Admin</title>
+    <title>Orders - Toughcuts Admin</title>
     <meta name="robots" content="noindex, nofollow" />
 
     <link rel="icon" type="image/png" href="../frontend/images/toughcutslogo.png" />
@@ -31,8 +31,8 @@
 
             <nav class="admin-nav">
                 <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
-                <a href="users.html" class="admin-nav-link active"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
-                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
+                <a href="orders.html" class="admin-nav-link active"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
                 <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
                 <span class="admin-nav-link disabled"><i class="fas fa-user-tie" aria-hidden="true"></i> Barbers <span class="admin-nav-soon">Soon</span></span>
                 <span class="admin-nav-link disabled"><i class="fas fa-tags" aria-hidden="true"></i> Services <span class="admin-nav-soon">Soon</span></span>
@@ -52,8 +52,8 @@
         <main class="admin-main">
             <div class="admin-page-header">
                 <div>
-                    <h1 class="admin-page-title">Users</h1>
-                    <p class="admin-page-sub">Everyone with a Toughcuts account.</p>
+                    <h1 class="admin-page-title">Orders</h1>
+                    <p class="admin-page-sub">Product checkouts — cash on pickup/delivery.</p>
                 </div>
 
                 <div class="admin-notif-wrap">
@@ -88,44 +88,62 @@
                 </div>
             </div>
 
+            <div class="admin-error" id="ordersError" role="alert" hidden></div>
+
             <div class="admin-stat-row">
                 <div class="admin-stat-card">
-                    <div class="admin-stat-value" id="statTotalUsers">—</div>
-                    <div class="admin-stat-label">Total Users</div>
+                    <div class="admin-stat-value" id="statTotalOrders">—</div>
+                    <div class="admin-stat-label">Total Orders</div>
                 </div>
                 <div class="admin-stat-card">
-                    <div class="admin-stat-value" id="statNewThisMonth">—</div>
-                    <div class="admin-stat-label">Joined This Month</div>
+                    <div class="admin-stat-value" id="statPendingOrders">—</div>
+                    <div class="admin-stat-label">Needs Action</div>
                 </div>
                 <div class="admin-stat-card">
-                    <div class="admin-stat-value" id="statAdmins">—</div>
-                    <div class="admin-stat-label">Admin Accounts</div>
+                    <div class="admin-stat-value" id="statTodayOrders">—</div>
+                    <div class="admin-stat-label">Today</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statRevenue">—</div>
+                    <div class="admin-stat-label">Revenue (Completed)</div>
                 </div>
             </div>
 
             <div class="admin-toolbar">
                 <div class="admin-search">
                     <i class="fas fa-search" aria-hidden="true"></i>
-                    <input type="search" id="userSearchInput" placeholder="Search by name, email, or phone..." />
+                    <input type="search" id="orderSearchInput" placeholder="Search by order ID or phone..." />
                 </div>
-                <span class="admin-toolbar-count" id="userResultsCount"></span>
+                <select id="orderStatusFilter" class="admin-select">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="ready">Ready</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <select id="orderFulfillmentFilter" class="admin-select">
+                    <option value="">Pickup + Delivery</option>
+                    <option value="pickup">Pickup Only</option>
+                    <option value="delivery">Delivery Only</option>
+                </select>
+                <span class="admin-toolbar-count" id="orderResultsCount"></span>
             </div>
 
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>Full Name</th>
-                            <th>Email</th>
-                            <th>Phone Number</th>
-                            <th>Address</th>
-                            <th>Date Registered</th>
+                            <th>Order</th>
+                            <th>Fulfillment</th>
+                            <th>Total</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th>Placed</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody id="usersTableBody">
-                        <tr class="admin-empty-row"><td colspan="7">Loading users...</td></tr>
+                    <tbody id="ordersTableBody">
+                        <tr class="admin-empty-row"><td colspan="6">Loading orders...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -133,35 +151,68 @@
     </div>
 
     <!-- ========================================
-    EDIT USER MODAL — name / email only, per spec
+    ORDER DETAIL DRAWER
     ======================================== -->
-    <div class="admin-modal-backdrop" id="editModalBackdrop" hidden></div>
-    <div class="admin-modal" id="editUserModal" hidden role="dialog" aria-label="Edit user">
-        <button type="button" class="admin-drawer-close" id="editModalCloseBtn" aria-label="Close">
+    <div class="admin-drawer-backdrop" id="drawerBackdrop" hidden></div>
+    <aside class="admin-drawer" id="orderDrawer" hidden aria-label="Order details">
+        <button type="button" class="admin-drawer-close" id="drawerCloseBtn" aria-label="Close">
             <i class="fas fa-xmark" aria-hidden="true"></i>
         </button>
 
-        <h3 class="admin-modal-title">Edit User</h3>
-        <p class="admin-modal-sub">Update this account's name or email.</p>
+        <span class="admin-badge" id="drawerOrderBadge">—</span>
+        <h2 class="admin-drawer-name" id="drawerOrderId" style="margin-top:10px;">—</h2>
+        <p class="admin-drawer-email" id="drawerOrderPlaced">—</p>
 
-        <div class="admin-drawer-field">
-            <label for="editFullName">Full Name</label>
-            <input type="text" id="editFullName" class="admin-input" placeholder="Full name" />
+        <div class="admin-drawer-stat-row">
+            <div class="admin-drawer-stat">
+                <div class="admin-drawer-stat-value" id="drawerOrderTotal">—</div>
+                <div class="admin-drawer-stat-label">Total</div>
+            </div>
+            <div class="admin-drawer-stat">
+                <div class="admin-drawer-stat-value" id="drawerOrderItemCount">—</div>
+                <div class="admin-drawer-stat-label">Items</div>
+            </div>
         </div>
-        <div class="admin-drawer-field">
-            <label for="editEmail">Email</label>
-            <input type="email" id="editEmail" class="admin-input" placeholder="Email address" />
+
+        <div class="admin-drawer-section">
+            <h4>Fulfillment</h4>
+            <p class="admin-drawer-plain" id="drawerFulfillment">—</p>
+            <p class="admin-drawer-plain admin-drawer-dim" id="drawerAddress" hidden></p>
         </div>
 
-        <button type="button" class="admin-drawer-save" id="editSaveBtn">Save Changes</button>
-        <p class="admin-drawer-save-status" id="editSaveStatus"></p>
-    </div>
+        <div class="admin-drawer-section">
+            <h4>Contact</h4>
+            <p class="admin-drawer-plain" id="drawerContactPhone">—</p>
+        </div>
 
-    <!-- SCRIPTS -->
+        <div class="admin-drawer-section" id="drawerNotesSection" hidden>
+            <h4>Order Notes</h4>
+            <p class="admin-drawer-plain admin-drawer-dim" id="drawerNotes">—</p>
+        </div>
+
+        <div class="admin-drawer-section">
+            <h4>Items</h4>
+            <div id="drawerItemsList"></div>
+        </div>
+
+        <div class="admin-drawer-section">
+            <h4>Update Status</h4>
+            <select id="drawerStatusSelect" class="admin-input">
+                <option value="pending">Pending</option>
+                <option value="preparing">Preparing</option>
+                <option value="ready">Ready</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <button type="button" class="admin-drawer-save" id="drawerStatusSaveBtn" style="margin-top:12px;">Save Status</button>
+            <p class="admin-drawer-save-status" id="drawerStatusSaveResult"></p>
+        </div>
+    </aside>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../frontend/js/supabase.js"></script>
     <script src="admin-auth.js"></script>
     <script src="notifications.js"></script>
-    <script src="users.js"></script>
+    <script src="orders.js"></script>
 </body>
 </html>

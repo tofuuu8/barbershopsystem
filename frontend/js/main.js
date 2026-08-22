@@ -989,7 +989,93 @@ function updateAuthUI() {
             if (avatar) avatar.textContent = getAvatarInitial(user);
         }
     });
+
+    initAccountMenus();
 }
+
+// --------------------------------------------
+// Account dropdown — turns the header avatar into a small menu (My
+// Account / My Orders / My Appointments / Log Out) instead of a direct
+// link, so those pages are reachable from every page without editing
+// each page's header markup individually. Built once per .account-icon (there's
+// exactly one per page) the first time updateAuthUI() runs; later
+// updateAuthUI() calls just show/hide the trigger and refresh the
+// avatar initial as before — the menu itself doesn't need rebuilding.
+// --------------------------------------------
+function initAccountMenus() {
+    document.querySelectorAll('.account-icon').forEach(function (trigger) {
+        if (trigger.dataset.menuInit) return;
+        trigger.dataset.menuInit = 'true';
+
+        // The icon's own href already resolves correctly at this page's
+        // depth (e.g. "../account/account.html") — reuse it as-is for
+        // the "My Account" item instead of recomputing it.
+        const accountHref = trigger.getAttribute('href');
+
+        const wrap = document.createElement('div');
+        wrap.className = 'account-menu';
+        trigger.parentNode.insertBefore(wrap, trigger);
+        wrap.appendChild(trigger);
+
+        const panel = document.createElement('div');
+        panel.className = 'account-menu-panel';
+        panel.hidden = true;
+        panel.innerHTML = `
+            <a href="${accountHref}" class="account-menu-item">
+                <i class="fas fa-user" aria-hidden="true"></i> My Account
+            </a>
+            <a href="${SITE_BASE}myorders/myorders.html" class="account-menu-item">
+                <i class="fas fa-bag-shopping" aria-hidden="true"></i> My Orders
+            </a>
+            <a href="${SITE_BASE}myappointments/myappointments.html" class="account-menu-item">
+                <i class="fas fa-calendar-check" aria-hidden="true"></i> My Appointments
+            </a>
+            <button type="button" class="account-menu-item account-menu-logout">
+                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Log Out
+            </button>
+        `;
+        wrap.appendChild(panel);
+
+        trigger.setAttribute('aria-haspopup', 'true');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        trigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            const isOpen = !panel.hidden;
+            closeAllAccountMenus();
+            if (!isOpen) {
+                panel.hidden = false;
+                trigger.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        const logoutBtn = panel.querySelector('.account-menu-logout');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                closeAllAccountMenus();
+                logOut();
+            });
+        }
+    });
+}
+
+function closeAllAccountMenus() {
+    document.querySelectorAll('.account-menu-panel').forEach(function (panel) {
+        panel.hidden = true;
+        const trigger = panel.previousElementSibling;
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    });
+}
+
+// Close on outside click / Escape — same pattern as admin's notifications.js.
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('.account-menu')) closeAllAccountMenus();
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeAllAccountMenus();
+});
 
 // ============================================
 // ADD TO CART
