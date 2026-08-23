@@ -15,6 +15,7 @@
 // and STATUS_LABELS below to match.
 
 const STATUS_LABELS = {
+    awaiting_payment: 'Awaiting Payment',
     pending: 'Pending',
     preparing: 'Preparing',
     ready: 'Ready',
@@ -57,10 +58,10 @@ async function loadOrders() {
     const tbody = document.getElementById('ordersTableBody');
 
     const { data, error } = await supabaseClient
-        .from('orders')
-        .select('id, user_id, fulfillment_type, address, contact_phone, subtotal, total_price, status, notes, created_at')
-        .order('created_at', { ascending: false })
-        .limit(500);
+    .from('orders')
+    .select('id, user_id, fulfillment_type, address, contact_phone, subtotal, total_price, status, notes, created_at, payment_status, payment_provider, paid_at')
+    .order('created_at', { ascending: false })
+    .limit(500);
 
     if (error) {
         console.error(error);
@@ -170,7 +171,7 @@ function renderTable(orders) {
                 </td>
                 <td>${o.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup'}</td>
                 <td>${formatPHP(o.total_price)}</td>
-                <td>${statusBadge(o.status)}</td>
+                <td>${statusBadge(o.status)}${paymentBadge(o)}</td>
                 <td>${formatDateTime(o.created_at)}</td>
                 <td style="text-align:right;"><i class="fas fa-chevron-right" aria-hidden="true" style="color:var(--dim);"></i></td>
             </tr>
@@ -185,6 +186,15 @@ function renderTable(orders) {
 function statusBadge(status) {
     const label = STATUS_LABELS[status] || status || 'Unknown';
     return `<span class="admin-badge admin-badge--${escapeHtml(status || 'unknown')}">${escapeHtml(label)}</span>`;
+}
+
+function paymentBadge(order) {
+    if (!order.payment_provider) return ''; // Cash on Pickup/Delivery — nothing to show
+    const label = order.payment_status === 'paid' ? 'Paid Online' : 'Unpaid';
+    const color = order.payment_status === 'paid' ? 'var(--good)' : 'var(--dim)';
+    return ` <span style="font-size:0.72rem; color:${color}; margin-left:6px;">
+        <i class="fas fa-credit-card" aria-hidden="true"></i> ${label}
+    </span>`;
 }
 
 // --------------------------------------------
@@ -246,6 +256,17 @@ function openDrawer(orderId) {
 
     document.getElementById('drawerBackdrop').hidden = false;
     document.getElementById('orderDrawer').hidden = false;
+}
+
+const paymentSection = document.getElementById('drawerPaymentSection');
+if (order.payment_provider) {
+    const label = order.payment_status === 'paid'
+        ? `Paid online via ${order.payment_provider}${order.paid_at ? ' on ' + formatDateTime(order.paid_at) : ''}`
+        : `Awaiting online payment via ${order.payment_provider}`;
+    document.getElementById('drawerPayment').textContent = label;
+    paymentSection.hidden = false;
+} else {
+    paymentSection.hidden = true;
 }
 
 function closeDrawer() {

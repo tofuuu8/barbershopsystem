@@ -15,14 +15,32 @@
 // checkout.js if those columns don't exist yet. Both are handled as
 // optional here (older orders placed before that migration simply
 // won't have them).
+//
+// PAYMENT-RESUME — an order that's still 'awaiting_payment' (customer
+// started an online payment but never completed it) shows a "Complete
+// Payment" button instead of being a dead end. That calls the
+// resume-payment-checkout edge function, which builds a fresh PayMongo
+// Checkout Session for the SAME existing order (no new order/order_items
+// — those already exist and already reserved stock) and returns a
+// checkoutUrl to redirect to.
+//
+// CARD CLICK — clicking anywhere on a card (other than the pay button)
+// opens a detail modal with the full order info. The pay button calls
+// stopPropagation() so clicking it doesn't also pop the modal open.
 
 const ORDER_STATUS_LABELS = {
+    awaiting_payment: 'Awaiting Payment',
     pending: 'Pending',
     preparing: 'Preparing',
     ready: 'Ready',
     completed: 'Completed',
     cancelled: 'Cancelled'
 };
+
+// Kept in module scope so the detail modal (opened from a card click)
+// can look up the order + its items without re-querying Supabase.
+let myOrdersCache = [];
+let myOrderItemsByOrder = {};
 
 document.addEventListener('DOMContentLoaded', async function () {
     await authReadyPromise;
@@ -33,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     showMyOrdersContent();
+    initOrderDetailModal();
     await loadMyOrders();
 
     // Keep the gate/content split in sync if auth state changes after
@@ -85,6 +104,8 @@ async function loadMyOrders() {
     if (!orders || !orders.length) {
         if (emptyEl) emptyEl.hidden = false;
         listEl.innerHTML = '';
+        myOrdersCache = [];
+        myOrderItemsByOrder = {};
         return;
     }
 
@@ -104,9 +125,171 @@ async function loadMyOrders() {
         });
     }
 
+    // Cache for the detail modal to read from on click.
+    myOrdersCache = orders;
+    myOrderItemsByOrder = itemsByOrder;
+
     listEl.innerHTML = orders.map(function (order) {
         return renderMyOrderCard(order, itemsByOrder[order.id] || []);
     }).join('');
+
+    // Wire up interactions AFTER the HTML actually exists in the DOM.
+    initMyOrderCardClicks();
+    initMyOrderPayButtons();
+}
+
+// --------------------------------------------
+// Card click -> open detail modal
+// --------------------------------------------
+function initMyOrderCardClicks() {
+    const listEl = document.getElementById('myordersList');
+    if (!listEl) return;
+
+    listEl.querySelectorAll('.myorder-card').forEach(function (card) {
+        card.addEventListener('click', function (e) {
+            // Ignore clicks on the native <details>/<summary> items
+            // toggle and on the pay button — those have their own
+            // behavior and shouldn't also pop the modal open.
+            if (e.target.closest('.myorder-items') || e.target.closest('.myorder-pay-btn')) return;
+
+            const order = myOrdersCache.find(o => o.id === card.dataset.id);
+            if (order) openOrderDetailModal(order, myOrderItemsByOrder[order.id] || []);
+        });
+    });
+}
+
+// --------------------------------------------
+// "Complete Payment" button -> resume-payment-checkout
+// --------------------------------------------
+function initMyOrderPayButtons() {
+    const listEl = document.getElementById('myordersList');
+    if (!listEl) return;
+
+    listEl.querySelectorAll('.myorder-pay-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation(); // don't also trigger the card's "view details" click
+            handleResumePayment(btn.dataset.orderId, btn);
+        });
+    });
+}
+
+async function handleResumePayment(orderId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Redirecting...';
+
+    const { data, error } = await supabaseClient.functions.invoke('resume-payment-checkout', {
+        body: { orderId: orderId }
+    });
+
+    if (error || (data && data.error)) {
+        alert((data && data.error) || 'Could not resume payment. Please try again.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment';
+        return;
+    }
+
+    window.location.href = data.checkoutUrl;
+}
+
+// --------------------------------------------
+// Order detail modal
+// --------------------------------------------
+function initOrderDetailModal() {
+    const modal = document.getElementById('orderDetailModal');
+    if (!modal) return;
+
+    const backdrop = document.getElementById('orderModalBackdrop');
+    const closeBtn = document.getElementById('orderModalClose');
+
+    if (backdrop) backdrop.addEventListener('click', closeOrderDetailModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeOrderDetailModal);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeOrderDetailModal();
+    });
+}
+
+function openOrderDetailModal(order, items) {
+    const modal = document.getElementById('orderDetailModal');
+    if (!modal) return;
+
+    setTextMyOrders('orderModalId', `Order #${order.id.slice(0, 8).toUpperCase()}`);
+
+    const statusEl = document.getElementById('orderModalStatus');
+    if (statusEl) {
+        statusEl.textContent = ORDER_STATUS_LABELS[order.status] || order.status || 'Unknown';
+        statusEl.className = `myorder-status myorder-status-${order.status || 'pending'}`;
+    }
+
+    setTextMyOrders('orderModalDate', `Placed ${formatDateMyOrders(order.created_at)}`);
+    setTextMyOrders(
+        'orderModalFulfillment',
+        order.fulfillment_type === 'delivery'
+            ? `Delivery \u2014 ${order.address || '\u2014'}`
+            : 'Pickup at Studio'
+    );
+    setTextMyOrders('orderModalContact', order.contact_phone || '\u2014');
+    setTextMyOrders('orderModalTotal', formatPHPMyOrders(order.total_price));
+
+    const paymentEl = document.getElementById('orderModalPayment');
+    if (paymentEl) {
+        if (order.payment_provider) {
+            paymentEl.hidden = false;
+            paymentEl.textContent = order.payment_status === 'paid'
+                ? `Paid online via ${order.payment_provider}${order.paid_at ? ' on ' + formatDateMyOrders(order.paid_at) : ''}`
+                : `Awaiting online payment via ${order.payment_provider}`;
+        } else {
+            paymentEl.hidden = true;
+        }
+    }
+
+    const notesWrap = document.getElementById('orderModalNotesWrap');
+    if (notesWrap) {
+        if (order.notes) {
+            setTextMyOrders('orderModalNotes', order.notes);
+            notesWrap.hidden = false;
+        } else {
+            notesWrap.hidden = true;
+        }
+    }
+
+    const itemsEl = document.getElementById('orderModalItems');
+    if (itemsEl) {
+        itemsEl.innerHTML = items.length
+            ? items.map(function (item) {
+                return `
+                    <div class="myorder-item-row">
+                        <span>${item.quantity}\u00d7 ${escapeHtmlMyOrders(item.product_name)}</span>
+                        <span>${formatPHPMyOrders(item.line_total)}</span>
+                    </div>
+                `;
+            }).join('')
+            : '<p class="myorders-status-text myorder-items-empty">No items found for this order.</p>';
+    }
+
+    // "Complete Payment" also lives inside the modal, so it's reachable
+    // even after someone's already opened the detail view.
+    const modalPayWrap = document.getElementById('orderModalPayWrap');
+    const modalPayBtn = document.getElementById('orderModalPayBtn');
+    if (modalPayWrap && modalPayBtn) {
+        if (order.status === 'awaiting_payment' && order.payment_provider) {
+            modalPayWrap.hidden = false;
+            modalPayBtn.dataset.orderId = order.id;
+            modalPayBtn.disabled = false;
+            modalPayBtn.innerHTML = '<i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment';
+            modalPayBtn.onclick = function () { handleResumePayment(order.id, modalPayBtn); };
+        } else {
+            modalPayWrap.hidden = true;
+        }
+    }
+
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+}
+
+function closeOrderDetailModal() {
+    const modal = document.getElementById('orderDetailModal');
+    if (modal) modal.hidden = true;
+    document.body.style.overflow = '';
 }
 
 // --------------------------------------------
@@ -141,10 +324,22 @@ function renderMyOrderCard(order, items) {
         ? `<div class="myorder-card-notes"><i class="fas fa-note-sticky" aria-hidden="true"></i> <span>${escapeHtmlMyOrders(order.notes)}</span></div>`
         : '';
 
+    // "Complete Payment" only ever shows for an order that's still
+    // waiting on an online payment that was actually started
+    // (payment_provider set) — never for Cash on Pickup/Delivery
+    // orders, which don't have a payment_provider at all.
+    const resumePaymentBlock = (order.status === 'awaiting_payment' && order.payment_provider)
+        ? `<div class="myorder-card-footer">
+               <button type="button" class="myorder-pay-btn" data-order-id="${order.id}">
+                   <i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment
+               </button>
+           </div>`
+        : '';
+
     const itemCount = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
 
     return `
-        <div class="myorder-card" data-id="${order.id}">
+        <div class="myorder-card" data-id="${order.id}" role="button" tabindex="0">
             <div class="myorder-card-header">
                 <div>
                     <span class="myorder-card-id">Order #${order.id.slice(0, 8).toUpperCase()}</span>
@@ -170,6 +365,7 @@ function renderMyOrderCard(order, items) {
             </div>
 
             ${notesBlock}
+            ${resumePaymentBlock}
         </div>
     `;
 }
@@ -190,4 +386,9 @@ function escapeHtmlMyOrders(str) {
     const div = document.createElement('div');
     div.textContent = String(str);
     return div.innerHTML;
+}
+
+function setTextMyOrders(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
 }

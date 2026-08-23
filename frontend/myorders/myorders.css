@@ -171,10 +171,16 @@
     border-radius: var(--radius-lg);
     padding: 24px 26px;
     transition: var(--transition);
+    cursor: pointer;
 }
 
 .myorder-card:hover {
     border-color: rgba(255, 255, 255, 0.18);
+}
+
+.myorder-card:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
 }
 
 .myorder-card-header {
@@ -212,6 +218,7 @@
     white-space: nowrap;
 }
 
+.myorder-status-awaiting_payment { background: rgba(217, 119, 6, 0.15); color: #d97706; }
 .myorder-status-pending { background: rgba(217, 119, 6, 0.15); color: #d97706; }
 .myorder-status-preparing { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 .myorder-status-ready { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
@@ -368,6 +375,187 @@
     padding: 20px 0;
 }
 
+/* --------------------------------------------
+   "Complete Payment" footer (card version) — only rendered for an
+   order still 'awaiting_payment' that has a payment_provider set
+   (i.e. an online-payment order, never Cash on Pickup/Delivery).
+   -------------------------------------------- */
+.myorder-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+}
+
+.myorder-pay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 22px;
+    background: var(--white);
+    border: 1px solid var(--white);
+    border-radius: 50px;
+    color: var(--black);
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myorder-pay-btn:hover {
+    background: var(--steel);
+    border-color: var(--steel);
+}
+
+.myorder-pay-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ============================================
+   ORDER DETAIL MODAL
+   Mirrors the barber/product full-detail modal pattern used
+   elsewhere on the site (about.css's .barber-modal, products.css's
+   .product-modal).
+   ============================================ */
+.myorder-modal[hidden] {
+    display: none;
+}
+
+.myorder-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.myorder-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+}
+
+.myorder-modal-panel {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    max-width: 480px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 32px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+
+.myorder-modal-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(15, 15, 15, 0.75);
+    backdrop-filter: blur(4px);
+    border: none;
+    color: var(--white);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myorder-modal-close:hover {
+    background: var(--white);
+    color: var(--black);
+}
+
+.myorder-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding-right: 30px;
+    margin-bottom: 6px;
+}
+
+.myorder-modal-id {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.15rem;
+    letter-spacing: 0.5px;
+    color: var(--white);
+}
+
+.myorder-modal-date {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--dim);
+    margin-bottom: 22px;
+}
+
+.myorder-modal-section {
+    margin-bottom: 20px;
+}
+
+.myorder-modal-section h4 {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 8px;
+}
+
+.myorder-modal-plain {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--off);
+    line-height: 1.6;
+}
+
+.myorder-modal-dim {
+    color: var(--dim);
+    font-style: italic;
+}
+
+.myorder-modal-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--off);
+}
+
+.myorder-modal-total-row strong {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--white);
+}
+
+.myorder-modal-pay-wrap[hidden] {
+    display: none;
+}
+
+.myorder-modal-pay-wrap {
+    margin-top: 22px;
+}
+
+.myorder-pay-btn--modal {
+    width: 100%;
+    justify-content: center;
+}
+
 /* ============================================
    RESPONSIVE
    ============================================ */
@@ -379,4 +567,5 @@
     .myorders-gate-panel { padding: 36px 24px 30px; }
     .myorder-card { padding: 20px 18px; }
     .myorder-card-header { flex-direction: column; }
+    .myorder-modal-panel { padding: 24px; }
 }

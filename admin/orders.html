@@ -119,6 +119,7 @@
                 </div>
                 <select id="orderStatusFilter" class="admin-select">
                     <option value="">All Statuses</option>
+                    <option value="awaiting_payment">Awaiting Payment</option>
                     <option value="pending">Pending</option>
                     <option value="preparing">Preparing</option>
                     <option value="ready">Ready</option>
@@ -182,6 +183,11 @@
             <p class="admin-drawer-plain" id="drawerFulfillment">—</p>
             <p class="admin-drawer-plain admin-drawer-dim" id="drawerAddress" hidden></p>
         </div>
+
+        <div class="admin-drawer-section" id="drawerPaymentSection" hidden>
+    <h4>Payment</h4>
+    <p class="admin-drawer-plain" id="drawerPayment">—</p>
+</div>
 
         <div class="admin-drawer-section">
             <h4>Contact</h4>

@@ -156,6 +156,60 @@
     </section>
 
     <!-- ==========================================
+    ORDER DETAIL MODAL
+    Opened by clicking anywhere on an order card (except the item
+    list's own expand/collapse toggle or the Complete Payment button,
+    which have their own behavior). Mirrors the barber/product full-
+    detail modal pattern used elsewhere on the site.
+    ========================================== -->
+    <div class="myorder-modal" id="orderDetailModal" hidden role="dialog" aria-modal="true" aria-label="Order details">
+        <div class="myorder-modal-backdrop" id="orderModalBackdrop"></div>
+        <div class="myorder-modal-panel">
+            <button type="button" class="myorder-modal-close" id="orderModalClose" aria-label="Close">
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+            </button>
+
+            <div class="myorder-modal-header">
+                <h3 class="myorder-modal-id" id="orderModalId">Order #—</h3>
+                <span class="myorder-status" id="orderModalStatus">—</span>
+            </div>
+            <p class="myorder-modal-date" id="orderModalDate">—</p>
+
+            <div class="myorder-modal-section">
+                <h4>Delivery / Pickup</h4>
+                <p class="myorder-modal-plain" id="orderModalFulfillment">—</p>
+            </div>
+
+            <div class="myorder-modal-section">
+                <h4>Contact</h4>
+                <p class="myorder-modal-plain" id="orderModalContact">—</p>
+                <p class="myorder-modal-plain myorder-modal-dim" id="orderModalPayment" hidden>—</p>
+            </div>
+
+            <div class="myorder-modal-section" id="orderModalNotesWrap" hidden>
+                <h4>Notes</h4>
+                <p class="myorder-modal-plain myorder-modal-dim" id="orderModalNotes">—</p>
+            </div>
+
+            <div class="myorder-modal-section">
+                <h4>Items</h4>
+                <div id="orderModalItems"></div>
+            </div>
+
+            <div class="myorder-modal-total-row">
+                <span>Total</span>
+                <strong id="orderModalTotal">—</strong>
+            </div>
+
+            <div class="myorder-modal-pay-wrap" id="orderModalPayWrap" hidden>
+                <button type="button" class="myorder-pay-btn myorder-pay-btn--modal" id="orderModalPayBtn">
+                    <i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
     FOOTER
     ========================================== -->
     <footer class="footer">

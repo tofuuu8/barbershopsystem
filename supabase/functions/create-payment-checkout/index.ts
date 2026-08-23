@@ -184,7 +184,6 @@ Deno.serve(async (req) => {
         .insert({
             user_id: user.id,
             fulfillment_type: body.fulfillment_type,
-            area: body.fulfillment_type === 'delivery' ? body.area : null,
             address: body.fulfillment_type === 'delivery' ? body.address?.trim() : null,
             subtotal,
             total_price: totalPrice,
