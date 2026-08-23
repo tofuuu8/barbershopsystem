@@ -860,20 +860,33 @@ function initChatWidget() {
 // ============================================
 // CART COUNTER
 // ============================================
+function readSafeCart() {
+    try {
+        const raw = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
+        if (!Array.isArray(raw)) return [];
+        return raw
+            .map(item => ({
+                id: String(item && item.id || '').trim(),
+                name: String(item && item.name || '').trim(),
+                price: Number(item && item.price),
+                quantity: item && item.quantity
+            }))
+            .filter(item => item.id && item.name && Number.isFinite(item.price) && item.price >= 0
+                && typeof item.quantity === 'number' && Number.isInteger(item.quantity) && item.quantity > 0);
+    } catch (e) {
+        return [];
+    }
+}
+
 function initCartCounter() {
     const count = document.querySelector('.cart-count');
     const cartIcon = document.getElementById('cartIcon');
     if (!count) return;
 
-    try {
-        const cart = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
-        const total = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
-        count.textContent = total;
-        if (cartIcon) {
-            cartIcon.setAttribute('aria-label', `View cart, ${total} item${total === 1 ? '' : 's'}`);
-        }
-    } catch (e) {
-        count.textContent = '0';
+    const total = readSafeCart().reduce((sum, item) => sum + item.quantity, 0);
+    count.textContent = total;
+    if (cartIcon) {
+        cartIcon.setAttribute('aria-label', `View cart, ${total} item${total === 1 ? '' : 's'}`);
     }
 }
 
@@ -1102,15 +1115,9 @@ function canAddStockAwareCartItem(productId, quantity) {
         return false;
     }
 
-    let cart = [];
-    try {
-        cart = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
-    } catch (e) {
-        cart = [];
-    }
-
+    const cart = readSafeCart();
     const existing = cart.find(item => item.id === productId);
-    const requestedTotal = (existing && Number(existing.quantity) || 0) + quantity;
+    const requestedTotal = (existing ? existing.quantity : 0) + quantity;
     if (requestedTotal > stock.stock) {
         alert(`Only ${stock.stock} ${stock.stock === 1 ? 'unit is' : 'units are'} currently available.`);
         return false;
@@ -1122,13 +1129,7 @@ function canAddStockAwareCartItem(productId, quantity) {
 function addToCart(productId, name, price, quantity = 1, opts = {}) {
     if (!canAddStockAwareCartItem(productId, quantity)) return false;
 
-    let cart = [];
-    try {
-        cart = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
-    } catch (e) {
-        cart = [];
-    }
-
+    const cart = readSafeCart();
     const existing = cart.find(item => item.id === productId);
     if (existing) {
         existing.quantity += quantity;
@@ -1317,10 +1318,10 @@ function getRedirectParam() {
 // Appends the current page's redirect param (if any) onto a target URL,
 // preserving whatever query string that URL already has.
 function withRedirectParam(url) {
-    const raw = new URLSearchParams(window.location.search).get('redirect');
-    if (!raw) return url;
+    const redirect = getRedirectParam();
+    if (!redirect) return url;
     const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}redirect=${raw}`;
+    return `${url}${separator}redirect=${encodeURIComponent(redirect)}`;
 }
 
 // Wires every link marked data-preserve-redirect so it carries the

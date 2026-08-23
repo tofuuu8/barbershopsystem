@@ -57,6 +57,7 @@ interface CheckoutItemRequest {
 
 interface CreatePaymentRequestBody {
     items: CheckoutItemRequest[];
+    customer_name?: string;
     fulfillment_type: 'pickup' | 'delivery';
     area?: string;
     address?: string;
@@ -113,8 +114,17 @@ Deno.serve(async (req) => {
     if (!Array.isArray(body.items) || !body.items.length) {
         return jsonResponse({ error: 'Your cart is empty.' }, 400);
     }
+    if (body.fulfillment_type !== 'pickup' && body.fulfillment_type !== 'delivery') {
+        return jsonResponse({ error: 'Please choose pickup or delivery.' }, 400);
+    }
+    if (!body.customer_name?.trim() || body.customer_name.trim().length < 2) {
+        return jsonResponse({ error: 'Please provide your full name.' }, 400);
+    }
     if (body.fulfillment_type === 'delivery' && (!body.area || !body.address?.trim())) {
         return jsonResponse({ error: 'Please provide a delivery area and address.' }, 400);
+    }
+    if (body.contact_preference !== 'phone' && body.contact_preference !== 'email') {
+        return jsonResponse({ error: 'Please choose a valid contact preference.' }, 400);
     }
     if (body.contact_preference === 'phone' && !body.contact_phone?.trim()) {
         return jsonResponse({ error: 'Please provide a phone number.' }, 400);
@@ -126,7 +136,17 @@ Deno.serve(async (req) => {
     // boundary (we've already confirmed the caller's identity above).
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    const productIds = body.items.map((i) => i.product_id);
+    const requestedById = new Map<string, number>();
+    for (const requested of body.items) {
+        const productId = String(requested?.product_id ?? '').trim();
+        const quantity = requested?.quantity;
+        if (!productId || typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity <= 0) {
+            return jsonResponse({ error: 'Invalid quantity in your cart.' }, 400);
+        }
+        requestedById.set(productId, (requestedById.get(productId) ?? 0) + quantity);
+    }
+
+    const productIds = [...requestedById.keys()];
     const { data: products, error: productsError } = await admin
         .from('products')
         .select('id, name, price, stock_quantity, is_active')
@@ -140,21 +160,20 @@ Deno.serve(async (req) => {
     const productsById = new Map((products ?? []).map((p) => [p.id, p]));
     const lineItems: { product_id: string; name: string; unit_price: number; quantity: number; line_total: number }[] = [];
 
-    for (const requested of body.items) {
-        const product = productsById.get(requested.product_id);
-        const quantity = Number(requested.quantity);
+    for (const [productId, quantity] of requestedById) {
+        const product = productsById.get(productId);
 
         if (!product || !product.is_active) {
             return jsonResponse({ error: `A product in your cart is no longer available.` }, 409);
         }
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-            return jsonResponse({ error: 'Invalid quantity in your cart.' }, 400);
-        }
-        if (quantity > product.stock_quantity) {
+        if (!Number.isInteger(product.stock_quantity) || product.stock_quantity <= 0 || quantity > product.stock_quantity) {
             return jsonResponse({ error: `Only ${product.stock_quantity} of ${product.name} left.` }, 409);
         }
 
         const unitPrice = Number(product.price);
+        if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+            return jsonResponse({ error: `A product in your cart has an invalid price.` }, 500);
+        }
         lineItems.push({
             product_id: product.id,
             name: product.name,
@@ -183,7 +202,9 @@ Deno.serve(async (req) => {
         .from('orders')
         .insert({
             user_id: user.id,
+            customer_name: body.customer_name.trim(),
             fulfillment_type: body.fulfillment_type,
+            area: body.fulfillment_type === 'delivery' ? body.area?.toLowerCase().trim() : null,
             address: body.fulfillment_type === 'delivery' ? body.address?.trim() : null,
             subtotal,
             total_price: totalPrice,

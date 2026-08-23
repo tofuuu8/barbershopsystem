@@ -185,7 +185,12 @@ function showBanner(errorId, successId, message, isError) {
     if (isError) {
         if (successEl) successEl.hidden = true;
         if (errorEl) {
-            errorEl.innerHTML = `<i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>${message}</span>`;
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-circle-exclamation';
+            icon.setAttribute('aria-hidden', 'true');
+            const text = document.createElement('span');
+            text.textContent = String(message || 'Something went wrong. Please try again.');
+            errorEl.replaceChildren(icon, text);
             errorEl.hidden = false;
         }
     } else {

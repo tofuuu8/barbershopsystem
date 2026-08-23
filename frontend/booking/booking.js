@@ -699,7 +699,13 @@ function setText(id, text) {
 function showBookingError(message) {
     const el = document.getElementById('bookingError');
     if (!el) return;
-    el.innerHTML = `<i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>${message}</span>`;
+
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-circle-exclamation';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = String(message || 'Something went wrong. Please try again.');
+    el.replaceChildren(icon, text);
     el.hidden = false;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -924,7 +930,8 @@ function formatTimeLabel(timeStr) {
 }
 
 function statusBadgeClass(status) {
-    return `booking-history-status booking-history-status--${status}`;
+    const safeStatus = ['pending', 'confirmed', 'completed', 'cancelled'].includes(status) ? status : 'unknown';
+    return `booking-history-status booking-history-status--${safeStatus}`;
 }
 
 async function loadUpcomingBookings() {
@@ -967,25 +974,36 @@ async function loadUpcomingBookings() {
 
     if (empty) empty.hidden = true;
 
-    list.innerHTML = data.map(b => `
-        <div class="booking-history-item" data-id="${b.id}">
-            <div class="booking-history-main">
-                <h3>${b.service_name}</h3>
-                <p class="booking-history-meta">
-                    ${formatDateLabel(b.booking_date)} at ${formatTimeLabel(b.booking_time)}
-                    &middot; ${b.location_type === 'home' ? 'Home Service' : 'In-Studio'}
-                    &middot; ${b.barber_name || 'Random'}
-                    ${b.contact_phone ? `&middot; ${b.contact_phone}` : ''}
-                </p>
+    list.innerHTML = data.map(b => {
+        const id = escapeHtml(String(b.id || ''));
+        const serviceName = escapeHtml(String(b.service_name || 'Appointment'));
+        const barberName = escapeHtml(String(b.barber_name || 'Random'));
+        const phone = b.contact_phone ? `&middot; ${escapeHtml(String(b.contact_phone))}` : '';
+        const status = String(b.status || 'unknown');
+        const statusLabel = escapeHtml(status);
+        const location = b.location_type === 'home' ? 'Home Service' : 'In-Studio';
+        const cancelButton = status === 'pending' || status === 'confirmed'
+            ? `<button type="button" class="booking-history-cancel" data-id="${id}">Cancel</button>`
+            : '';
+
+        return `
+            <div class="booking-history-item" data-id="${id}">
+                <div class="booking-history-main">
+                    <h3>${serviceName}</h3>
+                    <p class="booking-history-meta">
+                        ${formatDateLabel(b.booking_date)} at ${formatTimeLabel(b.booking_time)}
+                        &middot; ${location}
+                        &middot; ${barberName}
+                        ${phone}
+                    </p>
+                </div>
+                <div class="booking-history-aside">
+                    <span class="${statusBadgeClass(status)}">${statusLabel}</span>
+                    ${cancelButton}
+                </div>
             </div>
-            <div class="booking-history-aside">
-                <span class="${statusBadgeClass(b.status)}">${b.status}</span>
-                ${b.status === 'pending' || b.status === 'confirmed'
-                    ? `<button type="button" class="booking-history-cancel" data-id="${b.id}">Cancel</button>`
-                    : ''}
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     list.querySelectorAll('.booking-history-cancel').forEach(btn => {
         btn.addEventListener('click', function () { cancelBooking(this.dataset.id); });

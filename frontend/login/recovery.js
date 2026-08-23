@@ -33,7 +33,13 @@ function initRecoverySubtitle() {
 function showRecoveryError(message) {
     const el = document.getElementById('recoveryError');
     if (!el) return;
-    el.innerHTML = `<i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>${message}</span>`;
+
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-circle-exclamation';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = String(message || 'Something went wrong. Please try again.');
+    el.replaceChildren(icon, text);
     el.hidden = false;
 }
 

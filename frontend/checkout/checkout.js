@@ -315,15 +315,16 @@ function renderSummaryItems() {
     const cart = getCart();
     wrap.innerHTML = cart.map(function (item) {
         const image = (typeof cartProductImages !== 'undefined' && cartProductImages[item.id]) || '';
+        const safeName = escapeHtml(item.name);
         const lineTotal = item.price * item.quantity;
         return `
             <div class="checkout-summary-item">
                 <div class="checkout-summary-item-image">
-                    <img src="${image}" alt="" loading="lazy"
+                    <img src="${image}" alt="${safeName}" loading="lazy"
                          onerror="this.src='https://placehold.co/88x88/232323/666?text=Item'" />
                 </div>
                 <div class="checkout-summary-item-info">
-                    <h4>${item.name}</h4>
+                    <h4>${safeName}</h4>
                     <span>${formatPHP(item.price)} &times; ${item.quantity}</span>
                 </div>
                 <span class="checkout-summary-item-total">${formatPHP(lineTotal)}</span>
@@ -375,14 +376,27 @@ async function checkCartAvailability(cart) {
         return { ok: false, message: 'We could not verify product availability. Please refresh and try again.' };
     }
 
-    const productIds = [...new Set(cart.map(item => String(item.id || '')))].filter(Boolean);
+    // Local storage is only a shopping-list cache. Aggregate duplicate IDs and
+    // reject malformed quantities before reading the authoritative catalog.
+    const requestedById = new Map();
+    for (const item of cart) {
+        const productId = String(item && item.id || '').trim();
+        const rawQuantity = item && item.quantity;
+        const quantity = rawQuantity;
+        if (!productId || typeof rawQuantity !== 'number' || !Number.isInteger(quantity) || quantity <= 0) {
+            return { ok: false, message: 'Your cart contains an invalid quantity. Please return to the Products page.' };
+        }
+        requestedById.set(productId, (requestedById.get(productId) || 0) + quantity);
+    }
+
+    const productIds = [...requestedById.keys()];
     if (!productIds.length) {
         return { ok: false, message: 'Your cart contains an invalid product. Please return to the Products page.' };
     }
 
     const { data, error } = await supabaseClient
         .from('products')
-        .select('id, stock_quantity, is_active')
+        .select('id, name, price, stock_quantity, is_active')
         .in('id', productIds);
 
     if (error) {
@@ -391,20 +405,29 @@ async function checkCartAvailability(cart) {
     }
 
     const productsById = new Map((data || []).map(product => [String(product.id), product]));
-    for (const item of cart) {
-        const product = productsById.get(String(item.id));
-        const quantity = Number(item.quantity);
+    const verifiedItems = [];
+    for (const [productId, quantity] of requestedById) {
+        const product = productsById.get(productId);
         const stock = Number(product && product.stock_quantity);
+        const price = Number(product && product.price);
+        const name = String(product && product.name || 'This product');
 
-        if (!product || product.is_active === false || !Number.isFinite(stock) || stock <= 0) {
-            return { ok: false, message: `${item.name || 'One product'} is currently out of stock.` };
+        if (!product || product.is_active === false || !Number.isInteger(stock) || stock <= 0) {
+            return { ok: false, message: `${name} is currently out of stock.` };
         }
-        if (!Number.isInteger(quantity) || quantity <= 0 || quantity > stock) {
-            return { ok: false, message: `Only ${Math.floor(stock)} ${Math.floor(stock) === 1 ? 'unit is' : 'units are'} available for ${item.name || 'this product'}.` };
+        if (!Number.isFinite(price) || price < 0) {
+            return { ok: false, message: `${name} has an invalid price. Please contact the shop.` };
         }
+        if (quantity > stock) {
+            return { ok: false, message: `Only ${stock} ${stock === 1 ? 'unit is' : 'units are'} available for ${name}.` };
+        }
+
+        // These values are deliberately taken from Supabase, not localStorage,
+        // so cash checkout cannot be completed with a forged price or name.
+        verifiedItems.push({ id: productId, name, price, quantity });
     }
 
-    return { ok: true };
+    return { ok: true, items: verifiedItems };
 }
 
 function isSelectionComplete(sel) {
@@ -444,7 +467,13 @@ function setText(id, text) {
 function showCheckoutError(message) {
     const el = document.getElementById('checkoutError');
     if (!el) return;
-    el.innerHTML = `<i class="fas fa-circle-exclamation" aria-hidden="true"></i><span>${message}</span>`;
+
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-circle-exclamation';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = String(message || 'Something went wrong. Please try again.');
+    el.replaceChildren(icon, text);
     el.hidden = false;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -475,6 +504,7 @@ function initCheckoutForm() {
             showCheckoutError(availability.message);
             return;
         }
+        const verifiedCart = availability.items;
 
         if (!sel.name || sel.name.length < MIN_NAME_LENGTH) {
             showCheckoutError('Please enter your full name.');
@@ -507,13 +537,13 @@ function initCheckoutForm() {
         if (spinner) spinner.hidden = false;
 
         if (sel.paymentMethod === 'online') {
-            await submitOnlinePayment(sel, cart, confirmBtn, btnText, spinner);
+            await submitOnlinePayment(sel, verifiedCart, confirmBtn, btnText, spinner);
             return;
         }
 
-        const subtotal = cartSubtotal();
+                const subtotal = verifiedCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const deliveryFee = currentDeliveryFee();
-        const total = currentTotal();
+        const total = subtotal + deliveryFee;
 
         const { data: order, error: orderError } = await supabaseClient
             .from('orders')
@@ -547,7 +577,7 @@ function initCheckoutForm() {
             return;
         }
 
-        const itemRows = cart.map(function (item) {
+        const itemRows = verifiedCart.map(function (item) {
             return {
                 order_id: order.id,
                 product_id: item.id,
@@ -600,6 +630,7 @@ async function submitOnlinePayment(sel, cart, confirmBtn, btnText, spinner) {
             items: cart.map(function (item) {
                 return { product_id: item.id, quantity: item.quantity };
             }),
+            customer_name: sel.name,
             fulfillment_type: currentFulfillment,
             area: currentFulfillment === 'delivery' ? sel.area : undefined,
             address: currentFulfillment === 'delivery' ? sel.address : undefined,

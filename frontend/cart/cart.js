@@ -8,33 +8,53 @@
 // real thumbnail instead of a bare placeholder. Anything not listed here
 // (or any path that 404s) falls back to a placeholder automatically.
 const cartProductImages = {
-    'wax-fox-matte': 'images/products/matte-wax.jpg',
-    'wax-atlas-natural': 'images/products/natural-wax.jpg',
-    'wax-premium': 'images/products/premium-wax.jpg',
-    'spray-fox-matte': 'images/products/matte-spray.jpg',
-    'spray-atlas-volume': 'images/products/volume-spray.jpg',
-    'spray-premium-hold': 'images/products/premium-hold-spray.jpg',
+    'wax-fox-matte': '../images/products/matte-wax.jpg',
+    'wax-atlas-natural': '../images/products/natural-wax.jpg',
+    'wax-premium': '../images/products/premium-wax.jpg',
+    'spray-fox-matte': '../images/products/matte-spray.jpg',
+    'spray-atlas-volume': '../images/products/volume-spray.jpg',
+    'spray-premium-hold': '../images/products/premium-hold-spray.jpg',
     // Homepage teaser grid uses separate ids for the same products
-    'latest-matte-wax': 'images/products/matte-wax.jpg',
-    'latest-natural-wax': 'images/products/natural-wax.jpg',
-    'latest-matte-spray': 'images/products/matte-spray.jpg'
+    'latest-matte-wax': '../images/products/matte-wax.jpg',
+    'latest-natural-wax': '../images/products/natural-wax.jpg',
+    'latest-matte-spray': '../images/products/matte-spray.jpg'
 };
+
+function normalizeCart(items) {
+    if (!Array.isArray(items)) return [];
+
+    const byId = new Map();
+    items.forEach(function (item) {
+        const id = String(item && item.id || '').trim();
+        const name = String(item && item.name || '').trim();
+        const price = Number(item && item.price);
+        const quantity = item && item.quantity;
+        if (!id || !name || !Number.isFinite(price) || price < 0 || typeof quantity !== 'number'
+            || !Number.isInteger(quantity) || quantity <= 0) return;
+
+        const existing = byId.get(id);
+        if (existing) existing.quantity += quantity;
+        else byId.set(id, { id, name, price, quantity });
+    });
+    return [...byId.values()];
+}
 
 function getCart() {
     try {
-        return JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
+        return normalizeCart(JSON.parse(localStorage.getItem('toughcuts_cart') || '[]'));
     } catch (e) {
         return [];
     }
 }
 
 function saveCart(cart) {
-    localStorage.setItem('toughcuts_cart', JSON.stringify(cart));
+    localStorage.setItem('toughcuts_cart', JSON.stringify(normalizeCart(cart)));
     if (typeof initCartCounter === 'function') initCartCounter();
 }
 
 function formatPHP(amount) {
-    return 'PHP ' + amount.toLocaleString('en-PH');
+    const value = Number(amount);
+    return 'PHP ' + (Number.isFinite(value) ? value : 0).toLocaleString('en-PH');
 }
 
 function renderCartPage() {
@@ -72,15 +92,17 @@ function renderCartPage() {
         const lineTotal = item.price * item.quantity;
         subtotal += lineTotal;
         const image = cartProductImages[item.id];
+        const safeId = escapeHtml(item.id);
+        const safeName = escapeHtml(item.name);
 
         return `
-            <div class="cart-item" data-id="${item.id}">
+            <div class="cart-item" data-id="${safeId}">
                 <div class="cart-item-image">
-                    <img src="${image || ''}" alt="${item.name}" loading="lazy"
+                    <img src="${image || ''}" alt="${safeName}" loading="lazy"
                          onerror="this.src='https://placehold.co/160x160/232323/666?text=Item'" />
                 </div>
                 <div class="cart-item-info">
-                    <h3>${item.name}</h3>
+                    <h3>${safeName}</h3>
                     <p class="cart-item-price">${formatPHP(item.price)} each</p>
                     <div class="cart-item-qty">
                         <button type="button" class="cart-qty-decrease" aria-label="Decrease quantity">
@@ -94,7 +116,7 @@ function renderCartPage() {
                 </div>
                 <div class="cart-item-aside">
                     <span class="cart-item-total">${formatPHP(lineTotal)}</span>
-                    <button type="button" class="cart-item-remove" aria-label="Remove ${item.name} from cart">
+                    <button type="button" class="cart-item-remove" aria-label="Remove ${safeName} from cart">
                         <i class="fas fa-trash" aria-hidden="true"></i>
                     </button>
                 </div>
