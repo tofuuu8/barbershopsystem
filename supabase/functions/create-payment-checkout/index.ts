@@ -126,8 +126,7 @@ Deno.serve(async (req) => {
     const { data: items, error: itemsError } = await admin
         .from('order_items')
         .select('product_name, unit_price, quantity')
-        .eq('order_id', order.id)
-        .order('created_at', { ascending: true });
+        .eq('order_id', order.id);
 
     if (itemsError || !items?.length) {
         console.error('Could not load transactional order items:', itemsError);

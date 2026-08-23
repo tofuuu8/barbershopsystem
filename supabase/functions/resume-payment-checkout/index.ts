@@ -63,8 +63,7 @@ Deno.serve(async (req) => {
     const { data: items, error: itemsError } = await admin
         .from('order_items')
         .select('product_name, unit_price, quantity')
-        .eq('order_id', order.id)
-        .order('created_at', { ascending: true });
+        .eq('order_id', order.id);
     if (itemsError || !items?.length) return jsonResponse({ error: 'Could not load this order\u2019s items.' }, 500);
 
     const expiresAt = order.expires_at || new Date(Date.now() + 30 * 60 * 1000).toISOString();
