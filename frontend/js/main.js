@@ -1080,8 +1080,54 @@ document.addEventListener('keydown', function (e) {
 // ============================================
 // ADD TO CART
 // ============================================
+// Products page can register this optional getter after the shared script
+// loads. Other pages do not have to load the catalog module, so the guard
+// remains permissive there and the server must still enforce stock at checkout.
+function canAddStockAwareCartItem(productId, quantity) {
+    if (!Number.isFinite(quantity) || quantity <= 0) return false;
+    if (typeof window.getCustomerProductStock !== 'function') return true;
+
+    const stock = window.getCustomerProductStock(productId);
+    if (!stock) return true;
+
+    if (!stock.ready) {
+        alert(stock.error
+            ? 'Stock availability is temporarily unavailable. Please refresh and try again.'
+            : 'Stock availability is still loading. Please try again in a moment.');
+        return false;
+    }
+
+    if (!stock.isActive || stock.stock <= 0) {
+        alert('This product is currently out of stock.');
+        return false;
+    }
+
+    let cart = [];
+    try {
+        cart = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
+    } catch (e) {
+        cart = [];
+    }
+
+    const existing = cart.find(item => item.id === productId);
+    const requestedTotal = (existing && Number(existing.quantity) || 0) + quantity;
+    if (requestedTotal > stock.stock) {
+        alert(`Only ${stock.stock} ${stock.stock === 1 ? 'unit is' : 'units are'} currently available.`);
+        return false;
+    }
+
+    return true;
+}
+
 function addToCart(productId, name, price, quantity = 1, opts = {}) {
-    let cart = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
+    if (!canAddStockAwareCartItem(productId, quantity)) return false;
+
+    let cart = [];
+    try {
+        cart = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
+    } catch (e) {
+        cart = [];
+    }
 
     const existing = cart.find(item => item.id === productId);
     if (existing) {
@@ -1096,6 +1142,7 @@ function addToCart(productId, name, price, quantity = 1, opts = {}) {
     if (!opts.silent) {
         alert(`${name} added to cart!`);
     }
+    return true;
 }
 
 // Wires every .product-btn in the DOM to addToCart() using its data attributes.
@@ -1134,7 +1181,8 @@ function initBuyNow() {
                 return;
             }
 
-            addToCart(id, name, parseFloat(price), 1, { silent: true });
+            const added = addToCart(id, name, parseFloat(price), 1, { silent: true });
+            if (!added) return;
 
             const cartLink = document.getElementById('cartIcon');
             if (cartLink) {

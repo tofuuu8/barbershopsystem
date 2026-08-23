@@ -114,7 +114,7 @@
         <div class="container">
             <span class="section-badge">CHECKOUT</span>
             <h1 class="checkout-title">CONFIRM YOUR <span class="highlight">ORDER</span></h1>
-            <p class="checkout-subtitle">Cash on hand — pay when you pick up or when it arrives at your door.</p>
+            <p class="checkout-subtitle">Pay in cash on pickup/delivery, or online with GCash, Maya, GrabPay, or card.</p>
         </div>
     </section>
 
@@ -147,8 +147,8 @@
             <!-- ============ EMPTY CART STATE ============ -->
             <div class="checkout-empty" id="checkoutEmpty" hidden>
                 <div class="checkout-empty-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></div>
-                <h2 class="checkout-empty-title">Your cart is empty</h2>
-                <p class="checkout-empty-text">There's nothing to check out yet — browse the shop and add something first.</p>
+                <h2 class="checkout-empty-title" id="checkoutEmptyTitle">Your cart is empty</h2>
+                <p class="checkout-empty-text" id="checkoutEmptyText">There's nothing to check out yet — browse the shop and add something first.</p>
                 <a href="../products/products.html" class="btn-primary">Browse Products</a>
             </div>
 
@@ -168,6 +168,19 @@
                     </div>
 
                     <div class="checkout-success-actions">
+                        <a href="../myorders/myorders.html" class="btn-primary">View My Orders</a>
+                        <a href="../products/products.html" class="btn-secondary">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ PAYMENT CONFIRMATION (returning from PayMongo) ============ -->
+            <div class="checkout-success" id="checkoutPaymentPending" hidden>
+                <div class="checkout-success-panel">
+                    <div class="checkout-success-icon"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i></div>
+                    <h2 class="checkout-success-title" id="checkoutPendingTitle">Confirming Your Payment...</h2>
+                    <p class="checkout-success-text" id="checkoutPendingText">This only takes a moment — please don't close this page.</p>
+                    <div class="checkout-success-actions" id="checkoutPendingActions" hidden>
                         <a href="../myorders/myorders.html" class="btn-primary">View My Orders</a>
                         <a href="../products/products.html" class="btn-secondary">Continue Shopping</a>
                     </div>
@@ -207,6 +220,21 @@
 
                                 <div class="checkout-delivery-fields" id="checkoutDeliveryFields" hidden>
                                     <div class="checkout-field">
+                                        <label for="checkoutAreaInput">Delivery Area</label>
+                                        <select id="checkoutAreaInput" class="checkout-input">
+                                            <option value="">Select your area</option>
+                                            <option value="san isidro">San Isidro</option>
+                                            <option value="rodriguez">Rodriguez</option>
+                                            <option value="san mateo">San Mateo</option>
+                                            <option value="marikina">Marikina</option>
+                                            <option value="antipolo">Antipolo</option>
+                                            <option value="cainta">Cainta</option>
+                                            <option value="taytay">Taytay</option>
+                                            <option value="quezon city">Quezon City</option>
+                                        </select>
+                                        <p class="checkout-field-note">Sets the delivery fee for your area.</p>
+                                    </div>
+                                    <div class="checkout-field">
                                         <label for="checkoutAddressInput">Delivery Address</label>
                                         <textarea id="checkoutAddressInput" class="checkout-textarea" placeholder="House/unit no., street, barangay, city" maxlength="200"></textarea>
                                         <p class="checkout-field-note" id="checkoutAddressNote" hidden>We couldn't load a saved address — please enter one.</p>
@@ -229,9 +257,24 @@
                                 </div>
                             </div>
 
-                            <!-- STEP 3 — NOTES -->
+                            <!-- STEP 3 — PAYMENT METHOD -->
                             <div class="checkout-card">
-                                <h2 class="checkout-card-title"><span class="checkout-step-number">3</span> Anything Else? <span class="account-field-optional">(optional)</span></h2>
+                                <h2 class="checkout-card-title"><span class="checkout-step-number">3</span> Payment Method</h2>
+
+                                <div class="checkout-fulfillment-toggle" id="checkoutPaymentToggle" role="tablist">
+                                    <button type="button" class="checkout-fulfillment-btn checkout-payment-btn active" data-payment="cod" role="tab" aria-selected="true">
+                                        <i class="fas fa-money-bill-wave" aria-hidden="true"></i> Cash on Pickup/Delivery
+                                    </button>
+                                    <button type="button" class="checkout-fulfillment-btn checkout-payment-btn" data-payment="online" role="tab" aria-selected="false">
+                                        <i class="fas fa-credit-card" aria-hidden="true"></i> Pay Online
+                                    </button>
+                                </div>
+                                <p class="checkout-field-note" id="checkoutPaymentNote">You'll pay in cash when your order is ready or delivered.</p>
+                            </div>
+
+                            <!-- STEP 4 — NOTES -->
+                            <div class="checkout-card">
+                                <h2 class="checkout-card-title"><span class="checkout-step-number">4</span> Anything Else? <span class="account-field-optional">(optional)</span></h2>
                                 <div class="checkout-field">
                                     <label for="checkoutNotesInput">Notes for this order</label>
                                     <textarea id="checkoutNotesInput" class="checkout-textarea" placeholder="Gate code, preferred pickup time, packaging requests, etc." maxlength="300"></textarea>
@@ -255,7 +298,7 @@
                                 <span>Delivery Fee</span>
                                 <span id="checkoutSummaryDeliveryFee">PHP 0</span>
                             </div>
-                            <p class="checkout-summary-note">Cash on hand at pickup or delivery — no online payment needed.</p>
+                            <p class="checkout-summary-note" id="checkoutSummaryNote">Cash on hand at pickup or delivery — no online payment needed.</p>
                             <div class="checkout-summary-row checkout-summary-row--total">
                                 <span>Total</span>
                                 <span id="checkoutSummaryTotal">PHP 0</span>

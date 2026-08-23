@@ -157,6 +157,145 @@ const productsCatalog = [
     }
 ];
 
+// --------------------------------------------
+// CUSTOMER STOCK AVAILABILITY
+// --------------------------------------------
+// The customer catalog is still defined in products.html/productsCatalog,
+// but stock is read from the authoritative products table. Purchase buttons
+// stay disabled until this request finishes, so a missing table or failed
+// request fails closed instead of allowing a known-unavailable purchase.
+const customerStockState = {
+    ready: false,
+    error: false,
+    byId: new Map()
+};
+
+window.getCustomerProductStock = function (productId) {
+    const record = customerStockState.byId.get(String(productId));
+    return {
+        ready: customerStockState.ready,
+        error: customerStockState.error,
+        isActive: record ? record.isActive : false,
+        stock: record ? record.stock : 0,
+        lowStockThreshold: record ? record.lowStockThreshold : 0
+    };
+};
+
+function stockMessage(record, ready, error) {
+    if (!ready) return error ? 'Availability unavailable' : 'Checking availability…';
+    if (!record || !record.isActive || record.stock <= 0) return 'Out of stock';
+    if (record.stock <= record.lowStockThreshold) {
+        return `Only ${record.stock} left`;
+    }
+    return `${record.stock} available`;
+}
+
+function applyStockState(element, productId, record) {
+    if (!element) return;
+
+    const message = stockMessage(record, customerStockState.ready, customerStockState.error);
+    const available = customerStockState.ready && record && record.isActive && record.stock > 0;
+    const statusClass = !customerStockState.ready
+        ? 'is-checking'
+        : available
+            ? (record.stock <= record.lowStockThreshold ? 'is-low' : 'is-available')
+            : 'is-out';
+
+    if (element.matches('button')) {
+        // Keep the purchase label and existing button classes intact.
+        element.disabled = !available;
+        element.setAttribute('aria-disabled', String(!available));
+        element.title = available ? '' : message;
+        return;
+    }
+
+    element.textContent = message;
+    element.className = `product-stock ${statusClass}`;
+    element.setAttribute('aria-label', `${element.dataset.productName || 'Product'}: ${message}`);
+}
+
+function renderCustomerStockStates() {
+    document.querySelectorAll('.product-card--shop').forEach(card => {
+        const actionButton = card.querySelector('.product-btn[data-id]');
+        if (!actionButton) return;
+
+        const productId = actionButton.dataset.id;
+        let status = card.querySelector('.product-stock');
+        if (!status) {
+            status = document.createElement('p');
+            status.className = 'product-stock';
+            status.dataset.productName = actionButton.dataset.name || 'Product';
+            const price = card.querySelector('.product-price');
+            if (price) price.insertAdjacentElement('afterend', status);
+        }
+
+        const record = customerStockState.byId.get(productId);
+        applyStockState(status, productId, record);
+        card.classList.toggle('is-out-of-stock', customerStockState.ready && (!record || !record.isActive || record.stock <= 0));
+
+        card.querySelectorAll('.product-btn, .product-buy-btn').forEach(button => {
+            applyStockState(button, productId, record);
+        });
+    });
+}
+
+async function loadCustomerStock() {
+    renderCustomerStockStates();
+
+    if (typeof supabaseClient === 'undefined') {
+        customerStockState.error = true;
+        renderCustomerStockStates();
+        return;
+    }
+
+    const productIds = productsCatalog.map(product => product.id);
+    const { data, error } = await supabaseClient
+        .from('products')
+        .select('id, stock_quantity, low_stock_threshold, is_active')
+        .in('id', productIds);
+
+    if (error) {
+        console.error('Could not load product availability:', error);
+        customerStockState.error = true;
+        renderCustomerStockStates();
+        updateProductModalStock();
+        return;
+    }
+
+    customerStockState.byId.clear();
+    (data || []).forEach(product => {
+        const stock = Number(product.stock_quantity);
+        const threshold = Number(product.low_stock_threshold);
+        customerStockState.byId.set(String(product.id), {
+            isActive: product.is_active !== false,
+            stock: Number.isFinite(stock) ? Math.max(0, Math.floor(stock)) : 0,
+            lowStockThreshold: Number.isFinite(threshold) ? Math.max(0, Math.floor(threshold)) : 5
+        });
+    });
+    customerStockState.ready = true;
+    renderCustomerStockStates();
+    updateProductModalStock();
+}
+
+function updateProductModalStock() {
+    const status = document.getElementById('productModalStock');
+    const addButton = document.getElementById('productModalAddToCart');
+    const buyButton = document.getElementById('productModalBuyNow');
+    const productId = addButton && addButton.dataset.id;
+    if (!status || !productId) return;
+
+    const record = customerStockState.byId.get(productId);
+    status.dataset.productName = document.getElementById('productModalName')?.textContent || 'Product';
+    applyStockState(status, productId, record);
+
+    [addButton, buyButton].forEach(button => {
+        if (!button) return;
+        const available = customerStockState.ready && record && record.isActive && record.stock > 0;
+        button.disabled = !available;
+        button.setAttribute('aria-disabled', String(!available));
+    });
+}
+
 function findProduct(id) {
     return productsCatalog.find(p => p.id === id);
 }
@@ -244,6 +383,7 @@ function initProductModal() {
             buyNowBtn.dataset.name = product.name;
             buyNowBtn.dataset.price = product.price;
         }
+        updateProductModalStock();
 
         lastFocused = document.activeElement;
         modal.hidden = false;
@@ -288,7 +428,8 @@ function initProductModal() {
                 openAuthGate({ id: activeProduct.id, name: activeProduct.name, price: activeProduct.price });
                 return;
             }
-            addToCart(activeProduct.id, activeProduct.name, activeProduct.price, 1, { silent: true });
+            const added = addToCart(activeProduct.id, activeProduct.name, activeProduct.price, 1, { silent: true });
+            if (!added) return;
             const cartLink = document.getElementById('cartIcon');
             if (cartLink) window.location.href = cartLink.getAttribute('href');
         });
@@ -303,4 +444,7 @@ function initProductModal() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initProductModal);
+document.addEventListener('DOMContentLoaded', function () {
+    initProductModal();
+    loadCustomerStock();
+});
