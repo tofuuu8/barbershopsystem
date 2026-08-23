@@ -111,10 +111,15 @@ Deno.serve(async (req) => {
 
     if (orderError || !order?.id) {
         console.error('create_order_atomic failed:', orderError);
-        const message = /out of stock|unavailable/i.test(orderError?.message ?? '')
-            ? 'One or more products are no longer available.'
-            : orderError?.message || 'Could not start your order. Please try again.';
-        return jsonResponse({ error: message }, /out of stock|unavailable/i.test(message) ? 409 : 500);
+        const rawMessage = orderError?.message ?? '';
+        const schemaUnavailable = /create_order_atomic|PGRST202|does not exist|could not find the function/i.test(rawMessage);
+        const outOfStock = /out of stock|unavailable/i.test(rawMessage);
+        const message = schemaUnavailable
+            ? 'The payment database upgrade is not installed yet. Apply the latest Supabase migrations, then retry.'
+            : outOfStock
+                ? 'One or more products are no longer available.'
+                : rawMessage || 'Could not start your order. Please try again.';
+        return jsonResponse({ error: message }, schemaUnavailable ? 503 : (outOfStock ? 409 : 500));
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
