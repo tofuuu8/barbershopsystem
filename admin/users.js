@@ -7,8 +7,19 @@
 //
 // Table columns: Full Name, Email, Phone, Address, Date Registered,
 // Status (Online / Offline / Blocked), Actions (Edit / Block-Unblock /
-// Delete). Edit only ever touches full_name + email, per spec —
-// phone/address aren't user-editable from here.
+// Delete).
+//
+// EMAIL IS READ-ONLY IN THIS MODAL — a `lock_profile_email` trigger on
+// `profiles` (BEFORE UPDATE) forces new.email = old.email on every
+// update, no matter what's sent. That's intentional at the database
+// level (profiles.email should mirror the real auth.users login
+// email, not drift independently — editing it here would never touch
+// the actual login credential anyway). Previously this field was
+// editable and the update() call silently succeeded without changing
+// anything, so admins saw "User updated successfully!" while the
+// email quietly stayed the same. The field is now disabled with an
+// explanatory note, and email is left out of the update() payload
+// entirely so there's no round-trip pretending to change it.
 
 let allUsers = [];
 let currentAdmin = null;
@@ -168,7 +179,8 @@ function handleActionClick(e) {
 }
 
 // --------------------------------------------
-// Edit modal (name / email only)
+// Edit modal (name / phone / address — email is read-only, see file
+// header note on lock_profile_email)
 // --------------------------------------------
 function initEditModal() {
     const backdrop = document.getElementById('editModalBackdrop');
@@ -181,6 +193,17 @@ function initEditModal() {
         if (e.key === 'Escape') closeEditModal();
     });
     if (saveBtn) saveBtn.addEventListener('click', saveEditedUser);
+
+    // Email can't actually be changed from here — the profiles table
+    // has a trigger that reverts it on every update, since it's meant
+    // to mirror the real auth.users login email rather than drift
+    // independently. Lock the field down in the UI to match reality
+    // instead of silently no-op'ing on save.
+    const emailInput = document.getElementById('editEmail');
+    if (emailInput) {
+        emailInput.readOnly = true;
+        emailInput.title = 'Email can\u2019t be changed here \u2014 it\u2019s tied to the account\u2019s login credentials.';
+    }
 }
 
 function openEditModal(userId) {
@@ -211,7 +234,6 @@ async function saveEditedUser() {
     const btn = document.getElementById('editSaveBtn');
     const status = document.getElementById('editSaveStatus');
     const fullName = document.getElementById('editFullName').value.trim();
-    const email = document.getElementById('editEmail').value.trim();
     const phone = document.getElementById('editPhone').value.trim();
     const address = document.getElementById('editAddress').value.trim();
 
@@ -220,20 +242,19 @@ async function saveEditedUser() {
         status.textContent = 'Please enter a name.';
         return;
     }
-    if (!email) {
-        status.style.color = 'var(--bad)';
-        status.textContent = 'Please enter an email.';
-        return;
-    }
 
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
+    // Email intentionally left out of this payload — see
+    // initEditModal()'s comment above. Sending it would either be
+    // silently reverted by lock_profile_email or, if that trigger is
+    // ever removed, would incorrectly desync profiles.email from the
+    // real auth.users login email.
     const { error } = await supabaseClient
         .from('profiles')
         .update({
             full_name: fullName,
-            email: email,
             phone: phone || null,
             address: address || null
         })
@@ -252,7 +273,6 @@ async function saveEditedUser() {
     const user = allUsers.find(u => u.id === activeActionUserId);
     if (user) {
         user.full_name = fullName;
-        user.email = email;
         user.phone = phone || null;
         user.address = address || null;
     }
