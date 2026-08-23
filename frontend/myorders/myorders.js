@@ -33,6 +33,7 @@ const ORDER_STATUS_LABELS = {
     pending: 'Pending',
     preparing: 'Preparing',
     ready: 'Ready',
+    out_for_delivery: 'Out for Delivery',
     completed: 'Completed',
     cancelled: 'Cancelled'
 };
@@ -67,6 +68,12 @@ function isOrderCancellable(order) {
     if (!CANCELLABLE_STATUSES.includes(order.status)) return false;
     if (order.payment_provider && order.payment_status === 'paid') return false;
     return true;
+}
+
+function isPaymentWindowOpen(order) {
+    return order.status === 'awaiting_payment'
+        && !!order.payment_provider
+        && (!order.expires_at || new Date(order.expires_at).getTime() > Date.now());
 }
 
 // Kept in module scope so the detail modal (opened from a card click)
@@ -218,7 +225,7 @@ async function handleResumePayment(orderId, btn) {
         body: { orderId: orderId }
     });
 
-    if (error || (data && data.error)) {
+    if (error || !data || data.error || !data.checkoutUrl) {
         alert((data && data.error) || 'Could not resume payment. Please try again.');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment';
@@ -333,7 +340,9 @@ function openOrderDetailModal(order, items) {
             paymentEl.hidden = false;
             paymentEl.textContent = order.payment_status === 'paid'
                 ? `Paid online via ${order.payment_provider}${order.paid_at ? ' on ' + formatDateMyOrders(order.paid_at) : ''}`
-                : `Awaiting online payment via ${order.payment_provider}`;
+                : isPaymentWindowOpen(order)
+                    ? `Awaiting online payment via ${order.payment_provider}`
+                    : 'Payment window expired';
         } else {
             paymentEl.hidden = true;
         }
@@ -368,7 +377,7 @@ function openOrderDetailModal(order, items) {
     const modalPayWrap = document.getElementById('orderModalPayWrap');
     const modalPayBtn = document.getElementById('orderModalPayBtn');
     if (modalPayWrap && modalPayBtn) {
-        if (order.status === 'awaiting_payment' && order.payment_provider) {
+        if (isPaymentWindowOpen(order)) {
             modalPayWrap.hidden = false;
             modalPayBtn.dataset.orderId = order.id;
             modalPayBtn.disabled = false;
@@ -444,8 +453,11 @@ function renderMyOrderCard(order, items) {
     // waiting on an online payment that was actually started
     // (payment_provider set) — never for Cash on Pickup/Delivery
     // orders, which don't have a payment_provider at all.
-    const showPayBtn = order.status === 'awaiting_payment' && order.payment_provider;
+    const showPayBtn = isPaymentWindowOpen(order);
     const showCancelBtn = isOrderCancellable(order);
+    const paymentExpiryBlock = order.status === 'awaiting_payment' && order.payment_provider && !isPaymentWindowOpen(order)
+        ? '<div class="myorder-card-notes"><i class="fas fa-clock" aria-hidden="true"></i> Payment window expired — place the order again.</div>'
+        : '';
 
     const footerButtons = [
         showCancelBtn
@@ -493,6 +505,7 @@ function renderMyOrderCard(order, items) {
             </div>
 
             ${notesBlock}
+            ${paymentExpiryBlock}
             ${resumePaymentBlock}
         </div>
     `;

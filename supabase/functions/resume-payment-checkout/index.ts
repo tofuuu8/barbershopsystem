@@ -1,20 +1,3 @@
-// ============================================================
-// supabase/functions/resume-payment-checkout/index.ts
-// ============================================================
-// Called when a customer wants to pay for an order they already
-// created but abandoned (status: 'awaiting_payment'). Unlike
-// create-payment-checkout, this does NOT insert a new order or
-// order_items — those already exist and already reserved stock.
-// It only re-reads the existing order, builds a fresh PayMongo
-// Checkout Session for the same amount, and updates payment_reference.
-//
-// Deploy:
-//   supabase functions deploy resume-payment-checkout
-//
-// Reuses the same secrets as create-payment-checkout:
-//   PAYMONGO_SECRET_KEY, SITE_URL
-// ============================================================
-
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const CORS_HEADERS = {
@@ -34,22 +17,20 @@ Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
     if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const paymongoSecretKey = Deno.env.get('PAYMONGO_SECRET_KEY');
-    const siteUrl = Deno.env.get('SITE_URL');
-
-    if (!paymongoSecretKey || !siteUrl) {
+    const siteUrl = Deno.env.get('SITE_URL')?.replace(/\/$/, '');
+    if (!supabaseUrl || !anonKey || !serviceRoleKey || !paymongoSecretKey || !siteUrl) {
         return jsonResponse({ error: 'Online payment isn\u2019t configured on the server yet.' }, 500);
     }
 
-    const authClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const userClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } }
     });
-    const { data: userData, error: userError } = await authClient.auth.getUser();
-    if (userError || !userData?.user) {
-        return jsonResponse({ error: 'Please log in to continue.' }, 401);
-    }
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData?.user) return jsonResponse({ error: 'Please log in to continue.' }, 401);
     const user = userData.user;
 
     let body: { orderId?: string };
@@ -58,39 +39,36 @@ Deno.serve(async (req) => {
     } catch {
         return jsonResponse({ error: 'Invalid request body.' }, 400);
     }
-    if (!body.orderId) {
-        return jsonResponse({ error: 'Missing order ID.' }, 400);
+    if (!body.orderId || !/^[0-9a-f-]{20,}$/i.test(body.orderId)) {
+        return jsonResponse({ error: 'Missing or invalid order ID.' }, 400);
     }
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
-
-    // Only ever resume the caller's OWN order, and only if it's still
-    // actually awaiting payment — never let this be used to re-trigger
-    // payment on someone else's order or one that's already paid/cancelled.
     const { data: order, error: orderError } = await admin
         .from('orders')
-        .select('id, user_id, status, payment_status, total_price, contact_phone')
+        .select('id, user_id, status, payment_status, total_price, customer_name, contact_phone, expires_at')
         .eq('id', body.orderId)
         .eq('user_id', user.id)
         .single();
 
-    if (orderError || !order) {
-        return jsonResponse({ error: 'Order not found.' }, 404);
-    }
+    if (orderError || !order) return jsonResponse({ error: 'Order not found.' }, 404);
     if (order.status !== 'awaiting_payment' || order.payment_status === 'paid') {
         return jsonResponse({ error: 'This order isn\u2019t waiting on payment anymore.' }, 409);
+    }
+    if (order.expires_at && new Date(order.expires_at).getTime() <= Date.now()) {
+        await admin.from('orders').update({ status: 'cancelled', payment_status: 'failed', cancel_reason: 'Payment window expired', cancelled_at: new Date().toISOString() }).eq('id', order.id);
+        return jsonResponse({ error: 'This payment window expired. Please place the order again.' }, 409);
     }
 
     const { data: items, error: itemsError } = await admin
         .from('order_items')
         .select('product_name, unit_price, quantity')
-        .eq('order_id', order.id);
+        .eq('order_id', order.id)
+        .order('created_at', { ascending: true });
+    if (itemsError || !items?.length) return jsonResponse({ error: 'Could not load this order\u2019s items.' }, 500);
 
-    if (itemsError || !items?.length) {
-        return jsonResponse({ error: 'Could not load this order\u2019s items.' }, 500);
-    }
-
-    const paymongoRes = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
+    const expiresAt = order.expires_at || new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const paymongoRes = await fetch('https://api.paymongo.com/v2/checkout_sessions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -99,12 +77,12 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
             data: {
                 attributes: {
-                    billing: { email: user.email, phone: order.contact_phone ?? undefined },
-                    line_items: items.map((i) => ({
-                        name: i.product_name,
-                        amount: Math.round(Number(i.unit_price) * 100),
+                    billing: { name: order.customer_name || undefined, email: user.email, phone: order.contact_phone || undefined },
+                    line_items: items.map((item) => ({
+                        name: item.product_name,
+                        amount: Math.round(Number(item.unit_price) * 100),
                         currency: 'PHP',
-                        quantity: i.quantity
+                        quantity: item.quantity
                     })),
                     payment_method_types: ['gcash', 'paymaya', 'grab_pay', 'card'],
                     description: `Toughcuts order ${order.id}`,
@@ -117,14 +95,32 @@ Deno.serve(async (req) => {
         })
     });
 
-    const paymongoData = await paymongoRes.json();
-    if (!paymongoRes.ok) {
-        console.error('PayMongo error:', paymongoData);
+    const paymongoData = await paymongoRes.json().catch(() => null);
+    if (!paymongoRes.ok || !paymongoData?.data?.id || !paymongoData.data.attributes?.checkout_url) {
+        console.error('PayMongo recovery error:', paymongoData);
         return jsonResponse({ error: 'Could not start payment. Please try again.' }, 502);
     }
 
     const session = paymongoData.data;
-    await admin.from('orders').update({ payment_reference: session.id }).eq('id', order.id);
+    const { error: updateError } = await admin.from('orders').update({
+        payment_reference: session.id,
+        payment_status: 'pending',
+        last_payment_attempt_at: new Date().toISOString(),
+        expires_at: expiresAt
+    }).eq('id', order.id).eq('status', 'awaiting_payment');
+    const { error: attemptError } = await admin.from('payment_attempts').insert({
+        order_id: order.id,
+        provider: 'paymongo',
+        checkout_session_id: session.id,
+        status: 'created',
+        amount: order.total_price,
+        expires_at: expiresAt
+    });
 
-    return jsonResponse({ checkoutUrl: session.attributes.checkout_url });
+    if (updateError || attemptError) {
+        console.error('Could not record payment recovery attempt:', updateError || attemptError);
+        return jsonResponse({ error: 'Payment started, but we could not record the attempt. Please contact the studio if needed.' }, 500);
+    }
+
+    return jsonResponse({ orderId: order.id, checkoutUrl: session.attributes.checkout_url, expiresAt });
 });

@@ -55,6 +55,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     showAccountPage();
     setAccountLoading(true);
     await loadProfile();
+    await loadBarberOptions();
+    renderProfile();
     setAccountLoading(false);
     initEditNameForm();
     initPasswordChangeForm();
@@ -141,6 +143,33 @@ async function loadProfile() {
     renderProfile();
 }
 
+async function loadBarberOptions() {
+    const select = document.getElementById('accountPreferredBarberInput');
+    if (!select) return;
+
+    const fallback = [
+        { id: 'barber-russel', name: 'Barber Russel' },
+        { id: 'klark-dizon', name: 'Barber Klark' },
+        { id: 'barber-jon', name: 'Barber Jon' }
+    ];
+    let barbers = fallback;
+    if (typeof supabaseClient !== 'undefined') {
+        const { data, error } = await supabaseClient
+            .from('barbers')
+            .select('id, name')
+            .eq('is_active', true)
+            .order('name');
+        if (!error && data && data.length) barbers = data;
+    }
+
+    select.innerHTML = '<option value="">No preference</option>' + barbers.map(function (barber) {
+        const option = document.createElement('option');
+        option.value = barber.id;
+        option.textContent = barber.name;
+        return option.outerHTML;
+    }).join('');
+}
+
 function renderProfile() {
     const user = getCurrentUser();
     if (!currentProfile || !user) return;
@@ -173,6 +202,27 @@ function renderProfile() {
 
     const addressInput = document.getElementById('accountAddressInput');
     if (addressInput) addressInput.value = currentProfile.address || '';
+
+    const savedAddressesInput = document.getElementById('accountSavedAddressesInput');
+    if (savedAddressesInput) {
+        const saved = Array.isArray(currentProfile.saved_addresses) ? currentProfile.saved_addresses : [];
+        savedAddressesInput.value = saved.map(function (item) {
+            return typeof item === 'string' ? item : (item && item.address) || '';
+        }).filter(Boolean).join('\n');
+    }
+
+    const preferredBarberInput = document.getElementById('accountPreferredBarberInput');
+    if (preferredBarberInput) preferredBarberInput.value = currentProfile.preferred_barber_id || '';
+
+    const fulfillmentInput = document.getElementById('accountFulfillmentInput');
+    if (fulfillmentInput) fulfillmentInput.value = currentProfile.default_fulfillment_type === 'delivery' ? 'delivery' : 'pickup';
+
+    const emailNotificationsInput = document.getElementById('accountEmailNotificationsInput');
+    if (emailNotificationsInput) emailNotificationsInput.checked = currentProfile.notification_email !== false;
+    const smsNotificationsInput = document.getElementById('accountSmsNotificationsInput');
+    if (smsNotificationsInput) smsNotificationsInput.checked = currentProfile.notification_sms !== false;
+    const marketingInput = document.getElementById('accountMarketingInput');
+    if (marketingInput) marketingInput.checked = currentProfile.marketing_opt_in === true;
 }
 
 // --------------------------------------------
@@ -224,6 +274,12 @@ function initEditNameForm() {
     const nameInput = document.getElementById('accountNameInput');
     const phoneInput = document.getElementById('accountPhoneInput');
     const addressInput = document.getElementById('accountAddressInput');
+    const savedAddressesInput = document.getElementById('accountSavedAddressesInput');
+    const preferredBarberInput = document.getElementById('accountPreferredBarberInput');
+    const fulfillmentInput = document.getElementById('accountFulfillmentInput');
+    const emailNotificationsInput = document.getElementById('accountEmailNotificationsInput');
+    const smsNotificationsInput = document.getElementById('accountSmsNotificationsInput');
+    const marketingInput = document.getElementById('accountMarketingInput');
     const submitBtn = document.getElementById('accountNameSubmitBtn');
     const submitText = submitBtn.querySelector('.login-submit-text');
     const spinner = submitBtn.querySelector('.login-submit-spinner');
@@ -237,6 +293,12 @@ function initEditNameForm() {
         // store them, and nothing else on the site depends on them yet.
         const phone = phoneInput ? phoneInput.value.trim() : '';
         const address = addressInput ? addressInput.value.trim() : '';
+        const savedAddresses = savedAddressesInput
+            ? savedAddressesInput.value.split('\n').map(value => value.trim()).filter(Boolean).slice(0, 5)
+            : [];
+        if (address && !savedAddresses.includes(address)) savedAddresses.unshift(address);
+        const preferredBarberId = preferredBarberInput ? preferredBarberInput.value : '';
+        const defaultFulfillmentType = fulfillmentInput && fulfillmentInput.value === 'delivery' ? 'delivery' : 'pickup';
 
         if (!name) {
             showProfileError('Please enter your name.');
@@ -266,7 +328,17 @@ function initEditNameForm() {
         const [profileResult, userResult] = await Promise.all([
             supabaseClient
                 .from('profiles')
-                .update({ full_name: name, phone: phone, address: address })
+                .update({
+                    full_name: name,
+                    phone: phone,
+                    address: address,
+                    preferred_barber_id: preferredBarberId || null,
+                    default_fulfillment_type: defaultFulfillmentType,
+                    saved_addresses: savedAddresses,
+                    notification_email: emailNotificationsInput ? emailNotificationsInput.checked : true,
+                    notification_sms: smsNotificationsInput ? smsNotificationsInput.checked : true,
+                    marketing_opt_in: marketingInput ? marketingInput.checked : false
+                })
                 .eq('id', user.id),
             supabaseClient.auth.updateUser({ data: { name: name } })
         ]);
@@ -297,6 +369,12 @@ function initEditNameForm() {
         currentProfile.full_name = name;
         currentProfile.phone = phone;
         currentProfile.address = address;
+        currentProfile.preferred_barber_id = preferredBarberId || null;
+        currentProfile.default_fulfillment_type = defaultFulfillmentType;
+        currentProfile.saved_addresses = savedAddresses;
+        currentProfile.notification_email = emailNotificationsInput ? emailNotificationsInput.checked : true;
+        currentProfile.notification_sms = smsNotificationsInput ? smsNotificationsInput.checked : true;
+        currentProfile.marketing_opt_in = marketingInput ? marketingInput.checked : false;
         renderProfile();
 
         if (userError) {

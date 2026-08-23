@@ -33,6 +33,7 @@
                 <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
                 <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
                 <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock" aria-hidden="true"></i> Availability</a>
                 <a href="products.html" class="admin-nav-link"><i class="fas fa-box" aria-hidden="true"></i> Products</a>
                 <a href="orders.html" class="admin-nav-link active"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
                 <span class="admin-nav-link disabled"><i class="fas fa-chart-pie" aria-hidden="true"></i> Revenue <span class="admin-nav-soon">Soon</span></span>
@@ -134,6 +135,7 @@
                     <option value="pending">Pending</option>
                     <option value="preparing">Preparing</option>
                     <option value="ready">Ready</option>
+                    <option value="out_for_delivery">Out for Delivery</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                 </select>
@@ -176,6 +178,7 @@
 
         <span class="admin-badge" id="drawerOrderBadge">—</span>
         <h2 class="admin-drawer-name" id="drawerOrderId" style="margin-top:10px;">—</h2>
+        <p class="admin-drawer-email" id="drawerCustomerName">Customer</p>
         <p class="admin-drawer-email" id="drawerOrderPlaced">—</p>
 
         <div class="admin-drawer-stat-row">
@@ -192,6 +195,7 @@
         <div class="admin-drawer-section">
             <h4>Fulfillment</h4>
             <p class="admin-drawer-plain" id="drawerFulfillment">—</p>
+            <p class="admin-drawer-plain admin-drawer-dim" id="drawerArea" hidden></p>
             <p class="admin-drawer-plain admin-drawer-dim" id="drawerAddress" hidden></p>
         </div>
 
@@ -221,6 +225,7 @@
                 <option value="pending">Pending</option>
                 <option value="preparing">Preparing</option>
                 <option value="ready">Ready</option>
+                <option value="out_for_delivery">Out for Delivery</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
             </select>

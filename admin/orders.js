@@ -19,13 +19,14 @@ const STATUS_LABELS = {
     pending: 'Pending',
     preparing: 'Preparing',
     ready: 'Ready',
+    out_for_delivery: 'Out for Delivery',
     completed: 'Completed',
     cancelled: 'Cancelled'
 };
 
 // Statuses that count toward "Needs Action" on the stat row — anything
 // not yet finished and not cancelled.
-const ACTIVE_STATUSES = ['pending', 'preparing', 'ready'];
+const ACTIVE_STATUSES = ['pending', 'preparing', 'ready', 'out_for_delivery'];
 
 let allOrders = [];
 let orderItemsByOrder = {}; // { orderId: [items] }
@@ -59,7 +60,7 @@ async function loadOrders() {
 
     const { data, error } = await supabaseClient
     .from('orders')
-    .select('id, user_id, fulfillment_type, address, contact_phone, subtotal, total_price, status, notes, created_at, payment_status, payment_provider, paid_at')
+        .select('id, user_id, customer_name, fulfillment_type, area, address, contact_phone, subtotal, delivery_fee, total_price, status, notes, cancel_reason, expires_at, created_at, updated_at, payment_status, payment_provider, paid_at, completed_at')
     .order('created_at', { ascending: false })
     .limit(500);
 
@@ -161,7 +162,7 @@ function applyFiltersAndRender() {
         if (statusFilter && o.status !== statusFilter) return false;
         if (fulfillmentFilter && o.fulfillment_type !== fulfillmentFilter) return false;
         if (q) {
-            const haystack = `${o.id} ${o.contact_phone || ''}`.toLowerCase();
+            const haystack = `${o.id} ${o.customer_name || ''} ${o.contact_phone || ''} ${o.area || ''}`.toLowerCase();
             if (!haystack.includes(q)) return false;
         }
         return true;
@@ -237,6 +238,7 @@ function openDrawer(orderId) {
 
     setText('drawerOrderId', `Order #${order.id.slice(0, 8).toUpperCase()}`);
     setText('drawerOrderPlaced', `Placed ${formatDateTime(order.created_at)}`);
+    setText('drawerCustomerName', order.customer_name || 'Customer');
     setText('drawerOrderTotal', formatPHP(order.total_price));
 
     const items = orderItemsByOrder[order.id] || [];
@@ -244,6 +246,11 @@ function openDrawer(orderId) {
     setText('drawerOrderItemCount', itemCount);
 
     setText('drawerFulfillment', order.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup at Studio');
+    const areaEl = document.getElementById('drawerArea');
+    if (areaEl) {
+        areaEl.textContent = order.fulfillment_type === 'delivery' && order.area ? `Area: ${order.area}` : '';
+        areaEl.hidden = !(order.fulfillment_type === 'delivery' && order.area);
+    }
     const addressEl = document.getElementById('drawerAddress');
     if (order.fulfillment_type === 'delivery' && order.address) {
         addressEl.textContent = order.address;
@@ -274,9 +281,12 @@ function openDrawer(orderId) {
 
     const paymentSection = document.getElementById('drawerPaymentSection');
     if (order.payment_provider) {
+        const expired = order.expires_at && new Date(order.expires_at).getTime() <= Date.now() && order.payment_status !== 'paid';
         const label = order.payment_status === 'paid'
             ? `Paid online via ${order.payment_provider}${order.paid_at ? ' on ' + formatDateTime(order.paid_at) : ''}`
-            : `Awaiting online payment via ${order.payment_provider}`;
+            : expired
+                ? `Payment expired via ${order.payment_provider}`
+                : `Awaiting online payment via ${order.payment_provider}`;
         document.getElementById('drawerPayment').textContent = label;
         paymentSection.hidden = false;
     } else {
@@ -304,17 +314,20 @@ async function saveOrderStatus() {
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
-    const { error } = await supabaseClient
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', activeDrawerOrderId);
+    const { data: updatedOrder, error } = await supabaseClient.rpc('update_order_status', {
+        p_order_id: activeDrawerOrderId,
+        p_new_status: newStatus,
+        p_cancel_reason: newStatus === 'cancelled' ? 'Cancelled by administrator' : null
+    });
 
     btn.disabled = false;
     btn.textContent = 'Save Status';
 
-    if (error) {
+    if (error || !updatedOrder) {
         result.style.color = 'var(--bad)';
-        result.textContent = error.message || 'Could not update status.';
+        result.textContent = /function .*update_order_status|does not exist/i.test(error?.message || '')
+            ? 'Run the latest Supabase migrations before updating order status.'
+            : (error?.message || 'Could not update status.');
         return;
     }
 
@@ -322,7 +335,7 @@ async function saveOrderStatus() {
     result.textContent = 'Saved.';
 
     const order = allOrders.find(o => o.id === activeDrawerOrderId);
-    if (order) order.status = newStatus;
+    if (order) Object.assign(order, updatedOrder);
     renderStats();
     applyFiltersAndRender();
 }

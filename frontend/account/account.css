@@ -423,3 +423,32 @@
         justify-content: center;
     }
 }
+
+.account-preferences-fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.account-preferences-fieldset legend {
+    display: block;
+    font-family: var(--font-ui, sans-serif);
+    font-size: .68rem;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--dim, rgba(255,255,255,.55));
+    margin-bottom: 10px;
+}
+
+.account-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--off, rgba(255,255,255,.68));
+    font-size: .86rem;
+    margin: 8px 0;
+}
+
+.account-checkbox-label input { accent-color: var(--steel, #d8d2c4); }
+#accountPreferredBarberInput,
+#accountFulfillmentInput { appearance: auto; }

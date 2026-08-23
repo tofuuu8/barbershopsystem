@@ -183,6 +183,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     applyGenderToUI();
     renderServiceCard();
     initBarberCards();
+    await initPreferredBarber();
     await initPhoneField();
     await initEmailField();
     await initDateTimeInputs();
@@ -427,6 +428,29 @@ function applyContactMethodToUI() {
     if (emailField) emailField.hidden = contactMethod !== 'email';
 }
 
+async function initPreferredBarber() {
+    if (selectedBarberId || typeof supabaseClient === 'undefined') return;
+    const user = getCurrentUser();
+    if (!user) return;
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('preferred_barber_id')
+        .eq('id', user.id)
+        .maybeSingle();
+    if (error || !data?.preferred_barber_id) return;
+    const card = document.querySelector(`.booking-barber-card[data-barber-id="${data.preferred_barber_id}"]`);
+    if (card && !card.classList.contains('is-unavailable')) selectPreferredBarberCard(card);
+}
+
+function selectPreferredBarberCard(card) {
+    document.querySelectorAll('.booking-barber-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedBarberId = card.dataset.barberId || null;
+    selectedBarberName = card.querySelector('.booking-barber-name')?.textContent || 'Random';
+    refreshTimeSlots();
+    updateSummary();
+}
+
 function initContactMethodToggle() {
     document.querySelectorAll('.booking-contact-method-btn').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -480,25 +504,22 @@ function isValidBookingEmail(email) {
 // ============================================
 // DATE & TIME
 // ============================================
-async function fetchBarberBookedRanges(barberId, dateStr) {
-    if (!barberId || !dateStr || typeof supabaseClient === 'undefined') return [];
+async function fetchAvailableBookingSlots(barberId, dateStr, durationMinutes) {
+    if (!dateStr || typeof supabaseClient === 'undefined') return [];
 
-    const { data, error } = await supabaseClient
-        .from('bookings')
-        .select('booking_time, service_duration')
-        .eq('barber_id', barberId)
-        .eq('booking_date', dateStr)
-        .neq('status', 'cancelled');
+    const { data, error } = await supabaseClient.rpc('get_available_booking_slots', {
+        p_date: dateStr,
+        p_barber_id: barberId || null,
+        p_gender: currentGender,
+        p_service_duration_minutes: durationMinutes
+    });
 
     if (error) {
-        console.error(error);
+        console.error('Could not load appointment availability:', error);
         return [];
     }
 
-    return (data || []).map(b => {
-        const [h, m] = (b.booking_time || '0:0').split(':').map(Number);
-        return { start: h * 60 + m, duration: parseDurationMinutes(b.service_duration) };
-    });
+    return data || [];
 }
 
 async function initDateTimeInputs() {
@@ -550,16 +571,16 @@ async function refreshTimeSlots() {
     const isToday = dateStr === today.toISOString().slice(0, 10);
     const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
-    barberBookedRanges = await fetchBarberBookedRanges(selectedBarberId, dateStr);
+    const availableSlots = await fetchAvailableBookingSlots(selectedBarberId, dateStr, durationMinutes);
+    const availableTimes = new Set(availableSlots.map(slot => String(slot.slot_time || '').slice(0, 5)));
 
     for (let mins = hours.open; mins + durationMinutes <= hours.close; mins += SLOT_INCREMENT_MINUTES) {
         if (isToday && mins <= nowMinutes) continue;
-
-        const conflict = barberBookedRanges.some(b => rangesOverlap(mins, durationMinutes, b.start, b.duration));
-        if (conflict) continue;
+        const slotValue = minutesTo24h(mins);
+        if (!availableTimes.has(slotValue)) continue;
 
         const option = document.createElement('option');
-        option.value = minutesTo24h(mins);
+        option.value = slotValue;
         option.textContent = minutesToLabel(mins);
         timeSelect.appendChild(option);
     }
@@ -758,97 +779,33 @@ function initBookingForm() {
         if (btnText) btnText.textContent = 'Booking...';
         if (spinner) spinner.hidden = false;
 
-        // Last-moment availability check. For a specific barber this is a
-        // re-check (refreshTimeSlots already filters the dropdown, but
-        // someone else could book in the gap). For "Random" (no barber
-        // selected) this is also where we assign a barber — we try each
-        // candidate in random order and pick the first one whose calendar
-        // is clear at the chosen time.
-        const durationMinutes = parseDurationMinutes(sel.service.duration);
-        const [h, m] = sel.time.split(':').map(Number);
-        const startMinutes = h * 60 + m;
+        const { data, error } = await supabaseClient.rpc('create_booking_atomic', {
+            p_gender: currentGender,
+            p_service_id: sel.service.id,
+            p_barber_id: selectedBarberId,
+            p_location_type: currentLocation,
+            p_area: currentLocation === 'home' ? selectedAreaName : null,
+            p_address: currentLocation === 'home' ? sel.address : null,
+            p_booking_date: sel.date,
+            p_booking_time: sel.time,
+            p_contact_phone: contactMethod === 'phone' ? sel.phone : null,
+            p_contact_preference: contactMethod,
+            p_notes: sel.notes.trim() || null
+        });
 
-        if (selectedBarberId) {
-            const freshRanges = await fetchBarberBookedRanges(selectedBarberId, sel.date);
-            const conflict = freshRanges.some(b => rangesOverlap(startMinutes, durationMinutes, b.start, b.duration));
-
-            if (conflict) {
-                confirmBtn.disabled = false;
-                if (btnText) btnText.textContent = 'Confirm Booking';
-                if (spinner) spinner.hidden = true;
-                showBookingError('That time was just booked with this barber — please pick another slot.');
-                await refreshTimeSlots();
-                return;
-            }
-        } else {
-            // Random assignment — women's haircuts are only done by
-            // Barber Klark, so the pool is just him; men's rotates
-            // through all three barbers.
-            const candidates = currentGender === 'women'
-                ? BOOKING_BARBERS.filter(b => WOMENS_BARBER_IDS.includes(b.id))
-                : BOOKING_BARBERS;
-            const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-            let assignedBarber = null;
-
-            for (const barber of shuffled) {
-                const freshRanges = await fetchBarberBookedRanges(barber.id, sel.date);
-                const conflict = freshRanges.some(b => rangesOverlap(startMinutes, durationMinutes, b.start, b.duration));
-                if (!conflict) { assignedBarber = barber; break; }
-            }
-
-            if (!assignedBarber) {
-                confirmBtn.disabled = false;
-                if (btnText) btnText.textContent = 'Confirm Booking';
-                if (spinner) spinner.hidden = true;
-                showBookingError('All our barbers are booked at that time — please pick another slot.');
-                return;
-            }
-
-            selectedBarberId = assignedBarber.id;
-            selectedBarberName = assignedBarber.name;
-        }
-
-        const total = sel.service.price + (currentLocation === 'home' ? currentTravelFee : 0);
-
-        const { data, error } = await supabaseClient
-            .from('bookings')
-            .insert({
-                user_id: user.id,
-                gender: currentGender,
-                service_id: sel.service.id,
-                service_name: sel.service.name,
-                service_price: sel.service.price,
-                service_duration: sel.service.duration,
-                barber_id: selectedBarberId,
-                barber_name: selectedBarberId ? selectedBarberName : null,
-                location_type: currentLocation,
-                area: currentLocation === 'home' ? selectedAreaName : null,
-                address: currentLocation === 'home' ? sel.address : null,
-                travel_fee: currentLocation === 'home' ? currentTravelFee : 0,
-                total_price: total,
-                booking_date: sel.date,
-                booking_time: sel.time,
-                contact_phone: contactMethod === 'phone' ? sel.phone : null,
-                contact_preference: contactMethod,
-                notes: sel.notes.trim() || null
-            })
-            .select()
-            .single();
-
-        if (error) {
+        if (error || !data) {
             confirmBtn.disabled = false;
             if (btnText) btnText.textContent = 'Confirm Booking';
             if (spinner) spinner.hidden = true;
             console.error(error);
             showBookingError(
-                /row-level security/i.test(error.message || '')
-                    ? 'The bookings table isn\u2019t set up yet — run bookings_setup.sql in the Supabase SQL Editor first.'
-                    : /column .*contact_phone/i.test(error.message || '')
-                        ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_phone text;'
-                    : /column .*contact_preference/i.test(error.message || '')
-                        ? 'The bookings table needs a small update — run: alter table public.bookings add column if not exists contact_preference text;'
-                        : (error.message || 'Something went wrong. Please try again.')
+                /booked|outside|available/i.test(error?.message || '')
+                    ? (error.message || 'That time is no longer available. Please pick another slot.')
+                    : /function .*create_booking_atomic|does not exist/i.test(error?.message || '')
+                        ? 'Secure booking availability is not installed yet — run the latest Supabase migrations first.'
+                        : (error?.message || 'Something went wrong. Please try again.')
             );
+            await refreshTimeSlots();
             return;
         }
 

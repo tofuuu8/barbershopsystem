@@ -32,7 +32,8 @@
             <nav class="admin-nav">
                 <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
                 <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
-                <a href="bookings.html" class="admin-nav-link active"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                                <a href="bookings.html" class="admin-nav-link active"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock" aria-hidden="true"></i> Availability</a>
                 <a href="products.html" class="admin-nav-link"><i class="fas fa-box" aria-hidden="true"></i> Products</a>
                 <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
                 <span class="admin-nav-link disabled"><i class="fas fa-chart-pie" aria-hidden="true"></i> Revenue <span class="admin-nav-soon">Soon</span></span>
@@ -133,8 +134,9 @@
                     <button type="button" class="admin-filter-pill active" data-status="all">All</button>
                     <button type="button" class="admin-filter-pill" data-status="pending">Pending</button>
                     <button type="button" class="admin-filter-pill" data-status="confirmed">Confirmed</button>
-                    <button type="button" class="admin-filter-pill" data-status="completed">Completed</button>
-                    <button type="button" class="admin-filter-pill" data-status="cancelled">Cancelled</button>
+                <button type="button" class="admin-filter-pill" data-status="completed">Completed</button>
+                <button type="button" class="admin-filter-pill" data-status="no_show">No Show</button>
+                <button type="button" class="admin-filter-pill" data-status="cancelled">Cancelled</button>
                 </div>
 
                 <span class="admin-toolbar-count" id="bookingResultsCount"></span>
@@ -203,11 +205,15 @@
                 <span class="admin-detail-label">Total</span>
                 <span class="admin-detail-value" id="detailTotal">—</span>
             </div>
-            <div class="admin-detail-item span-2" id="detailNotesWrap" hidden>
-                <span class="admin-detail-label">Notes</span>
-                <span class="admin-detail-value" id="detailNotes">—</span>
+                <div class="admin-detail-item span-2" id="detailNotesWrap" hidden>
+                    <span class="admin-detail-label">Notes</span>
+                    <span class="admin-detail-value" id="detailNotes">—</span>
+                </div>
+                <div class="admin-detail-item span-2" id="detailAdminNotesWrap" hidden>
+                    <span class="admin-detail-label">Internal Notes</span>
+                    <span class="admin-detail-value" id="detailAdminNotes">—</span>
+                </div>
             </div>
-        </div>
 
         <div class="admin-detail-divider"></div>
 
@@ -218,7 +224,28 @@
                 <option value="confirmed">Confirmed</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="no_show">No Show</option>
             </select>
+        </div>
+
+        <div class="admin-drawer-field">
+            <label for="bookingBarberSelect">Assigned Barber</label>
+            <select id="bookingBarberSelect" class="admin-select"></select>
+        </div>
+
+        <div class="admin-drawer-field">
+            <label for="bookingDateInput">Date</label>
+            <input type="date" id="bookingDateInput" class="admin-input" />
+        </div>
+
+        <div class="admin-drawer-field">
+            <label for="bookingTimeInput">Time</label>
+            <input type="time" id="bookingTimeInput" class="admin-input" step="1800" />
+        </div>
+
+        <div class="admin-drawer-field">
+            <label for="bookingAdminNotesInput">Internal Notes</label>
+            <textarea id="bookingAdminNotesInput" class="admin-input" rows="3" maxlength="500" placeholder="Notes for staff only"></textarea>
         </div>
 
         <div class="admin-modal-actions">

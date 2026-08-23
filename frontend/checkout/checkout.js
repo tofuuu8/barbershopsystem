@@ -262,7 +262,7 @@ async function initContactFields() {
 
     const { data, error } = await supabaseClient
         .from('profiles')
-        .select('full_name, phone, address')
+        .select('full_name, phone, address, saved_addresses, default_fulfillment_type')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -285,10 +285,20 @@ async function initContactFields() {
         phoneNote.hidden = false;
     }
 
+    const savedAddresses = Array.isArray(data.saved_addresses)
+        ? data.saved_addresses.map(value => typeof value === 'string' ? value : (value && value.address) || '').filter(Boolean)
+        : [];
     if (data.address && addressInput) {
         addressInput.value = data.address;
+    } else if (savedAddresses[0] && addressInput) {
+        addressInput.value = savedAddresses[0];
     } else if (addressNote) {
         addressNote.hidden = false;
+    }
+
+    if (data.default_fulfillment_type === 'delivery') {
+        currentFulfillment = 'delivery';
+        applyFulfillmentToUI();
     }
 }
 
@@ -541,78 +551,37 @@ function initCheckoutForm() {
             return;
         }
 
-                const subtotal = verifiedCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const deliveryFee = currentDeliveryFee();
-        const total = subtotal + deliveryFee;
+        const { data: order, error: orderError } = await supabaseClient.rpc('create_order_atomic', {
+            p_customer_name: sel.name,
+            p_fulfillment_type: currentFulfillment,
+            p_area: currentFulfillment === 'delivery' ? sel.area : null,
+            p_address: currentFulfillment === 'delivery' ? sel.address : null,
+            p_contact_phone: sel.phone,
+            p_notes: sel.notes.trim() || null,
+            p_items: verifiedCart.map(function (item) {
+                return { product_id: item.id, quantity: item.quantity };
+            }),
+            p_payment_provider: null
+        });
 
-        const { data: order, error: orderError } = await supabaseClient
-            .from('orders')
-            .insert({
-                user_id: user.id,
-                customer_name: sel.name,
-                fulfillment_type: currentFulfillment,
-                area: currentFulfillment === 'delivery' ? sel.area : null,
-                address: currentFulfillment === 'delivery' ? sel.address : null,
-                contact_phone: sel.phone,
-                subtotal: subtotal,
-                delivery_fee: deliveryFee,
-                total_price: total,
-                notes: sel.notes.trim() || null
-            })
-            .select()
-            .single();
-
-        if (orderError) {
+        if (orderError || !order) {
             confirmBtn.disabled = false;
             if (btnText) btnText.textContent = 'Place Order';
             if (spinner) spinner.hidden = true;
             console.error(orderError);
             showCheckoutError(
-                /row-level security/i.test(orderError.message || '')
-                    ? 'The orders table isn\u2019t set up yet — run orders_setup.sql in the Supabase SQL Editor first.'
-                    : /column .*(customer_name|delivery_fee|area)/i.test(orderError.message || '')
-                        ? 'The orders table is missing a column — see the ALTER TABLE note at the top of checkout.js.'
-                        : (orderError.message || 'Something went wrong. Please try again.')
+                /function .*create_order_atomic|does not exist/i.test(orderError?.message || '')
+                    ? 'The secure checkout function is not installed yet — run the latest Supabase migrations first.'
+                    : /out of stock|unavailable/i.test(orderError?.message || '')
+                        ? (orderError.message || 'One or more products are no longer available.')
+                        : (orderError?.message || 'Something went wrong. Please try again.')
             );
             return;
         }
 
-        const itemRows = verifiedCart.map(function (item) {
-            return {
-                order_id: order.id,
-                product_id: item.id,
-                product_name: item.name,
-                unit_price: item.price,
-                quantity: item.quantity,
-                line_total: item.price * item.quantity
-            };
-        });
-
-        const { error: itemsError } = await supabaseClient
-            .from('order_items')
-            .insert(itemRows);
-
-        if (itemsError) {
-            console.error(itemsError);
-            // Don't leave an order with no line items behind — clean it
-            // up so the visitor's order history (once it exists) never
-            // shows a mystery empty order.
-            await supabaseClient.from('orders').delete().eq('id', order.id);
-
-            confirmBtn.disabled = false;
-            if (btnText) btnText.textContent = 'Place Order';
-            if (spinner) spinner.hidden = true;
-            showCheckoutError(
-                /column .*order_items|relation .*order_items/i.test(itemsError.message || '')
-                    ? 'The order_items table isn\u2019t set up yet — run orders_setup.sql in the Supabase SQL Editor first.'
-                    : (itemsError.message || 'Something went wrong saving your order items. Please try again.')
-            );
-            return;
-        }
-
-        // Order fully saved — clear the cart (saveCart() from cart.js
-        // also refreshes the header's cart counter) and show the
-        // confirmation screen.
+        // The server transaction has already recalculated totals, inserted
+        // line items, and reserved stock. Only clear the local shopping list
+        // after that authoritative operation succeeds.
         saveCart([]);
         showCheckoutSuccess(order, sel);
     });

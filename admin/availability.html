@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Availability - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="../frontend/images/toughcutslogo.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+<div class="admin-shell">
+    <aside class="admin-sidebar">
+        <div class="admin-sidebar-brand"><i class="fas fa-scissors" aria-hidden="true"></i><span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span></div>
+        <nav class="admin-nav">
+            <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
+            <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
+            <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+            <a href="availability.html" class="admin-nav-link active"><i class="fas fa-clock" aria-hidden="true"></i> Availability</a>
+            <a href="products.html" class="admin-nav-link"><i class="fas fa-box" aria-hidden="true"></i> Products</a>
+            <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
+        </nav>
+        <div class="admin-sidebar-footer"><p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p><button type="button" class="admin-logout-btn" id="adminLogoutBtn"><i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out</button></div>
+    </aside>
+
+    <main class="admin-main admin-main-wide">
+        <div class="admin-page-header">
+            <div><h1 class="admin-page-title">Availability</h1><p class="admin-page-sub">Manage barber hours, leave, and blocked appointment times.</p></div>
+            <div class="admin-notif-wrap"><button type="button" class="admin-notif-btn" id="notifBtn" aria-label="Notifications"><i class="fas fa-bell" aria-hidden="true"></i><span class="admin-notif-badge" id="notifBadge" hidden>0</span></button><div class="admin-notif-panel" id="notifPanel" hidden><div class="admin-notif-panel-header">Notifications</div><div class="admin-notif-list" id="notifOrders"><div class="admin-notif-empty">Loading...</div></div></div></div>
+        </div>
+
+        <div class="admin-content-grid">
+            <section class="admin-card">
+                <h2 class="admin-card-title">Barber Schedules</h2>
+                <p class="admin-card-sub">The public booking calendar uses these weekly hours.</p>
+                <div id="scheduleError" class="admin-error" role="alert" hidden></div>
+                <div class="admin-field"><label for="availabilityBarberSelect">Barber</label><select id="availabilityBarberSelect" class="admin-select"></select></div>
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Day</th><th>Open</th><th>Close</th><th>Active</th><th></th></tr></thead><tbody id="scheduleTableBody"><tr class="admin-empty-row"><td colspan="5">Loading...</td></tr></tbody></table></div>
+            </section>
+
+            <section class="admin-card">
+                <h2 class="admin-card-title">Block Time</h2>
+                <p class="admin-card-sub">Use this for leave, breaks, training, or maintenance.</p>
+                <div id="blockedTimeStatus" class="admin-notice" role="status" hidden></div>
+                <form id="blockedTimeForm" class="admin-form">
+                    <div class="admin-field"><label for="blockedBarberSelect">Barber</label><select id="blockedBarberSelect" class="admin-select"></select></div>
+                    <div class="admin-field"><label for="blockedStartInput">Starts</label><input type="datetime-local" id="blockedStartInput" class="admin-input" required /></div>
+                    <div class="admin-field"><label for="blockedEndInput">Ends</label><input type="datetime-local" id="blockedEndInput" class="admin-input" required /></div>
+                    <div class="admin-field"><label for="blockedReasonInput">Reason</label><input type="text" id="blockedReasonInput" class="admin-input" maxlength="120" placeholder="Annual leave" /></div>
+                    <button class="admin-submit" type="submit" id="blockedTimeSubmitBtn">Add Blocked Time</button>
+                </form>
+                <div class="admin-table-wrap" style="margin-top:24px;"><table class="admin-table"><thead><tr><th>Barber</th><th>Time</th><th>Reason</th><th></th></tr></thead><tbody id="blockedTimesTableBody"><tr class="admin-empty-row"><td colspan="4">Loading...</td></tr></tbody></table></div>
+            </section>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../frontend/js/supabase.js"></script>
+<script src="admin-auth.js"></script>
+<script src="notifications.js"></script>
+<script src="availability.js"></script>
+</body>
+</html>

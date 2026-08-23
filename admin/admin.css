@@ -1649,3 +1649,51 @@ input, select, textarea { font: inherit; }
     .admin-modal { max-width: 92%; }
     .admin-notif-panel { width: 280px; right: -10px; }
 }
+
+
+/* Additional operational status states */
+.admin-badge--out_for_delivery,
+.admin-status-out_for_delivery {
+    color: #9bc7ff;
+    background: rgba(87, 153, 232, 0.12);
+    border-color: rgba(87, 153, 232, 0.35);
+}
+
+.admin-status-pending { color: #e6c37a; background: rgba(230, 195, 122, 0.12); border: 1px solid rgba(230, 195, 122, 0.35); }
+.admin-status-confirmed { color: #9bc7ff; background: rgba(87, 153, 232, 0.12); border: 1px solid rgba(87, 153, 232, 0.35); }
+.admin-status-completed { color: var(--good); background: rgba(76, 175, 125, 0.12); border: 1px solid rgba(76, 175, 125, 0.35); }
+.admin-status-cancelled,
+.admin-status-no_show { color: #f2a6a1; background: rgba(224, 90, 90, 0.12); border: 1px solid rgba(224, 90, 90, 0.35); }
+
+.admin-content-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.admin-card {
+    min-width: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+}
+
+.admin-card-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.25rem;
+    color: var(--white);
+    margin-bottom: 6px;
+}
+
+.admin-card-sub {
+    color: var(--dim);
+    font-size: .82rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+    .admin-content-grid { grid-template-columns: 1fr; }
+}

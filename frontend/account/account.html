@@ -195,9 +195,37 @@
                         </div>
 
                         <div class="login-field">
-                            <label for="accountAddressInput">Address <span class="account-field-optional">(Optional)</span></label>
+                            <label for="accountAddressInput">Default Address <span class="account-field-optional">(Optional)</span></label>
                             <textarea id="accountAddressInput" name="accountAddressInput" class="login-input account-address-input" placeholder="House/Unit No., Street, Barangay, City, Province" autocomplete="street-address" rows="3" maxlength="200"></textarea>
                         </div>
+
+                        <div class="login-field">
+                            <label for="accountSavedAddressesInput">Saved Delivery Addresses <span class="account-field-optional">(Optional)</span></label>
+                            <textarea id="accountSavedAddressesInput" name="accountSavedAddressesInput" class="login-input account-address-input" placeholder="One address per line" rows="3" maxlength="600"></textarea>
+                            <p class="account-field-note">The first address is used as your default when available.</p>
+                        </div>
+
+                        <div class="login-field">
+                            <label for="accountPreferredBarberInput">Preferred Barber <span class="account-field-optional">(Optional)</span></label>
+                            <select id="accountPreferredBarberInput" name="accountPreferredBarberInput" class="login-input">
+                                <option value="">No preference</option>
+                            </select>
+                        </div>
+
+                        <div class="login-field">
+                            <label for="accountFulfillmentInput">Default Order Fulfillment</label>
+                            <select id="accountFulfillmentInput" name="accountFulfillmentInput" class="login-input">
+                                <option value="pickup">Pickup at Studio</option>
+                                <option value="delivery">Delivery</option>
+                            </select>
+                        </div>
+
+                        <fieldset class="login-field account-preferences-fieldset">
+                            <legend>Notifications</legend>
+                            <label class="account-checkbox-label"><input type="checkbox" id="accountEmailNotificationsInput" /> Email updates</label>
+                            <label class="account-checkbox-label"><input type="checkbox" id="accountSmsNotificationsInput" /> SMS updates</label>
+                            <label class="account-checkbox-label"><input type="checkbox" id="accountMarketingInput" /> Offers and promotions</label>
+                        </fieldset>
 
                         <div class="login-field">
                             <label>Email Address</label>

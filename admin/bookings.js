@@ -23,6 +23,7 @@ let profilesById = {};
 let currentAdmin = null;
 let activeStatusFilter = 'all';
 let activeBookingId = null; // whoever the detail modal is currently open for
+let availableBarbers = [];
 
 document.addEventListener('DOMContentLoaded', async function () {
     currentAdmin = await requireAdminOrRedirect();
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initSearch();
     initStatusPills();
     initBookingModal();
+    await loadBarberOptions();
     await loadBookings();
 });
 
@@ -80,7 +82,7 @@ async function loadBookings() {
 // Stats
 // --------------------------------------------
 function renderStats() {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = localDateString(new Date());
 
     const today = allBookings.filter(b => b.booking_date === todayStr && b.status !== 'cancelled').length;
     const pending = allBookings.filter(b => b.status === 'pending').length;
@@ -208,14 +210,37 @@ function renderTable(bookings) {
 // Status badge
 // --------------------------------------------
 function getStatusBadge(status) {
-    const labels = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+    const labels = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled', no_show: 'No Show' };
+    const safeStatus = Object.prototype.hasOwnProperty.call(labels, status) ? status : 'unknown';
     const label = labels[status] || status || 'Unknown';
-    return `<span class="admin-status-badge admin-status-${status}">${label}</span>`;
+    return `<span class="admin-status-badge admin-status-${safeStatus}">${escapeHtml(label)}</span>`;
 }
 
 // --------------------------------------------
 // Detail / status-update modal
 // --------------------------------------------
+async function loadBarberOptions() {
+    const select = document.getElementById('bookingBarberSelect');
+    const fallback = [
+        { id: 'barber-russel', name: 'Barber Russel' },
+        { id: 'klark-dizon', name: 'Barber Klark' },
+        { id: 'barber-jon', name: 'Barber Jon' }
+    ];
+    availableBarbers = fallback;
+    if (typeof supabaseClient !== 'undefined') {
+        const { data, error } = await supabaseClient.from('barbers').select('id, name').eq('is_active', true).order('name');
+        if (!error && data && data.length) availableBarbers = data;
+    }
+    if (select) {
+        select.innerHTML = availableBarbers.map(function (barber) {
+            const option = document.createElement('option');
+            option.value = barber.id;
+            option.textContent = barber.name;
+            return option.outerHTML;
+        }).join('');
+    }
+}
+
 function initBookingModal() {
     const backdrop = document.getElementById('bookingModalBackdrop');
     const closeBtn = document.getElementById('bookingModalCloseBtn');
@@ -261,6 +286,21 @@ function openBookingModal(bookingId) {
     }
     setText('detailTotal', totalText);
 
+    const adminNotesWrap = document.getElementById('detailAdminNotesWrap');
+    if (adminNotesWrap) {
+        adminNotesWrap.hidden = !booking.admin_notes;
+        setText('detailAdminNotes', booking.admin_notes || '—');
+    }
+
+    const barberSelect = document.getElementById('bookingBarberSelect');
+    if (barberSelect) barberSelect.value = booking.barber_id || '';
+    const dateInput = document.getElementById('bookingDateInput');
+    if (dateInput) dateInput.value = booking.booking_date || '';
+    const timeInput = document.getElementById('bookingTimeInput');
+    if (timeInput) timeInput.value = String(booking.booking_time || '').slice(0, 5);
+    const adminNotesInput = document.getElementById('bookingAdminNotesInput');
+    if (adminNotesInput) adminNotesInput.value = booking.admin_notes || '';
+
     const notesWrap = document.getElementById('detailNotesWrap');
     if (booking.notes) {
         notesWrap.hidden = false;
@@ -288,17 +328,22 @@ function closeBookingModal() {
 }
 
 async function updateBookingStatus(newStatus) {
-    if (!activeBookingId) return;
+    if (!activeBookingId) return null;
 
-    const { error } = await supabaseClient
-        .from('bookings')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', activeBookingId);
+    const { data, error } = await supabaseClient.rpc('update_booking_admin', {
+        p_booking_id: activeBookingId,
+        p_new_status: newStatus,
+        p_booking_date: document.getElementById('bookingDateInput').value,
+        p_booking_time: document.getElementById('bookingTimeInput').value,
+        p_barber_id: document.getElementById('bookingBarberSelect').value,
+        p_admin_notes: document.getElementById('bookingAdminNotesInput').value.trim() || null
+    });
 
-    if (error) throw error;
+    if (error || !data) throw error || new Error('Could not update appointment.');
 
     const booking = allBookings.find(b => b.id === activeBookingId);
-    if (booking) booking.status = newStatus;
+    if (booking) Object.assign(booking, data);
+    return data;
 }
 
 async function saveBookingStatus() {
@@ -322,7 +367,9 @@ async function saveBookingStatus() {
     } catch (error) {
         console.error(error);
         status.style.color = 'var(--bad)';
-        status.textContent = error.message || 'Could not update status.';
+        status.textContent = /function .*update_booking_admin|does not exist/i.test(error.message || '')
+            ? 'Run the latest Supabase migrations before updating appointments.'
+            : (error.message || 'Could not update appointment.');
     } finally {
         btn.disabled = false;
         btn.textContent = 'Save Status';
@@ -398,6 +445,13 @@ async function handleDeleteBooking(bookingId) {
 // --------------------------------------------
 // Formatting helpers
 // --------------------------------------------
+function localDateString(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 function formatPHP(amount) {
     return 'PHP ' + (Number(amount) || 0).toLocaleString('en-PH');
 }
