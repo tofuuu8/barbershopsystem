@@ -37,6 +37,38 @@ const ORDER_STATUS_LABELS = {
     cancelled: 'Cancelled'
 };
 
+// Self-service cancellation is only offered while an order hasn't
+// started being fulfilled yet. Assumes an RLS policy on `orders` that
+// lets a signed-in user UPDATE their own rows to status='cancelled'
+// only from one of these starting statuses — see the policy this
+// feature ships with:
+//
+//   create policy "Users can cancel their own pending/awaiting orders"
+//   on orders for update
+//   using (auth.uid() = user_id and status in ('pending', 'awaiting_payment'))
+//   with check (status = 'cancelled');
+//
+// If that policy isn't in place yet, the cancel button will fail with
+// a row-level-security error, which is caught below and surfaced as a
+// friendly message rather than a silent failure.
+const CANCELLABLE_STATUSES = ['pending', 'awaiting_payment'];
+
+// On top of status, an order that's already been paid online
+// (payment_provider set AND payment_status === 'paid') can no longer
+// be self-service cancelled, even if it's still sitting in 'pending'
+// (which is exactly the status a successful online payment moves it
+// to). Cash on Pickup/Delivery orders have no payment_provider at
+// all, so they're untouched by this and stay cancellable while
+// pending. Mirror this same check server-side in the RLS policy
+// (add `and not (payment_provider is not null and payment_status =
+// 'paid')` to the USING clause) — the button hiding below is only a
+// UX nicety, not the actual enforcement.
+function isOrderCancellable(order) {
+    if (!CANCELLABLE_STATUSES.includes(order.status)) return false;
+    if (order.payment_provider && order.payment_status === 'paid') return false;
+    return true;
+}
+
 // Kept in module scope so the detail modal (opened from a card click)
 // can look up the order + its items without re-querying Supabase.
 let myOrdersCache = [];
@@ -136,6 +168,7 @@ async function loadMyOrders() {
     // Wire up interactions AFTER the HTML actually exists in the DOM.
     initMyOrderCardClicks();
     initMyOrderPayButtons();
+    initMyOrderCancelButtons();
 }
 
 // --------------------------------------------
@@ -148,9 +181,13 @@ function initMyOrderCardClicks() {
     listEl.querySelectorAll('.myorder-card').forEach(function (card) {
         card.addEventListener('click', function (e) {
             // Ignore clicks on the native <details>/<summary> items
-            // toggle and on the pay button — those have their own
-            // behavior and shouldn't also pop the modal open.
-            if (e.target.closest('.myorder-items') || e.target.closest('.myorder-pay-btn')) return;
+            // toggle and on the pay/cancel buttons — those have their
+            // own behavior and shouldn't also pop the modal open.
+            if (
+                e.target.closest('.myorder-items') ||
+                e.target.closest('.myorder-pay-btn') ||
+                e.target.closest('.myorder-cancel-btn')
+            ) return;
 
             const order = myOrdersCache.find(o => o.id === card.dataset.id);
             if (order) openOrderDetailModal(order, myOrderItemsByOrder[order.id] || []);
@@ -189,6 +226,66 @@ async function handleResumePayment(orderId, btn) {
     }
 
     window.location.href = data.checkoutUrl;
+}
+
+// --------------------------------------------
+// "Cancel Order" button -> self-service cancel for pending/
+// awaiting_payment orders only. Same recipe as myappointments.js's
+// handleCancelAppointment(): RLS-guarded UPDATE, .select() so a
+// silently-blocked policy (zero rows matched, error: null) is treated
+// as a failure instead of a false success.
+// --------------------------------------------
+function initMyOrderCancelButtons() {
+    const listEl = document.getElementById('myordersList');
+    if (!listEl) return;
+
+    listEl.querySelectorAll('.myorder-cancel-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            handleCancelOrder(btn.dataset.orderId, btn);
+        });
+    });
+}
+
+// Returns true on a successful cancel, false otherwise — callers that
+// also need to close a modal (see the modal's cancel button above)
+// check this before doing so, so a failed/blocked cancel never closes
+// the modal out from under the error message.
+async function handleCancelOrder(orderId, btn) {
+    if (!confirm('Cancel this order? This can\u2019t be undone.')) return false;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Cancelling...';
+
+    const { data, error } = await supabaseClient
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId)
+        .select();
+
+    if (error) {
+        console.error(error);
+        alert(
+            /row-level security|permission denied/i.test(error.message || '')
+                ? 'Cancelling isn\u2019t enabled for customer accounts yet \u2014 please contact the studio to cancel this order.'
+                : (error.message || 'Something went wrong \u2014 please try again.')
+        );
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
+        return false;
+    }
+
+    if (!data || !data.length) {
+        // RLS silently matched zero rows — same as a blocked policy,
+        // since Postgres never surfaces this as an error on its own.
+        alert('Cancelling isn\u2019t enabled for customer accounts yet \u2014 please contact the studio to cancel this order.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
+        return false;
+    }
+
+    await loadMyOrders(); // re-fetch so status/buttons/modal all update together
+    return true;
 }
 
 // --------------------------------------------
@@ -282,6 +379,25 @@ function openOrderDetailModal(order, items) {
         }
     }
 
+    // Same idea for "Cancel Order" inside the modal.
+    const modalCancelWrap = document.getElementById('orderModalCancelWrap');
+    const modalCancelBtn = document.getElementById('orderModalCancelBtn');
+    if (modalCancelWrap && modalCancelBtn) {
+        if (isOrderCancellable(order)) {
+            modalCancelWrap.hidden = false;
+            modalCancelBtn.dataset.orderId = order.id;
+            modalCancelBtn.disabled = false;
+            modalCancelBtn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
+            modalCancelBtn.onclick = function () {
+                handleCancelOrder(order.id, modalCancelBtn).then(function (succeeded) {
+                    if (succeeded) closeOrderDetailModal();
+                });
+            };
+        } else {
+            modalCancelWrap.hidden = true;
+        }
+    }
+
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
 }
@@ -328,12 +444,24 @@ function renderMyOrderCard(order, items) {
     // waiting on an online payment that was actually started
     // (payment_provider set) — never for Cash on Pickup/Delivery
     // orders, which don't have a payment_provider at all.
-    const resumePaymentBlock = (order.status === 'awaiting_payment' && order.payment_provider)
-        ? `<div class="myorder-card-footer">
-               <button type="button" class="myorder-pay-btn" data-order-id="${order.id}">
+    const showPayBtn = order.status === 'awaiting_payment' && order.payment_provider;
+    const showCancelBtn = isOrderCancellable(order);
+
+    const footerButtons = [
+        showCancelBtn
+            ? `<button type="button" class="myorder-cancel-btn" data-order-id="${order.id}">
+                   <i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order
+               </button>`
+            : '',
+        showPayBtn
+            ? `<button type="button" class="myorder-pay-btn" data-order-id="${order.id}">
                    <i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment
-               </button>
-           </div>`
+               </button>`
+            : ''
+    ].join('');
+
+    const resumePaymentBlock = (showPayBtn || showCancelBtn)
+        ? `<div class="myorder-card-footer">${footerButtons}</div>`
         : '';
 
     const itemCount = items.reduce((sum, i) => sum + (i.quantity || 0), 0);

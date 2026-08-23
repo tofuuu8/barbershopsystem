@@ -201,10 +201,17 @@
                 <strong id="orderModalTotal">—</strong>
             </div>
 
-            <div class="myorder-modal-pay-wrap" id="orderModalPayWrap" hidden>
-                <button type="button" class="myorder-pay-btn myorder-pay-btn--modal" id="orderModalPayBtn">
-                    <i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment
-                </button>
+            <div class="myorder-modal-actions">
+                <div class="myorder-modal-cancel-wrap" id="orderModalCancelWrap" hidden>
+                    <button type="button" class="myorder-cancel-btn myorder-cancel-btn--modal" id="orderModalCancelBtn">
+                        <i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order
+                    </button>
+                </div>
+                <div class="myorder-modal-pay-wrap" id="orderModalPayWrap" hidden>
+                    <button type="button" class="myorder-pay-btn myorder-pay-btn--modal" id="orderModalPayBtn">
+                        <i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -309,5 +316,6 @@
     <script src="../js/supabase.js"></script>
     <script src="../js/main.js"></script>
     <script src="myorders.js"></script>
+    <script src="../js/order-notifications.js"></script>
 </body>
 </html>

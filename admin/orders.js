@@ -106,14 +106,32 @@ function renderStats() {
 
     const needsAction = allOrders.filter(o => ACTIVE_STATUSES.includes(o.status)).length;
     const today = allOrders.filter(o => o.created_at && localDateString(new Date(o.created_at)) === todayStr).length;
+
+    // Revenue Collected = money actually in hand right now, not money
+    // tied to a particular fulfillment stage. That's:
+    //   - any order paid online (payment_status === 'paid'), regardless
+    //     of whether it's still preparing/ready or already completed
+    //   - Cash on Pickup/Delivery orders (no payment_provider), where
+    //     cash is only actually collected at completion
+    // Using status === 'completed' alone (the old metric) understated
+    // this — an online-paid order sitting in "preparing" is real
+    // revenue already collected, not revenue still pending.
     const revenue = allOrders
-        .filter(o => o.status === 'completed')
+        .filter(o => o.payment_provider
+            ? o.payment_status === 'paid'
+            : o.status === 'completed')
         .reduce((sum, o) => sum + Number(o.total_price || 0), 0);
+
+    // Orders Fulfilled — a separate, purely operational count of
+    // orders that have actually been handed over, independent of when
+    // the money came in.
+    const fulfilled = allOrders.filter(o => o.status === 'completed').length;
 
     setText('statTotalOrders', allOrders.length);
     setText('statPendingOrders', needsAction);
     setText('statTodayOrders', today);
     setText('statRevenue', formatPHP(revenue));
+    setText('statOrdersFulfilled', fulfilled);
 }
 
 // Local (not UTC) date string — see the booking-flow timezone notes;
@@ -254,19 +272,19 @@ function openDrawer(orderId) {
     document.getElementById('drawerStatusSelect').value = order.status || 'pending';
     setText('drawerStatusSaveResult', '');
 
+    const paymentSection = document.getElementById('drawerPaymentSection');
+    if (order.payment_provider) {
+        const label = order.payment_status === 'paid'
+            ? `Paid online via ${order.payment_provider}${order.paid_at ? ' on ' + formatDateTime(order.paid_at) : ''}`
+            : `Awaiting online payment via ${order.payment_provider}`;
+        document.getElementById('drawerPayment').textContent = label;
+        paymentSection.hidden = false;
+    } else {
+        paymentSection.hidden = true;
+    }
+
     document.getElementById('drawerBackdrop').hidden = false;
     document.getElementById('orderDrawer').hidden = false;
-}
-
-const paymentSection = document.getElementById('drawerPaymentSection');
-if (order.payment_provider) {
-    const label = order.payment_status === 'paid'
-        ? `Paid online via ${order.payment_provider}${order.paid_at ? ' on ' + formatDateTime(order.paid_at) : ''}`
-        : `Awaiting online payment via ${order.payment_provider}`;
-    document.getElementById('drawerPayment').textContent = label;
-    paymentSection.hidden = false;
-} else {
-    paymentSection.hidden = true;
 }
 
 function closeDrawer() {

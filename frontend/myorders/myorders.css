@@ -415,6 +415,44 @@
     cursor: default;
 }
 
+/* --------------------------------------------
+   "Cancel Order" — same recipe as myappointments.css's
+   .myappt-cancel-btn, for visual consistency between the two
+   "My X" pages.
+   -------------------------------------------- */
+.myorder-cancel-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 22px;
+    background: transparent;
+    border: 1px solid rgba(224, 90, 90, 0.4);
+    border-radius: 50px;
+    color: #e05a5a;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myorder-cancel-btn:hover {
+    background: #e05a5a;
+    border-color: #e05a5a;
+    color: var(--white);
+}
+
+.myorder-cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Card footer can hold both buttons side by side. */
+.myorder-card-footer {
+    gap: 10px;
+}
+
 /* ============================================
    ORDER DETAIL MODAL
    Mirrors the barber/product full-detail modal pattern used
@@ -543,15 +581,20 @@
     color: var(--white);
 }
 
-.myorder-modal-pay-wrap[hidden] {
-    display: none;
-}
-
-.myorder-modal-pay-wrap {
+.myorder-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin-top: 22px;
 }
 
-.myorder-pay-btn--modal {
+.myorder-modal-pay-wrap[hidden],
+.myorder-modal-cancel-wrap[hidden] {
+    display: none;
+}
+
+.myorder-pay-btn--modal,
+.myorder-cancel-btn--modal {
     width: 100%;
     justify-content: center;
 }

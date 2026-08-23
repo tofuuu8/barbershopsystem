@@ -10,15 +10,16 @@
 // everywhere.
 //
 // "Accounts" and "Bookings" are wired to real data (`profiles` /
-// `bookings`). "Products" is now wired too — it surfaces low/out-of-
-// stock items from `products`, since those are the ones that need
-// staff attention (a healthy-stock product doesn't need a nudge).
+// `bookings`). "Products" surfaces low/out-of-stock items from
+// `products`. "Orders" is wired too — new orders from `orders`, same
+// "new within the window" pattern as Bookings/Accounts.
 
 const NOTIF_WINDOW_HOURS = 48; // anything within this window counts as "new" for the bell
 
 let notifAccountCount = 0;
 let notifBookingCount = 0;
 let notifProductCount = 0;
+let notifOrderCount = 0;
 
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('notifBtn');
@@ -44,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loadAccountNotifications();
     loadBookingNotifications();
     loadProductNotifications();
+    loadOrderNotifications();
 });
 
 // --------------------------------------------
@@ -176,11 +178,59 @@ async function loadProductNotifications() {
 }
 
 // --------------------------------------------
+// Orders — real data, from `orders`. Same "new within the window"
+// pattern as Accounts/Bookings — recent checkouts staff should know
+// about. Skips 'awaiting_payment' orders (nothing to act on until a
+// customer actually pays or it gets auto-cancelled) so the bell only
+// surfaces orders that genuinely need attention.
+// --------------------------------------------
+async function loadOrderNotifications() {
+    const listEl = document.getElementById('notifOrders');
+    if (!listEl || typeof supabaseClient === 'undefined') return;
+
+    const since = new Date(Date.now() - NOTIF_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await supabaseClient
+        .from('orders')
+        .select('id, fulfillment_type, total_price, status, created_at')
+        .neq('status', 'awaiting_payment')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+    if (error) {
+        console.error(error);
+        listEl.innerHTML = `<div class="admin-notif-empty">Couldn't load order notifications.</div>`;
+        return;
+    }
+
+    const orders = data || [];
+    notifOrderCount = orders.length;
+    refreshNotifBadge();
+
+    if (!orders.length) {
+        listEl.innerHTML = `<div class="admin-notif-empty">No new orders recently.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = orders.map(o => `
+        <div class="admin-notif-item">
+            <div class="admin-notif-item-icon"><i class="fas fa-bag-shopping" aria-hidden="true"></i></div>
+            <div class="admin-notif-item-body">
+                <p>New order: <strong>#${o.id.slice(0, 8).toUpperCase()}</strong> \u2014 PHP ${Number(o.total_price || 0).toLocaleString('en-PH')} (${o.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup'})</p>
+                <span>${timeAgoNotif(o.created_at)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// --------------------------------------------
 // Badge — combined count across every wired section (Accounts +
-// Bookings + Products). Add a section's count here once it's wired.
+// Bookings + Products + Orders). Add a section's count here once it's
+// wired.
 // --------------------------------------------
 function refreshNotifBadge() {
-    setNotifBadge(notifAccountCount + notifBookingCount + notifProductCount);
+    setNotifBadge(notifAccountCount + notifBookingCount + notifProductCount + notifOrderCount);
 }
 
 function setNotifBadge(count) {
