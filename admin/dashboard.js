@@ -3,10 +3,8 @@
 // ============================================================
 // "Total Registered Users" reads `profiles`. Total Revenue Today,
 // Total Appointments Today, Pending Appointments, the Weekly Revenue
-// graph, and Recent Bookings now read `bookings` (that table exists
-// as of the admin Bookings page — see bookings.js for the same
-// data model). Low Stock Alerts stays a placeholder — no
-// products/inventory table yet.
+// graph, and Recent Bookings read `bookings`. Low Stock Alerts now
+// reads `products` (see products_setup.sql / the admin Products page).
 
 let currentAdmin = null;
 
@@ -29,12 +27,7 @@ function initLogout() {
 async function loadDashboard() {
     await loadTotalUsers();
     await loadBookingStats();
-
-    // TODO(products/inventory table): Low Stock Alerts depends on a
-    // `products` (or `inventory`) table with a quantity/stock column
-    // and a defined low-stock threshold. Stays as a placeholder
-    // until that table exists.
-    renderLowStockPlaceholder();
+    await loadLowStockCount();
 }
 
 // --------------------------------------------
@@ -178,18 +171,27 @@ async function loadTotalUsers() {
 }
 
 // --------------------------------------------
-// Low Stock Alerts — placeholder until a products/inventory table
-// exists. Once it does, replace this with a query like:
-//
-//   const { count } = await supabaseClient
-//       .from('products')
-//       .select('id', { count: 'exact', head: true })
-//       .lte('stock_quantity', LOW_STOCK_THRESHOLD);
-//
-// and set statLowStock to that count instead.
+// Low Stock Alerts — real data, from `products`. Counts active
+// products at or under their own low_stock_threshold (per-product,
+// not a single global number, since products.js's admin page lets
+// each product set its own threshold).
 // --------------------------------------------
-function renderLowStockPlaceholder() {
-    setText('statLowStock', '—');
+async function loadLowStockCount() {
+    const { data, error } = await supabaseClient
+        .from('products')
+        .select('stock_quantity, low_stock_threshold')
+        .eq('is_active', true);
+
+    if (error) {
+        // Table may not exist yet on sites that haven't run
+        // products_setup.sql — show the placeholder rather than an
+        // alarming error on the dashboard.
+        setText('statLowStock', '—');
+        return;
+    }
+
+    const lowCount = (data || []).filter(p => p.stock_quantity <= (p.low_stock_threshold ?? 5)).length;
+    setText('statLowStock', lowCount);
 }
 
 // --------------------------------------------

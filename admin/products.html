@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="../frontend/images/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- ========================================
+        SIDEBAR
+        ======================================== -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors" aria-hidden="true"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                <a href="products.html" class="admin-nav-link active"><i class="fas fa-box" aria-hidden="true"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
+                <span class="admin-nav-link disabled"><i class="fas fa-chart-pie" aria-hidden="true"></i> Revenue <span class="admin-nav-soon">Soon</span></span>
+                <span class="admin-nav-link disabled"><i class="fas fa-user-tie" aria-hidden="true"></i> Barbers <span class="admin-nav-soon">Soon</span></span>
+                <span class="admin-nav-link disabled"><i class="fas fa-tags" aria-hidden="true"></i> Services <span class="admin-nav-soon">Soon</span></span>
+                <span class="admin-nav-link disabled"><i class="fas fa-user-shield" aria-hidden="true"></i> Admin Account <span class="admin-nav-soon">Soon</span></span>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- ========================================
+        MAIN
+        ======================================== -->
+        <main class="admin-main admin-main-wide">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Products</h1>
+                    <p class="admin-page-sub">Manage your product catalog and stock.</p>
+                </div>
+
+                <div class="admin-notif-wrap">
+                    <button type="button" class="admin-notif-btn" id="notifBtn" aria-label="Notifications">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span class="admin-notif-badge" id="notifBadge" hidden>0</span>
+                    </button>
+                    <div class="admin-notif-panel" id="notifPanel" hidden>
+                        <div class="admin-notif-panel-header">Notifications</div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-user-plus" aria-hidden="true"></i> Accounts</div>
+                            <div class="admin-notif-list" id="notifAccounts">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</div>
+                            <div class="admin-notif-list" id="notifBookings">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
+                            <div class="admin-notif-list" id="notifProducts">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-error" id="productsError" role="alert" hidden></div>
+
+            <!-- ========================================
+            STAT CARDS
+            ======================================== -->
+            <div class="admin-stat-row">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statTotalProducts">—</div>
+                    <div class="admin-stat-label">Total Products</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statActiveProducts">—</div>
+                    <div class="admin-stat-label">Active (Visible)</div>
+                </div>
+                <div class="admin-stat-card admin-stat-card-alert">
+                    <div class="admin-stat-value" id="statLowStockProducts">—</div>
+                    <div class="admin-stat-label">Low Stock</div>
+                </div>
+                <div class="admin-stat-card admin-stat-card-alert">
+                    <div class="admin-stat-value" id="statOutOfStockProducts">—</div>
+                    <div class="admin-stat-label">Out of Stock</div>
+                </div>
+            </div>
+
+            <!-- ========================================
+            TOOLBAR
+            ======================================== -->
+            <div class="admin-toolbar">
+                <div class="admin-search">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <input type="search" id="productSearchInput" placeholder="Search by name or brand..." />
+                </div>
+                <select id="productCategoryFilter" class="admin-select">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="productStockFilter" class="admin-select">
+                    <option value="">All Stock Levels</option>
+                    <option value="ok">In Stock</option>
+                    <option value="low">Low Stock</option>
+                    <option value="out">Out of Stock</option>
+                </select>
+                <span class="admin-toolbar-count" id="productResultsCount"></span>
+                <button type="button" class="admin-drawer-save" id="addProductBtn" style="margin-left:auto; width:auto; white-space:nowrap;">
+                    <i class="fas fa-plus" aria-hidden="true"></i> Add Product
+                </button>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Visibility</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+                        <tr class="admin-empty-row"><td colspan="6">Loading products...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================
+    ADD / EDIT PRODUCT MODAL
+    ======================================== -->
+    <div class="admin-modal-backdrop" id="productModalBackdrop" hidden></div>
+    <div class="admin-modal admin-modal--wide" id="productModal" hidden role="dialog" aria-label="Add or edit product">
+        <button type="button" class="admin-drawer-close" id="productModalCloseBtn" aria-label="Close">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+
+        <h3 class="admin-modal-title" id="productModalTitle">Add Product</h3>
+        <p class="admin-modal-sub">Fields marked (optional) can be left blank.</p>
+
+        <div class="admin-form-grid">
+            <div class="admin-drawer-field">
+                <label for="productIdInput">Product ID (slug)</label>
+                <input type="text" id="productIdInput" class="admin-input" placeholder="e.g. wax-fox-matte" />
+                <p class="admin-drawer-field-note" id="productIdNote">Lowercase, hyphens only — can't be changed after creating. Used as the cart/order line-item ID.</p>
+            </div>
+            <div class="admin-drawer-field">
+                <label for="productNameInput">Name</label>
+                <input type="text" id="productNameInput" class="admin-input" placeholder="e.g. Matte Molding Wax" />
+            </div>
+            <div class="admin-drawer-field">
+                <label for="productBrandInput">Brand <span class="account-field-optional">(optional)</span></label>
+                <input type="text" id="productBrandInput" class="admin-input" placeholder="e.g. FOX" />
+            </div>
+            <div class="admin-drawer-field">
+                <label for="productCategoryInput">Category <span class="account-field-optional">(optional)</span></label>
+                <input type="text" id="productCategoryInput" class="admin-input" placeholder="e.g. wax, spray" />
+            </div>
+            <div class="admin-drawer-field">
+                <label for="productPriceInput">Price (PHP)</label>
+                <input type="number" id="productPriceInput" class="admin-input" placeholder="0" min="0" step="1" />
+            </div>
+            <div class="admin-drawer-field">
+                <label for="productStockInput">Stock Quantity</label>
+                <input type="number" id="productStockInput" class="admin-input" placeholder="0" min="0" step="1" />
+            </div>
+            <div class="admin-drawer-field admin-drawer-field--full">
+                <label for="productLowStockInput">Low Stock Threshold</label>
+                <input type="number" id="productLowStockInput" class="admin-input" placeholder="5" min="0" step="1" style="max-width:160px;" />
+                <p class="admin-drawer-field-note">Flagged as "Low Stock" once quantity drops to this number or below.</p>
+            </div>
+            <div class="admin-drawer-field admin-drawer-field--full">
+                <label for="productDescriptionInput">Description <span class="account-field-optional">(optional)</span></label>
+                <textarea id="productDescriptionInput" class="admin-input" rows="3" placeholder="Short product description shown on the product page"></textarea>
+            </div>
+            <div class="admin-drawer-field admin-drawer-field--full">
+                <label for="productFeaturesInput">Features <span class="account-field-optional">(optional, one per line)</span></label>
+                <textarea id="productFeaturesInput" class="admin-input" rows="3" placeholder="Matte, no-shine finish&#10;Strong all-day hold"></textarea>
+            </div>
+            <div class="admin-drawer-field admin-drawer-field--full">
+                <label for="productHowToUseInput">How To Use <span class="account-field-optional">(optional, one step per line, in order)</span></label>
+                <textarea id="productHowToUseInput" class="admin-input" rows="3" placeholder="Start with dry or towel-dried hair.&#10;Scrape a small, pea-sized amount..."></textarea>
+            </div>
+            <div class="admin-drawer-field admin-drawer-field--full">
+                <label for="productGalleryInput">Image URLs <span class="account-field-optional">(optional, one per line)</span></label>
+                <textarea id="productGalleryInput" class="admin-input" rows="2" placeholder="../images/products/matte-wax.jpg"></textarea>
+            </div>
+            <div class="admin-drawer-field admin-drawer-field--full">
+                <div class="admin-checkbox-field">
+                    <input type="checkbox" id="productActiveInput" checked />
+                    <label for="productActiveInput">Active (visible on the storefront)</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="admin-drawer-save" id="productSaveBtn">Save Product</button>
+        <p class="admin-drawer-save-status" id="productSaveStatus"></p>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../frontend/js/supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="products.js"></script>
+</body>
+</html>

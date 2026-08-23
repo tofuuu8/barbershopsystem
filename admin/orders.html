@@ -32,10 +32,13 @@
             <nav class="admin-nav">
                 <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
                 <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
-                <a href="orders.html" class="admin-nav-link active"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
                 <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
+                <a href="products.html" class="admin-nav-link"><i class="fas fa-box" aria-hidden="true"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link active"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
+                <span class="admin-nav-link disabled"><i class="fas fa-chart-pie" aria-hidden="true"></i> Revenue <span class="admin-nav-soon">Soon</span></span>
                 <span class="admin-nav-link disabled"><i class="fas fa-user-tie" aria-hidden="true"></i> Barbers <span class="admin-nav-soon">Soon</span></span>
                 <span class="admin-nav-link disabled"><i class="fas fa-tags" aria-hidden="true"></i> Services <span class="admin-nav-soon">Soon</span></span>
+                <span class="admin-nav-link disabled"><i class="fas fa-user-shield" aria-hidden="true"></i> Admin Account <span class="admin-nav-soon">Soon</span></span>
             </nav>
 
             <div class="admin-sidebar-footer">
@@ -80,8 +83,8 @@
 
                         <div class="admin-notif-section">
                             <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
-                            <div class="admin-notif-list">
-                                <div class="admin-notif-empty">No product alerts yet — coming soon.</div>
+                            <div class="admin-notif-list" id="notifProducts">
+                                <div class="admin-notif-empty">Loading...</div>
                             </div>
                         </div>
                     </div>

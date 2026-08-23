@@ -2,18 +2,23 @@
 // ADMIN — NOTIFICATIONS BELL
 // ============================================================
 // Shared across every admin page (loaded after admin-auth.js, before
-// the page's own script). "Accounts" (new signups) and "Bookings"
-// (pending appointments) are both wired to real data now that the
-// `bookings` table exists — `profiles` and `bookings` respectively.
-// "Products" stays a static placeholder until a products table
-// exists; give it its own loadXNotifications() function here
-// following the same shape as the two below once it does.
+// the page's own script) — this is the ONLY place bell content is
+// populated, so every page shows the exact same notifications
+// regardless of which page you're on. Don't add page-specific
+// notification code to individual page scripts (e.g. bookings.js /
+// orders.js) — it belongs here instead, so the bell stays consistent
+// everywhere.
 //
-// Pages without a #notifBookings element (none currently) simply skip
-// that section — loadBookingNotifications() no-ops if the element
-// isn't found, same guard pattern as loadAccountNotifications().
+// "Accounts" and "Bookings" are wired to real data (`profiles` /
+// `bookings`). "Products" is now wired too — it surfaces low/out-of-
+// stock items from `products`, since those are the ones that need
+// staff attention (a healthy-stock product doesn't need a nudge).
 
-const NOTIF_NEW_ACCOUNT_WINDOW_HOURS = 48; // accounts registered within this window count as "new"
+const NOTIF_WINDOW_HOURS = 48; // anything within this window counts as "new" for the bell
+
+let notifAccountCount = 0;
+let notifBookingCount = 0;
+let notifProductCount = 0;
 
 document.addEventListener('DOMContentLoaded', function () {
     const btn = document.getElementById('notifBtn');
@@ -38,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     loadAccountNotifications();
     loadBookingNotifications();
+    loadProductNotifications();
 });
 
 // --------------------------------------------
@@ -47,7 +53,7 @@ async function loadAccountNotifications() {
     const listEl = document.getElementById('notifAccounts');
     if (!listEl || typeof supabaseClient === 'undefined') return;
 
-    const since = new Date(Date.now() - NOTIF_NEW_ACCOUNT_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - NOTIF_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
     const { data, error } = await supabaseClient
         .from('profiles')
@@ -63,8 +69,8 @@ async function loadAccountNotifications() {
     }
 
     const accounts = data || [];
-    notifCounts.accounts = accounts.length;
-    updateNotifBadge();
+    notifAccountCount = accounts.length;
+    refreshNotifBadge();
 
     if (!accounts.length) {
         listEl.innerHTML = `<div class="admin-notif-empty">No new accounts recently.</div>`;
@@ -83,18 +89,18 @@ async function loadAccountNotifications() {
 }
 
 // --------------------------------------------
-// Bookings — real data, from `bookings`. Surfaces pending
-// appointments, since those are the ones that actually need staff
-// attention (confirmed/completed/cancelled don't need a nudge).
+// Bookings — real data, from `bookings`
 // --------------------------------------------
 async function loadBookingNotifications() {
     const listEl = document.getElementById('notifBookings');
     if (!listEl || typeof supabaseClient === 'undefined') return;
 
+    const since = new Date(Date.now() - NOTIF_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+
     const { data, error } = await supabaseClient
         .from('bookings')
-        .select('id, service_name, barber_name, booking_date, booking_time, created_at, user_id')
-        .eq('status', 'pending')
+        .select('id, service_name, barber_name, booking_date, booking_time, created_at')
+        .gte('created_at', since)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -105,11 +111,11 @@ async function loadBookingNotifications() {
     }
 
     const bookings = data || [];
-    notifCounts.bookings = bookings.length;
-    updateNotifBadge();
+    notifBookingCount = bookings.length;
+    refreshNotifBadge();
 
     if (!bookings.length) {
-        listEl.innerHTML = `<div class="admin-notif-empty">No pending bookings right now.</div>`;
+        listEl.innerHTML = `<div class="admin-notif-empty">No new bookings recently.</div>`;
         return;
     }
 
@@ -117,7 +123,7 @@ async function loadBookingNotifications() {
         <div class="admin-notif-item">
             <div class="admin-notif-item-icon"><i class="fas fa-calendar-check" aria-hidden="true"></i></div>
             <div class="admin-notif-item-body">
-                <p>Pending: <strong>${escapeHtmlNotif(b.service_name || 'Booking')}</strong> with ${escapeHtmlNotif(b.barber_name || 'a barber')}</p>
+                <p>New booking: <strong>${escapeHtmlNotif(b.service_name || 'Service')}</strong> with ${escapeHtmlNotif(b.barber_name || 'a barber')}</p>
                 <span>${timeAgoNotif(b.created_at)}</span>
             </div>
         </div>
@@ -125,17 +131,63 @@ async function loadBookingNotifications() {
 }
 
 // --------------------------------------------
-// Badge — sums whichever sections have loaded so far. Sections with
-// no data source yet (Products) just never add to notifCounts.
+// Products — real data, from `products`. Surfaces low/out-of-stock
+// items rather than "new" ones (there's no meaningful "recently
+// added" urgency for a product the way there is for a signup or a
+// booking) — anything at or under its own low_stock_threshold.
 // --------------------------------------------
-const notifCounts = { accounts: 0, bookings: 0 };
+async function loadProductNotifications() {
+    const listEl = document.getElementById('notifProducts');
+    if (!listEl || typeof supabaseClient === 'undefined') return;
 
-function updateNotifBadge() {
-    const total = notifCounts.accounts + notifCounts.bookings;
+    const { data, error } = await supabaseClient
+        .from('products')
+        .select('id, name, stock_quantity, low_stock_threshold, is_active')
+        .eq('is_active', true)
+        .order('stock_quantity', { ascending: true })
+        .limit(50);
+
+    if (error) {
+        // Table may not exist yet on sites that haven't run
+        // products_setup.sql — fail quietly rather than showing an
+        // alarming error in the bell for something optional.
+        listEl.innerHTML = `<div class="admin-notif-empty">No product alerts yet.</div>`;
+        return;
+    }
+
+    const lowStock = (data || []).filter(p => p.stock_quantity <= (p.low_stock_threshold ?? 5)).slice(0, 5);
+    notifProductCount = lowStock.length;
+    refreshNotifBadge();
+
+    if (!lowStock.length) {
+        listEl.innerHTML = `<div class="admin-notif-empty">All products are well stocked.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = lowStock.map(p => `
+        <div class="admin-notif-item">
+            <div class="admin-notif-item-icon"><i class="fas fa-box" aria-hidden="true"></i></div>
+            <div class="admin-notif-item-body">
+                <p>${p.stock_quantity <= 0 ? 'Out of stock' : 'Low stock'}: <strong>${escapeHtmlNotif(p.name)}</strong></p>
+                <span>${p.stock_quantity} left</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// --------------------------------------------
+// Badge — combined count across every wired section (Accounts +
+// Bookings + Products). Add a section's count here once it's wired.
+// --------------------------------------------
+function refreshNotifBadge() {
+    setNotifBadge(notifAccountCount + notifBookingCount + notifProductCount);
+}
+
+function setNotifBadge(count) {
     const badge = document.getElementById('notifBadge');
     if (!badge) return;
-    if (total > 0) {
-        badge.textContent = total > 9 ? '9+' : String(total);
+    if (count > 0) {
+        badge.textContent = count > 9 ? '9+' : String(count);
         badge.hidden = false;
     } else {
         badge.hidden = true;

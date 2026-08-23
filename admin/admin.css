@@ -357,7 +357,7 @@ input, select, textarea { font: inherit; }
    -------------------------------------------- */
 .admin-main {
     padding: 32px 40px 60px;
-    max-width: 1200px;
+    width: 100%;
 }
 
 .admin-main-wide {
@@ -396,11 +396,12 @@ input, select, textarea { font: inherit; }
 }
 
 .admin-stat-card {
+    flex: 1 1 0;
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 16px 22px;
-    min-width: 140px;
+    min-width: 150px;
 }
 
 .admin-stat-value {
@@ -1481,6 +1482,145 @@ input, select, textarea { font: inherit; }
 
 @media (max-width: 480px) {
     .admin-drawer { max-width: 100%; }
+}
+
+
+/* ============================================
+   PRODUCTS PAGE
+   ============================================ */
+
+/* --------------------------------------------
+   Product thumbnail in the table
+   -------------------------------------------- */
+.admin-product-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+}
+
+.admin-product-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.admin-product-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* --------------------------------------------
+   Stock badge (In Stock / Low Stock / Out of Stock)
+   -------------------------------------------- */
+.admin-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.62rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 50px;
+    border: 1px solid var(--line);
+}
+
+.admin-stock-badge--ok {
+    color: var(--good);
+    background: rgba(76, 175, 125, 0.1);
+    border-color: rgba(76, 175, 125, 0.3);
+}
+
+.admin-stock-badge--low {
+    color: #f2c96b;
+    background: rgba(242, 201, 107, 0.1);
+    border-color: rgba(242, 201, 107, 0.3);
+}
+
+.admin-stock-badge--out {
+    color: #f2a6a1;
+    background: rgba(224, 90, 90, 0.1);
+    border-color: rgba(224, 90, 90, 0.3);
+}
+
+/* --------------------------------------------
+   Visibility badge (Active / Hidden)
+   -------------------------------------------- */
+.admin-visibility-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.62rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 50px;
+    border: 1px solid var(--line);
+    color: var(--dim);
+}
+
+.admin-visibility-badge--active {
+    color: var(--steel);
+    background: rgba(216, 210, 196, 0.08);
+    border-color: rgba(216, 210, 196, 0.35);
+}
+
+/* --------------------------------------------
+   Add/Edit Product form — 2-column grid of
+   .admin-drawer-field items inside a wide modal
+   -------------------------------------------- */
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 18px;
+}
+
+.admin-form-grid .admin-drawer-field--full {
+    grid-column: 1 / -1;
+}
+
+.admin-drawer-field-note {
+    margin-top: 6px;
+    font-family: var(--font-body);
+    font-size: 0.76rem;
+    color: var(--dim);
+    line-height: 1.5;
+}
+
+.admin-checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 14px;
+}
+
+.admin-checkbox-field input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--steel);
+    cursor: pointer;
+}
+
+.admin-checkbox-field label {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: var(--white);
+    cursor: pointer;
+}
+
+@media (max-width: 560px) {
+    .admin-form-grid { grid-template-columns: 1fr; }
 }
 
 /* ============================================

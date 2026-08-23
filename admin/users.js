@@ -191,6 +191,8 @@ function openEditModal(userId) {
 
     document.getElementById('editFullName').value = user.full_name || '';
     document.getElementById('editEmail').value = user.email || '';
+    document.getElementById('editPhone').value = user.phone || '';
+    document.getElementById('editAddress').value = user.address || '';
     setText('editSaveStatus', '');
 
     document.getElementById('editModalBackdrop').hidden = false;
@@ -210,6 +212,8 @@ async function saveEditedUser() {
     const status = document.getElementById('editSaveStatus');
     const fullName = document.getElementById('editFullName').value.trim();
     const email = document.getElementById('editEmail').value.trim();
+    const phone = document.getElementById('editPhone').value.trim();
+    const address = document.getElementById('editAddress').value.trim();
 
     if (!fullName) {
         status.style.color = 'var(--bad)';
@@ -227,7 +231,12 @@ async function saveEditedUser() {
 
     const { error } = await supabaseClient
         .from('profiles')
-        .update({ full_name: fullName, email: email })
+        .update({
+            full_name: fullName,
+            email: email,
+            phone: phone || null,
+            address: address || null
+        })
         .eq('id', activeActionUserId);
 
     btn.disabled = false;
@@ -241,7 +250,12 @@ async function saveEditedUser() {
     }
 
     const user = allUsers.find(u => u.id === activeActionUserId);
-    if (user) { user.full_name = fullName; user.email = email; }
+    if (user) {
+        user.full_name = fullName;
+        user.email = email;
+        user.phone = phone || null;
+        user.address = address || null;
+    }
 
     renderStats();
     renderTable(allUsers);
@@ -282,16 +296,22 @@ async function handleToggleBlock(userId) {
 // --------------------------------------------
 // Delete
 // --------------------------------------------
+// Calls the `delete-user` Edge Function instead of deleting the
+// `profiles` row directly — that function is the only place allowed
+// to touch Supabase Auth (auth.users), since that requires the
+// service_role key, which must never run in browser JS. See
+// /supabase-functions/delete-user/index.ts for the function itself
+// and its deploy instructions.
 async function handleDelete(userId) {
     if (!confirm('Are you sure you want to DELETE this user? This action cannot be undone!')) return;
 
     try {
-        const { error } = await supabaseClient
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
+        const { data, error } = await supabaseClient.functions.invoke('delete-user', {
+            body: { userId }
+        });
 
         if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
 
         allUsers = allUsers.filter(u => u.id !== userId);
         renderStats();
@@ -299,7 +319,7 @@ async function handleDelete(userId) {
         showToast('User deleted successfully!');
     } catch (error) {
         console.error('Error deleting user:', error);
-        showToast('Error deleting user', 'error');
+        showToast(error.message || 'Error deleting user', 'error');
     }
 }
 
