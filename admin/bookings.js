@@ -210,7 +210,7 @@ function renderTable(bookings) {
 // Status badge
 // --------------------------------------------
 function getStatusBadge(status) {
-    const labels = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled', no_show: 'No Show' };
+    const labels = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
     const safeStatus = Object.prototype.hasOwnProperty.call(labels, status) ? status : 'unknown';
     const label = labels[status] || status || 'Unknown';
     return `<span class="admin-status-badge admin-status-${safeStatus}">${escapeHtml(label)}</span>`;
@@ -330,14 +330,35 @@ function closeBookingModal() {
 async function updateBookingStatus(newStatus) {
     if (!activeBookingId) return null;
 
-    const { data, error } = await supabaseClient.rpc('update_booking_admin', {
+    const payload = {
+        status: newStatus,
+        booking_date: document.getElementById('bookingDateInput').value,
+        booking_time: document.getElementById('bookingTimeInput').value,
+        barber_id: document.getElementById('bookingBarberSelect').value,
+        barber_name: availableBarbers.find(barber => barber.id === document.getElementById('bookingBarberSelect').value)?.name || null,
+        admin_notes: document.getElementById('bookingAdminNotesInput').value.trim() || null,
+        updated_at: new Date().toISOString()
+    };
+
+    const rpcResult = await supabaseClient.rpc('update_booking_admin', {
         p_booking_id: activeBookingId,
         p_new_status: newStatus,
-        p_booking_date: document.getElementById('bookingDateInput').value,
-        p_booking_time: document.getElementById('bookingTimeInput').value,
-        p_barber_id: document.getElementById('bookingBarberSelect').value,
-        p_admin_notes: document.getElementById('bookingAdminNotesInput').value.trim() || null
+        p_booking_date: payload.booking_date,
+        p_booking_time: payload.booking_time,
+        p_barber_id: payload.barber_id,
+        p_admin_notes: payload.admin_notes
     });
+
+    let data = rpcResult.data;
+    let error = rpcResult.error;
+    if (error && /update_booking_admin|PGRST202|does not exist/i.test(error.message || '')) {
+        // Compatibility path for databases that have the admin columns but
+        // have not yet installed the optional conflict-safe RPC. The normal
+        // path remains the RPC above; this fallback keeps status edits usable.
+        const directResult = await supabaseClient.from('bookings').update(payload).eq('id', activeBookingId).select().single();
+        data = directResult.data;
+        error = directResult.error;
+    }
 
     if (error || !data) throw error || new Error('Could not update appointment.');
 

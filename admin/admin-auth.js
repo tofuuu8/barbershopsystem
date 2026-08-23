@@ -8,7 +8,7 @@
 // slice admin actually needs: know who's signed in, and confirm
 // they're an admin before showing anything.
 //
-// Loaded after ../frontend/js/supabase.js (same shared Supabase
+// Loaded after supabase.js (same shared Supabase
 // client/project as the customer site — admins are just profiles rows
 // with is_admin = true, not a separate user pool).
 // ============================================================
@@ -40,7 +40,7 @@ if (typeof supabaseClient !== 'undefined') {
         }
     });
 } else {
-    console.warn('supabaseClient is not defined — make sure ../frontend/js/supabase.js is loaded before admin-auth.js.');
+    console.warn('supabaseClient is not defined — make sure supabase.js is loaded before admin-auth.js.');
     authReady = true;
     authReadyResolve();
 }
