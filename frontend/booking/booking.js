@@ -963,21 +963,51 @@ async function loadUpcomingBookings() {
     }).join('');
 
     list.querySelectorAll('.booking-history-cancel').forEach(btn => {
-        btn.addEventListener('click', function () { cancelBooking(this.dataset.id); });
+        btn.addEventListener('click', function () { cancelBooking(this.dataset.id, this); });
     });
 }
 
-async function cancelBooking(id) {
+// --------------------------------------------
+// Cancel — same guard as myappointments.js's handleCancelAppointment():
+// under RLS, an UPDATE that matches zero rows (blocked by policy)
+// returns error: null, not an error. Postgres never surfaces "blocked
+// by policy" as a failure on its own, so without checking the returned
+// row count, a blocked cancel would silently report success here while
+// the booking's status never actually changed.
+// --------------------------------------------
+async function cancelBooking(id, btn) {
     if (!window.confirm('Cancel this appointment?')) return;
 
-    const { error } = await supabaseClient
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Cancelling...';
+    }
+
+    const { data, error } = await supabaseClient
         .from('bookings')
         .update({ status: 'cancelled' })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
     if (error) {
         console.error(error);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Cancel';
+        }
         alert('Could not cancel that appointment — please try again.');
+        return;
+    }
+
+    if (!data || !data.length) {
+        // RLS silently matched zero rows (e.g. the booking is no longer
+        // in a cancellable status) — treat the same as a blocked policy
+        // rather than reporting success.
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Cancel';
+        }
+        alert('This appointment can no longer be cancelled from here — please refresh the page.');
         return;
     }
 
