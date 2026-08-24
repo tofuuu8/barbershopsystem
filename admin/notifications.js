@@ -48,12 +48,12 @@ async function loadAdminNotifications() {
         .from('notifications')
         .select('id, event_type, title, body, entity_type, entity_id, created_at, read_at')
         .eq('audience', 'admin')
-        .is('read_at', null)
+        .is('read_at', null)  // ← Unread lang
         .order('created_at', { ascending: false })
         .limit(50);
 
     if (error) {
-        console.error('Could not load durable notifications:', error);
+        console.error('Could not load notifications:', error);
         renderNotificationMessage('notifAccounts', 'Run the latest Supabase migrations to enable notifications.');
         renderNotificationMessage('notifBookings', 'Notifications are not available yet.');
         renderNotificationMessage('notifProducts', 'Notifications are not available yet.');
@@ -65,6 +65,24 @@ async function loadAdminNotifications() {
     adminNotifications = data || [];
     renderAdminNotifications();
 }
+
+document.addEventListener('DOMContentLoaded', async function () {
+    currentAdmin = await requireAdminOrRedirect();
+    if (!currentAdmin) return;
+
+    const emailEl = document.getElementById('adminSidebarEmail');
+    if (emailEl) emailEl.textContent = currentAdmin.email;
+
+    initLogout();
+    await loadDashboard();
+    
+    // ============================================
+    // Load notifications after dashboard
+    // ============================================
+    if (typeof loadAdminNotifications === 'function') {
+        await loadAdminNotifications();
+    }
+});
 
 function renderAdminNotifications() {
     const grouped = { notifAccounts: [], notifBookings: [], notifProducts: [], notifOrders: [] };
@@ -134,8 +152,9 @@ function subscribeToAdminNotifications() {
 function setNotifBadge(count) {
     const badge = document.getElementById('notifBadge');
     if (!badge) return;
+    
     badge.textContent = count > 9 ? '9+' : String(count);
-    badge.hidden = count <= 0;
+    badge.hidden = count <= 0;  // ← Naka-hide kung 0
 }
 
 function timeAgoNotif(iso) {

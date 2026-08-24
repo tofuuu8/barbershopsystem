@@ -1,42 +1,58 @@
 // ============================================
 // ABOUT PAGE — BARBER PROFILES + MODAL
+// Data comes from Supabase — NO HARDCODED BARBERS!
 // ============================================
-const barbers = [
-    {
-        id: 'barber-russel',
-        name: 'Barber Russel',
-        role: 'Barber and Stylist',
-        photo: '../images/team.jpg',
-        specialties: ['Fades', 'Beard Sculpting', 'Classic Cuts'],
-        experience: 8,
-        rating: 4.9,
-        reviews: 127,
-        bio: 'Barber Russel has been behind the chair for eight years and specializes in sharp, clean fades and traditional barbering. If you want precision over trend-chasing, he\'s your guy.'
-    },
-    {
-        id: 'klark-dizon',
-        name: 'Barber Klark',
-        role: 'Owner and Master Barber',
-        photo: '../images/team1.jpg',
-        specialties: ['Modern Styles', 'Textured Crops', 'Color'],
-        experience: 6,
-        rating: 4.8,
-        reviews: 98,
-        bio: 'Barber Klark stays on top of every trend without losing the fundamentals. His textured crops and color work have built him a loyal client base of regulars.'
-    },
-    {
-        id: 'barber-jon',
-        name: 'Barber Jon',
-        role: 'Barber and Stylist',
-        photo: '../images/team1.jpg',
-        specialties: ['Precision Fades', 'Hair Color', 'Kids Cuts'],
-        experience: 5,
-        rating: 4.9,
-        reviews: 110,
-        bio: 'Barber Jon trained in both barbering and color, giving him range most barbers don\'t have. Patient with first-time kids\' cuts, precise with everything else.'
-    }
-];
 
+let barbers = [];
+
+// ============================================
+// LOAD BARBERS FROM SUPABASE
+// ============================================
+async function loadBarbers() {
+    console.log('🔄 Loading barbers from Supabase...');
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('barbers')
+            .select('*')
+            .eq('is_active', true)
+            .order('name');
+
+        console.log('📊 Supabase response:', { data, error });
+
+        if (error) {
+            console.error('❌ Error loading barbers:', error);
+            showBarberError('Could not load barbers. Please refresh the page.');
+            return;
+        }
+
+        barbers = data || [];
+        console.log('✅ Loaded barbers:', barbers.length, barbers);
+        
+        renderBarberCards();
+        initBarberModal();
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+        showBarberError('Something went wrong. Please try again.');
+    }
+}
+
+function showBarberError(message) {
+    const grid = document.getElementById('barberGrid');
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--dim);">
+                <i class="fas fa-exclamation-circle" style="font-size:2rem; margin-bottom:16px; display:block;"></i>
+                <p>${message}</p>
+            </div>
+        `;
+    }
+}
+
+// ============================================
+// STAR RATING HELPER
+// ============================================
 function starRatingHtml(rating) {
     const full = Math.floor(rating);
     const hasHalf = rating - full >= 0.5;
@@ -48,25 +64,68 @@ function starRatingHtml(rating) {
     return html;
 }
 
+// ============================================
+// ESCAPE HTML
+// ============================================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================
+// RENDER BARBER CARDS
+// ============================================
 function renderBarberCards() {
     const grid = document.getElementById('barberGrid');
     if (!grid) return;
 
-    grid.innerHTML = barbers.map(barber => `
+    if (!barbers.length) {
+        grid.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--dim);">
+                <i class="fas fa-users" style="font-size:2rem; margin-bottom:16px; display:block;"></i>
+                <p>No barbers available yet. Check back soon!</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = barbers.map(barber => {
+        let imageSrc = barber.image_url || '';
+        
+        // If it's a Supabase URL, use it directly
+        if (imageSrc.includes('supabase.co')) {
+            // Use as is
+        } 
+        // If it's a relative path, fix it
+        else if (imageSrc && !imageSrc.startsWith('http')) {
+            // Remove any leading ../ or ./
+            imageSrc = imageSrc.replace(/^\.\.?\//, '');
+            imageSrc = '../' + imageSrc;
+        }
+        // Fallback
+        else {
+            imageSrc = '../images/team.jpg';
+        }
+        
+        return `
         <article class="barber-card">
             <div class="barber-card-photo">
-                <img src="${barber.photo}" alt="${barber.name}, ${barber.role}" loading="lazy"
-                     onerror="this.src='https://placehold.co/400x500/232323/666?text=Photo'" />
+                <img src="${imageSrc}" 
+                     alt="${barber.name}, ${barber.title || 'Barber'}" 
+                     loading="lazy"
+                     onerror="this.src='../images/team.jpg'" />
             </div>
             <div class="barber-card-body">
-                <h3 class="barber-card-name">${barber.name}</h3>
-                <p class="barber-card-role">${barber.role}</p>
+                <h3 class="barber-card-name">${escapeHtml(barber.name)}</h3>
+                <p class="barber-card-role">${escapeHtml(barber.title || 'Barber')}</p>
                 <div class="barber-card-tags">
-                    ${barber.specialties.map(s => `<span class="barber-tag">${s}</span>`).join('')}
+                    ${barber.specialties ? barber.specialties.split(',').map(s => `<span class="barber-tag">${escapeHtml(s.trim())}</span>`).join('') : ''}
                 </div>
                 <div class="barber-card-stats">
-                    <span class="barber-card-experience"><strong>${barber.experience}</strong> yrs experience</span>
-                    <span class="barber-card-rating">${starRatingHtml(barber.rating)} ${barber.rating}</span>
+                    <span class="barber-card-experience"><strong>${barber.experience || 0}</strong> yrs experience</span>
+                    <span class="barber-card-rating">${starRatingHtml(barber.rating || 0)} ${barber.rating || 0}</span>
                 </div>
                 <div class="barber-card-actions">
                     <a href="../booking/booking.html?barber=${barber.id}" class="btn-primary">Book with This Barber</a>
@@ -74,9 +133,14 @@ function renderBarberCards() {
                 </div>
             </div>
         </article>
-    `).join('');
+    `}).join('');
+
+    attachModalListeners();
 }
 
+// ============================================
+// BARBER MODAL
+// ============================================
 function initBarberModal() {
     const modal = document.getElementById('barberModal');
     const backdrop = document.getElementById('barberModalBackdrop');
@@ -86,25 +150,43 @@ function initBarberModal() {
 
     let lastFocused = null;
 
-    function openModal(barber) {
-        document.getElementById('barberModalPhoto').src = barber.photo;
-        document.getElementById('barberModalPhoto').alt = barber.name;
-        document.getElementById('barberModalName').textContent = barber.name;
-        document.getElementById('barberModalRole').textContent = barber.role;
-        document.getElementById('barberModalRating').innerHTML =
-            `${starRatingHtml(barber.rating)} ${barber.rating} (${barber.reviews} reviews)`;
-        document.getElementById('barberModalBio').textContent = barber.bio;
-        document.getElementById('barberModalSpecialties').innerHTML =
-            barber.specialties.map(s => `<span class="barber-tag">${s}</span>`).join('');
-        document.getElementById('barberModalExperience').textContent = barber.experience;
-        document.getElementById('barberModalReviews').textContent = barber.reviews;
-        document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${barber.id}`;
-
-        lastFocused = document.activeElement;
-        modal.hidden = false;
-        document.body.style.overflow = 'hidden';
-        closeBtn.focus();
+ function openModal(barber) {
+    // Use image_url from database
+    let imageSrc = barber.image_url || '';
+    if (!imageSrc) {
+        imageSrc = 'https://placehold.co/400x500/232323/666?text=Photo';
     }
+    
+    document.getElementById('barberModalPhoto').src = imageSrc;
+    document.getElementById('barberModalPhoto').alt = barber.name;
+    document.getElementById('barberModalPhoto').onerror = function() {
+        this.src = 'https://placehold.co/400x500/232323/666?text=Photo';
+    };
+    
+    document.getElementById('barberModalName').textContent = barber.name;
+    document.getElementById('barberModalRole').textContent = barber.title || 'Barber';
+    document.getElementById('barberModalRating').innerHTML =
+        `${starRatingHtml(barber.rating || 0)} ${barber.rating || 0} (${barber.reviews || 0} reviews)`;
+    document.getElementById('barberModalBio').textContent = barber.bio || 'No bio available.';
+    
+    const specialtiesEl = document.getElementById('barberModalSpecialties');
+    if (barber.specialties) {
+        specialtiesEl.innerHTML = barber.specialties.split(',').map(s => 
+            `<span class="barber-tag">${escapeHtml(s.trim())}</span>`
+        ).join('');
+    } else {
+        specialtiesEl.innerHTML = '<span class="barber-tag">All services</span>';
+    }
+    
+    document.getElementById('barberModalExperience').textContent = barber.experience || 0;
+    document.getElementById('barberModalReviews').textContent = barber.reviews || 0;
+    document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${barber.id}`;
+
+    lastFocused = document.activeElement;
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    if (closeBtn) closeBtn.focus();
+}
 
     function closeModal() {
         modal.hidden = true;
@@ -112,17 +194,7 @@ function initBarberModal() {
         if (lastFocused) lastFocused.focus();
     }
 
-    // "View Full Profile" buttons are rendered dynamically, so listen on the
-    // grid container and match by data-barber-id rather than binding per-card.
-    const grid = document.getElementById('barberGrid');
-    if (grid) {
-        grid.addEventListener('click', function(e) {
-            const btn = e.target.closest('.barber-view-more');
-            if (!btn) return;
-            const barber = barbers.find(b => b.id === btn.dataset.barberId);
-            if (barber) openModal(barber);
-        });
-    }
+    window._openBarberModal = openModal;
 
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     if (backdrop) backdrop.addEventListener('click', closeModal);
@@ -133,7 +205,35 @@ function initBarberModal() {
     });
 }
 
+// ============================================
+// ATTACH MODAL LISTENERS
+// ============================================
+function attachModalListeners() {
+    const grid = document.getElementById('barberGrid');
+    if (!grid) return;
+
+    grid.addEventListener('click', function(e) {
+        const btn = e.target.closest('.barber-view-more');
+        if (!btn) return;
+        const barberId = btn.dataset.barberId;
+        const barber = barbers.find(b => b.id === barberId);
+        if (barber && window._openBarberModal) {
+            window._openBarberModal(barber);
+        }
+    });
+}
+
+// ============================================
+// INIT
+// ============================================
 document.addEventListener('DOMContentLoaded', function () {
-    renderBarberCards();
-    initBarberModal();
+    console.log('📄 About page loaded!');
+    
+    if (typeof supabaseClient === 'undefined') {
+        console.error('❌ supabaseClient is not defined!');
+        showBarberError('Unable to connect to the server. Please try again later.');
+        return;
+    }
+    
+    loadBarbers();
 });
