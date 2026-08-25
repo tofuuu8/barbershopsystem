@@ -12,8 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
-
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
@@ -29,17 +28,16 @@
                 <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
             </div>
 
-            <nav class="admin-nav">
-                <a href="dashboard.html" class="admin-nav-link active"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
-                <a href="users.html" class="admin-nav-link"><i class="fas fa-users" aria-hidden="true"></i> Users</a>
-                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</a>
-                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock" aria-hidden="true"></i> Availability</a>
-                <a href="products.html" class="admin-nav-link"><i class="fas fa-box" aria-hidden="true"></i> Products</a>
-                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</a>
-                <span class="admin-nav-link disabled"><i class="fas fa-chart-pie" aria-hidden="true"></i> Revenue <span class="admin-nav-soon">Soon</span></span>
-                <span class="admin-nav-link disabled"><i class="fas fa-user-tie" aria-hidden="true"></i> Barbers <span class="admin-nav-soon">Soon</span></span>
-                <span class="admin-nav-link disabled"><i class="fas fa-tags" aria-hidden="true"></i> Services <span class="admin-nav-soon">Soon</span></span>
-                <span class="admin-nav-link disabled"><i class="fas fa-user-shield" aria-hidden="true"></i> Admin Account <span class="admin-nav-soon">Soon</span></span>
+           <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+                <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+                <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+                <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+                <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
             </nav>
 
             <div class="admin-sidebar-footer">
@@ -183,6 +181,60 @@
                             <p>No bookings yet</p>
                             <span>Bookings will show up here once the booking system is live.</span>
                         </div>
+                    </div>
+                </div>
+                                <!-- Barber Performance -->
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>💈 Top Barbers</h3>
+                        <span class="admin-panel-sub">This month</span>
+                    </div>
+                    <div id="topBarbersList">
+                        <div class="admin-recent-empty">
+                            <i class="fas fa-user-tie" aria-hidden="true"></i>
+                            <p>No barber data yet</p>
+                            <span>Barber performance will appear here once you have bookings.</span>
+                        </div>
+                    </div>
+                </div>
+                                <!-- Recent Orders -->
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>📦 Recent Orders</h3>
+                        <span class="admin-panel-sub">Latest activity</span>
+                    </div>
+                    <div id="recentOrdersList">
+                        <div class="admin-recent-empty">
+                            <i class="fas fa-box" aria-hidden="true"></i>
+                            <p>No orders yet</p>
+                            <span>Orders will appear here once customers start ordering.</span>
+                        </div>
+                    </div>
+                </div>
+
+                                <!-- Quick Actions -->
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>⚡ Quick Actions</h3>
+                        <span class="admin-panel-sub">Shortcuts</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 0;">
+                        <a href="bookings.html" class="admin-quick-action">
+                            <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                            <span>View Bookings</span>
+                        </a>
+                        <a href="users.html" class="admin-quick-action">
+                            <i class="fas fa-users" aria-hidden="true"></i>
+                            <span>Manage Users</span>
+                        </a>
+                        <a href="products.html" class="admin-quick-action">
+                            <i class="fas fa-box" aria-hidden="true"></i>
+                            <span>Manage Products</span>
+                        </a>
+                        <a href="barbers.html" class="admin-quick-action">
+                            <i class="fas fa-user-tie" aria-hidden="true"></i>
+                            <span>Manage Barbers</span>
+                        </a>
                     </div>
                 </div>
 

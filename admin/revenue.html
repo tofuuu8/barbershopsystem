@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Revenue - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="assets/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors" aria-hidden="true"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+                <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+                <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+                <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+                <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="admin-main admin-main-wide">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Revenue</h1>
+                    <p class="admin-page-sub">Track your business earnings and financial performance.</p>
+                </div>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="admin-toolbar">
+                <div class="admin-search" style="max-width:200px;">
+                    <i class="fas fa-calendar"></i>
+                    <input type="date" id="revenueStartDate" class="admin-input" style="padding-left:38px;" />
+                </div>
+                <span style="color:var(--dim);">to</span>
+                <div class="admin-search" style="max-width:200px;">
+                    <i class="fas fa-calendar"></i>
+                    <input type="date" id="revenueEndDate" class="admin-input" style="padding-left:38px;" />
+                </div>
+                <button type="button" class="admin-drawer-save" id="revenueFilterBtn" style="width:auto; padding:10px 24px;">Apply</button>
+                <button type="button" class="admin-filter-pill" id="revenueTodayBtn">Today</button>
+                <button type="button" class="admin-filter-pill" id="revenueWeekBtn">This Week</button>
+                <button type="button" class="admin-filter-pill" id="revenueMonthBtn">This Month</button>
+                
+        
+            </div>
+
+            <!-- Stats -->
+            <div class="admin-stat-row">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statTotalRevenue">—</div>
+                    <div class="admin-stat-label">Total Revenue</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statTotalOrders">—</div>
+                    <div class="admin-stat-label">Total Orders</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statAvgOrder">—</div>
+                    <div class="admin-stat-label">Average Order Value</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="admin-dash-grid">
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>Revenue Trend</h3>
+                        <span class="admin-panel-sub">Daily</span>
+                    </div>
+                    <div class="admin-chart" id="revenueTrendChart">
+                        <div class="admin-chart-bars" id="revenueTrendBars">
+                            <!-- Dynamic bars -->
+                        </div>
+                        <div class="admin-chart-empty" id="revenueTrendEmpty">
+                            <i class="fas fa-chart-column"></i>
+                            <p>No revenue data</p>
+                            <span>Revenue will appear once bookings are confirmed or completed.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>Revenue Breakdown</h3>
+                        <span class="admin-panel-sub">Services vs Products</span>
+                    </div>
+                    <div class="admin-chart" id="revenueBreakdownChart">
+                        <div class="admin-chart-bars" id="revenueBreakdownBars" style="flex-direction:column; justify-content:center; align-items:center; gap:20px; padding:20px;">
+                            <!-- Dynamic breakdown -->
+                        </div>
+                        <div class="admin-chart-empty" id="revenueBreakdownEmpty">
+                            <i class="fas fa-chart-pie"></i>
+                            <p>No breakdown data</p>
+                            <span>Data will appear once you have bookings and orders.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="admin-table-wrap" style="margin-top:24px;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Customer</th>
+                            <th>Item</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revenueTableBody">
+                        <tr class="admin-empty-row"><td colspan="6">Loading transactions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="revenue.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Account - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="assets/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+                <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+                <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+                <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+                <a href="services.html" class="admin-nav-link"><i class="fas fa-tags"></i> Services</a>
+                <a href="admin-account.html" class="admin-nav-link active"><i class="fas fa-user-shield"></i> Admin Account</a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="admin-main admin-main-wide">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Admin Account</h1>
+                    <p class="admin-page-sub">Manage your admin account settings.</p>
+                </div>
+            </div>
+
+            <div class="admin-content-grid">
+                <!-- Profile Section -->
+                <section class="admin-card">
+                    <h2 class="admin-card-title">Profile</h2>
+                    <p class="admin-card-sub">Update your account information.</p>
+
+                    <div class="admin-drawer-field">
+                        <label for="adminFullName">Full Name</label>
+                        <input type="text" id="adminFullName" class="admin-input" placeholder="Your full name" />
+                    </div>
+                    <div class="admin-drawer-field">
+                        <label for="adminEmailInput">Email</label>
+                        <input type="email" id="adminEmailInput" class="admin-input" placeholder="admin@toughcuts.com" readonly />
+                        <p style="font-size:0.7rem; color:var(--dim); margin-top:4px;">Email cannot be changed here.</p>
+                    </div>
+
+                    <button type="button" class="admin-drawer-save" id="adminProfileSaveBtn">Update Profile</button>
+                    <p class="admin-drawer-save-status" id="adminProfileStatus"></p>
+                </section>
+
+              <!-- CHANGE PASSWORD SECTION -->
+                <section class="admin-card">
+                    <h2 class="admin-card-title">Change Password</h2>
+                    <p class="admin-card-sub">Keep your account secure.</p>
+
+                    <div class="admin-drawer-field">
+                        <label for="adminCurrentPassword">Current Password</label>
+                        <div class="admin-password-wrapper">
+                            <input type="password" id="adminCurrentPassword" class="admin-input" placeholder="••••••••" />
+                            <button type="button" class="admin-password-toggle" data-target="adminCurrentPassword" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-drawer-field">
+                        <label for="adminNewPassword">New Password</label>
+                        <div class="admin-password-wrapper">
+                            <input type="password" id="adminNewPassword" class="admin-input" placeholder="••••••••" />
+                            <button type="button" class="admin-password-toggle" data-target="adminNewPassword" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <p class="admin-password-hint">Password must be at least 6 characters.</p>
+                    </div>
+
+                    <div class="admin-drawer-field">
+                        <label for="adminConfirmPassword">Confirm New Password</label>
+                        <div class="admin-password-wrapper">
+                            <input type="password" id="adminConfirmPassword" class="admin-input" placeholder="••••••••" />
+                            <button type="button" class="admin-password-toggle" data-target="adminConfirmPassword" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Password strength indicator -->
+                    <div class="admin-password-strength" id="passwordStrength" hidden>
+                        <div class="admin-password-strength-bar" id="passwordStrengthBar"></div>
+                        <span class="admin-password-strength-label" id="passwordStrengthLabel">Weak</span>
+                    </div>
+
+                    <button type="button" class="admin-drawer-save" id="adminPasswordSaveBtn">Update Password</button>
+                    <p class="admin-drawer-save-status" id="adminPasswordStatus"></p>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="admin-account.js"></script>
+</body>
+</html>
