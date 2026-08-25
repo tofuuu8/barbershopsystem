@@ -1016,14 +1016,14 @@ async function renderBarberCardsDynamic() {
 
     // Add barbers from database
     barbers.forEach(barber => {
-        const imageSrc = barber.image_url || '../images/owner.jpg';
+        const imageSrc = barber.image_url || '../images/team.jpg';
         const rating = barber.rating || 0;
         const title = barber.title || 'Barber';
         
         html += `
             <button type="button" class="booking-barber-card" data-barber-id="${barber.id}">
                 <img src="${imageSrc}" alt="" class="booking-barber-photo" loading="lazy" 
-                     onerror="this.src='../images/owner.jpg'" />
+                     onerror="this.src='../images/team.jpg'" />
                 <span class="booking-barber-name">${escapeHtml(barber.name)}</span>
                 <span class="booking-barber-role">${escapeHtml(title)}</span>
                 <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> ${rating}</span>
