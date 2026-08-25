@@ -84,15 +84,15 @@ function renderTable() {
             </td>
             <td>
                 <div class="admin-action-btns">
-                    <button class="admin-action-btn admin-action-edit" data-id="${b.id}" data-action="edit" title="Edit">
+                    <button class="admin-action-btn admin-action-edit" data-id="${escapeHtml(b.id)}" data-action="edit" title="Edit">
                         <i class="fas fa-pen"></i>
                     </button>
                     <button class="admin-action-btn ${b.is_active ? 'admin-action-block' : 'admin-action-unblock'}" 
-                            data-id="${b.id}" data-action="toggle" 
+                            data-id="${escapeHtml(b.id)}" data-action="toggle" 
                             title="${b.is_active ? 'Deactivate' : 'Activate'}">
                         <i class="fas ${b.is_active ? 'fa-eye-slash' : 'fa-eye'}"></i>
                     </button>
-                    <button class="admin-action-btn admin-action-delete" data-id="${b.id}" data-action="delete" title="Delete">
+                    <button class="admin-action-btn admin-action-delete" data-id="${escapeHtml(b.id)}" data-action="delete" title="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -126,53 +126,6 @@ function handleBarberAction(e) {
     }
 }
 
-// ============================================================
-// OPEN EDIT BARBER MODAL
-// ============================================================
-
-function openEditBarberModal(id) {
-    console.log('✏️ Opening edit modal for:', id);
-    
-    const barber = allBarbers.find(b => b.id === id);
-    if (!barber) {
-        console.error('❌ Barber not found:', id);
-        return;
-    }
-
-    console.log('📋 Barber data:', barber);
-
-    activeBarberId = id;
-    document.getElementById('barberModalTitle').textContent = 'Edit Barber';
-    document.getElementById('barberNameInput').value = barber.name || '';
-    document.getElementById('barberTitleInput').value = barber.title || '';
-    document.getElementById('barberBioInput').value = barber.bio || '';
-    document.getElementById('barberSpecialtiesInput').value = barber.specialties || '';
-    document.getElementById('barberExperienceInput').value = barber.experience || '';
-    document.getElementById('barberRatingInput').value = barber.rating || '';
-    document.getElementById('barberReviewsInput').value = barber.reviews || '';
-    document.getElementById('barberActiveInput').checked = barber.is_active;
-    document.getElementById('barberSaveStatus').textContent = '';
-
-    // ✅ FIX: Show existing image in preview
-    const fileInput = document.getElementById('barberImageInput');
-    const previewDiv = document.getElementById('imagePreview');
-    const previewImg = document.getElementById('imagePreviewImg');
-    
-    if (barber.image_url) {
-        fileInput.dataset.existingUrl = barber.image_url;
-        previewImg.src = barber.image_url;
-        previewDiv.style.display = 'block';
-    } else {
-        // Clear the file input
-        fileInput.value = '';
-        delete fileInput.dataset.existingUrl;
-        previewDiv.style.display = 'none';
-        previewImg.src = '';
-    }
-    
-    document.getElementById('barberModalBackdrop').hidden = false;
-    document.getElementById('barberModal').hidden = false;
-}
 
 // ============================================================
 // TOGGLE BARBER STATUS
@@ -266,27 +219,18 @@ function initBarberModal() {
     }
 }
 
-function openAddBarberModal() {
-    activeBarberId = null;
-    document.getElementById('barberModalTitle').textContent = 'Add Barber';
-    document.getElementById('barberNameInput').value = '';
-    document.getElementById('barberEmailInput').value = '';
-    document.getElementById('barberPhoneInput').value = '';
-    document.getElementById('barberSpecialtiesInput').value = '';
-    document.getElementById('barberBioInput').value = '';
-    document.getElementById('barberActiveInput').checked = true;
-    document.getElementById('barberSaveStatus').textContent = '';
-    document.getElementById('barberModalBackdrop').hidden = false;
-    document.getElementById('barberModal').hidden = false;
-}
 
 function openEditBarberModal(id) {
     const barber = allBarbers.find(b => b.id === id);
     if (!barber) return;
 
     activeBarberId = id;
+    document.getElementById('barberIdInput').value = barber.id || '';
     document.getElementById('barberModalTitle').textContent = 'Edit Barber';
     document.getElementById('barberNameInput').value = barber.name || '';
+    document.getElementById('barberEmailInput').value = barber.email || '';
+    document.getElementById('barberPhoneInput').value = barber.phone || '';
+    document.getElementById('barberGenderInput').value = barber.service_gender || 'all';
     document.getElementById('barberTitleInput').value = barber.title || '';
     document.getElementById('barberBioInput').value = barber.bio || '';
     document.getElementById('barberSpecialtiesInput').value = barber.specialties || '';
@@ -318,117 +262,6 @@ function closeBarberModal() {
     activeBarberId = null;
 }
 
-// ============================================================
-// SAVE BARBER (FIXED — WITH IMAGE UPLOAD)
-// ============================================================
-
-async function saveBarber() {
-    const name = document.getElementById('barberNameInput').value.trim();
-    const title = document.getElementById('barberTitleInput').value.trim();
-    const bio = document.getElementById('barberBioInput').value.trim();
-    const specialties = document.getElementById('barberSpecialtiesInput').value.trim();
-    const experience = parseInt(document.getElementById('barberExperienceInput').value) || 0;
-    const rating = parseFloat(document.getElementById('barberRatingInput').value) || 0;
-    const reviews = parseInt(document.getElementById('barberReviewsInput').value) || 0;
-    const isActive = document.getElementById('barberActiveInput').checked;
-    
-    // Get image file
-    const fileInput = document.getElementById('barberImageInput');
-    const file = fileInput.files[0];
-    
-    // Get existing image URL (if editing and no new file)
-    let imageUrl = fileInput.dataset.existingUrl || '';
-
-    if (!name) {
-        document.getElementById('barberSaveStatus').textContent = 'Please enter a name.';
-        document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
-        return;
-    }
-
-    const btn = document.getElementById('barberSaveBtn');
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
-
-    // Generate ID
-    let barberId = document.getElementById('barberIdInput')?.value?.trim();
-    if (!barberId) {
-        const nameSlug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const random = Math.floor(Math.random() * 1000);
-        barberId = `barber-${nameSlug}-${random}`;
-    }
-
-    // Upload image if a file was selected
-    if (file) {
-        try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${barberId}.${fileExt}`;
-            const filePath = `barbers/${fileName}`;
-
-            console.log('📤 Uploading image:', filePath);
-
-            const { error: uploadError } = await supabaseClient.storage
-                .from('barber-images')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
-
-            if (uploadError) {
-                console.error('❌ Upload error:', uploadError);
-                imageUrl = `../images/${fileName}`;
-            } else {
-                // Get public URL
-                const { data: urlData } = supabaseClient.storage
-                    .from('barber-images')
-                    .getPublicUrl(filePath);
-                imageUrl = urlData.publicUrl;
-                console.log('✅ Image uploaded:', imageUrl);
-            }
-        } catch (uploadError) {
-            console.error('❌ Upload error:', uploadError);
-            imageUrl = `../images/${file.name}`;
-        }
-    }
-
-    const payload = {
-        id: barberId,
-        name,
-        title: title || null,
-        bio: bio || null,
-        specialties: specialties || null,
-        experience,
-        rating,
-        reviews,
-        image_url: imageUrl || null,
-        is_active: isActive
-    };
-
-    console.log('📝 Saving barber:', payload);
-
-    let error;
-    if (activeBarberId) {
-        ({ error } = await supabaseClient.from('barbers').update(payload).eq('id', activeBarberId));
-    } else {
-        ({ error } = await supabaseClient.from('barbers').insert(payload));
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Save Barber';
-
-    if (error) {
-        console.error('❌ Error saving barber:', error);
-        document.getElementById('barberSaveStatus').textContent = error.message || 'Error saving barber.';
-        document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
-        return;
-    }
-
-    document.getElementById('barberSaveStatus').textContent = 'Saved successfully!';
-    document.getElementById('barberSaveStatus').style.color = 'var(--good)';
-    
-    await loadBarbers();
-    showToast('Barber saved successfully!');
-    setTimeout(closeBarberModal, 500);
-}
 
 // ============================================================
 // HELPERS
@@ -479,8 +312,12 @@ function showToast(message, type = 'success') {
 
 function openAddBarberModal() {
     activeBarberId = null;
+    document.getElementById('barberIdInput').value = '';
     document.getElementById('barberModalTitle').textContent = 'Add Barber';
     document.getElementById('barberNameInput').value = '';
+    document.getElementById('barberEmailInput').value = '';
+    document.getElementById('barberPhoneInput').value = '';
+    document.getElementById('barberGenderInput').value = 'all';
     document.getElementById('barberTitleInput').value = '';          // NEW
     document.getElementById('barberBioInput').value = '';
     document.getElementById('barberSpecialtiesInput').value = '';
@@ -500,6 +337,9 @@ function openAddBarberModal() {
 
 async function saveBarber() {
     const name = document.getElementById('barberNameInput').value.trim();
+    const email = document.getElementById('barberEmailInput').value.trim();
+    const phone = document.getElementById('barberPhoneInput').value.trim();
+    const serviceGender = document.getElementById('barberGenderInput').value;
     const title = document.getElementById('barberTitleInput').value.trim();
     const bio = document.getElementById('barberBioInput').value.trim();
     const specialties = document.getElementById('barberSpecialtiesInput').value.trim();
@@ -520,21 +360,46 @@ async function saveBarber() {
         document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
         return;
     }
+    if (!['all', 'men', 'women'].includes(serviceGender)) {
+        document.getElementById('barberSaveStatus').textContent = 'Please choose who this barber serves.';
+        document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
+        return;
+    }
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+        document.getElementById('barberSaveStatus').textContent = 'Please enter a valid email address.';
+        document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
+        return;
+    }
 
     const btn = document.getElementById('barberSaveBtn');
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
     // Generate ID
-    let barberId = document.getElementById('barberIdInput')?.value?.trim();
+    let barberId = activeBarberId || document.getElementById('barberIdInput')?.value?.trim();
     if (!barberId) {
         const nameSlug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         const random = Math.floor(Math.random() * 1000);
         barberId = `barber-${nameSlug}-${random}`;
     }
+    if (!/^[a-z0-9][a-z0-9-]{2,79}$/.test(barberId)) {
+        btn.disabled = false;
+        btn.textContent = 'Save Barber';
+        document.getElementById('barberSaveStatus').textContent = 'Barber ID must use lowercase letters, numbers, and hyphens.';
+        document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
+        return;
+    }
 
     // Upload image if a file was selected
     if (file) {
+        const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+        if (!allowedTypes.has(file.type) || file.size > 2 * 1024 * 1024) {
+            btn.disabled = false;
+            btn.textContent = 'Save Barber';
+            document.getElementById('barberSaveStatus').textContent = 'Use a JPG, PNG, or WEBP image up to 2 MB.';
+            document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
+            return;
+        }
         try {
             const fileExt = file.name.split('.').pop();
             const fileName = `${barberId}.${fileExt}`;
@@ -567,6 +432,9 @@ async function saveBarber() {
     const payload = {
         id: barberId,
         name,
+        email: email || null,
+        phone: phone || null,
+        service_gender: serviceGender,
         title: title || null,
         bio: bio || null,
         specialties: specialties || null,

@@ -223,9 +223,9 @@ async function changePassword() {
         return;
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[!$@%]/.test(newPassword)) {
         statusEl.style.color = 'var(--bad)';
-        statusEl.textContent = 'New password must be at least 6 characters.';
+        statusEl.textContent = 'New password must be at least 8 characters and include a letter, a number, and one of ! $ @ %. ';
         return;
     }
 
@@ -238,6 +238,20 @@ async function changePassword() {
     const btn = document.getElementById('adminPasswordSaveBtn');
     btn.disabled = true;
     btn.textContent = 'Updating...';
+
+    const user = getCurrentUser();
+    const { error: reauthError } = await supabaseClient.auth.signInWithPassword({
+        email: user?.email || '',
+        password: currentPassword
+    });
+
+    if (reauthError) {
+        btn.disabled = false;
+        btn.textContent = 'Update Password';
+        statusEl.style.color = 'var(--bad)';
+        statusEl.textContent = 'Current password is incorrect.';
+        return;
+    }
 
     const { error } = await supabaseClient.auth.updateUser({
         password: newPassword

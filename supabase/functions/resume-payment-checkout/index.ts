@@ -1,7 +1,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+const ALLOWED_ORIGIN = Deno.env.get('SITE_URL')?.replace(/\/$/, '') || 'null';
 const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
@@ -60,6 +61,15 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: 'This payment window expired. Please place the order again.' }, 409);
     }
 
+    const { error: staleAttemptError } = await admin.from('payment_attempts')
+        .update({ status: 'cancelled', completed_at: new Date().toISOString() })
+        .eq('order_id', order.id)
+        .eq('status', 'created');
+    if (staleAttemptError) {
+        console.error('Could not close previous payment attempt:', staleAttemptError);
+        return jsonResponse({ error: 'Could not prepare a new payment attempt. Please try again.' }, 500);
+    }
+
     const { data: items, error: itemsError } = await admin
         .from('order_items')
         .select('product_name, unit_price, quantity')
@@ -88,7 +98,7 @@ Deno.serve(async (req) => {
                     reference_number: order.id,
                     send_email_receipt: true,
                     success_url: `${siteUrl}/checkout/checkout.html?order=${order.id}&payment=success`,
-                    cancel_url: `${siteUrl}/myorders/myorders.html?order=${order.id}&payment=cancelled`
+                    cancel_url: `${siteUrl}/checkout/checkout.html?order=${order.id}&payment=cancelled`
                 }
             }
         })
@@ -118,7 +128,13 @@ Deno.serve(async (req) => {
 
     if (updateError || attemptError) {
         console.error('Could not record payment recovery attempt:', updateError || attemptError);
-        return jsonResponse({ error: 'Payment started, but we could not record the attempt. Please contact the studio if needed.' }, 500);
+        await admin.from('orders').update({
+            status: 'cancelled',
+            payment_status: 'failed',
+            cancel_reason: 'Payment recovery attempt could not be recorded',
+            cancelled_at: new Date().toISOString()
+        }).eq('id', order.id).eq('status', 'awaiting_payment');
+        return jsonResponse({ error: 'Could not record the payment attempt. Please try again.' }, 500);
     }
 
     return jsonResponse({ orderId: order.id, checkoutUrl: session.attributes.checkout_url, expiresAt });

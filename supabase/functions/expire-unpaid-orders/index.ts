@@ -9,7 +9,8 @@ Deno.serve(async (req) => {
 
     const configuredSecret = Deno.env.get('CRON_SECRET');
     const suppliedSecret = req.headers.get('x-cron-secret');
-    if (configuredSecret && suppliedSecret !== configuredSecret) return response({ error: 'Unauthorized' }, 401);
+    if (!configuredSecret) return response({ error: 'Cron endpoint is not configured.' }, 500);
+    if (suppliedSecret !== configuredSecret) return response({ error: 'Unauthorized' }, 401);
 
     const url = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

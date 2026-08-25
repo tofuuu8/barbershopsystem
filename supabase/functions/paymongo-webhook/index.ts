@@ -55,18 +55,26 @@ Deno.serve(async (req) => {
     const checkoutSessionId = resource?.id;
     const referenceNumber = attributes.reference_number || attributes.metadata?.order_id;
     const paymentId = attributes.payments?.[0]?.id || resource?.id;
+    const providerEventId = event?.data?.id || event?.id || `${eventType}:${checkoutSessionId || ''}:${paymentId || ''}`;
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!supabaseUrl || !serviceRoleKey) return jsonAck({ received: true, processed: false });
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
+    if (providerEventId) {
+        const { data: alreadyProcessed } = await admin.from('payment_attempts')
+            .select('id')
+            .eq('provider_event_id', providerEventId)
+            .maybeSingle();
+        if (alreadyProcessed) return jsonAck({ received: true, processed: true, duplicate: true });
+    }
     let order: any = null;
     if (referenceNumber) {
-        const { data } = await admin.from('orders').select('id, user_id, status, payment_status').eq('id', referenceNumber).maybeSingle();
+        const { data } = await admin.from('orders').select('id, user_id, status, payment_status, cancel_reason').eq('id', referenceNumber).maybeSingle();
         order = data;
     }
     if (!order && checkoutSessionId) {
-        const { data } = await admin.from('orders').select('id, user_id, status, payment_status').eq('payment_reference', checkoutSessionId).maybeSingle();
+        const { data } = await admin.from('orders').select('id, user_id, status, payment_status, cancel_reason').eq('payment_reference', checkoutSessionId).maybeSingle();
         order = data;
     }
     if (!order) {
@@ -76,33 +84,55 @@ Deno.serve(async (req) => {
 
     const isPaid = eventType === 'checkout_session.payment.paid' || eventType === 'payment.paid';
     const isFailed = eventType === 'payment.failed';
-    if (isPaid && order.payment_status !== 'paid') {
-        const { error } = await admin.from('orders').update({
-            payment_status: 'paid',
-            status: order.status === 'awaiting_payment' ? 'pending' : order.status,
-            paid_at: new Date().toISOString(),
-            payment_reference: checkoutSessionId || undefined
-        }).eq('id', order.id).neq('payment_status', 'paid');
-        if (error) console.error('Could not mark order paid:', error);
+    if (!isPaid && !isFailed) {
+        return jsonAck({ received: true, processed: false, paymentId });
+    }
+    const completedAt = new Date().toISOString();
 
-        await admin.from('payment_attempts')
-            .update({ status: 'paid', completed_at: new Date().toISOString(), raw_payload: event })
-            .eq('order_id', order.id)
-            .eq('status', 'created');
-    } else if (isFailed) {
-        await admin.from('payment_attempts')
-            .update({ status: 'failed', completed_at: new Date().toISOString(), raw_payload: event })
-            .eq('order_id', order.id)
-            .eq('status', 'created');
-        if (order.payment_status !== 'paid' && order.status === 'awaiting_payment') {
-            const { error } = await admin.from('orders').update({
-                status: 'cancelled',
-                payment_status: 'failed',
-                cancel_reason: 'Payment failed',
-                cancelled_at: new Date().toISOString()
-            }).eq('id', order.id).eq('status', 'awaiting_payment');
-            if (error) console.error('Could not cancel failed payment order:', error);
+    let attemptUpdate = admin.from('payment_attempts')
+        .update({
+            status: isPaid ? 'paid' : 'failed',
+            completed_at: completedAt,
+            provider_event_id: providerEventId,
+            raw_payload: event
+        })
+        .eq('order_id', order.id)
+        .eq('status', 'created');
+    if (checkoutSessionId) attemptUpdate = attemptUpdate.eq('checkout_session_id', checkoutSessionId);
+    const { error: attemptError } = await attemptUpdate;
+    if (attemptError) console.error('Could not update payment attempt:', attemptError);
+
+    if (isPaid && order.payment_status !== 'paid') {
+        const wasCancelled = order.status === 'cancelled';
+        const { error } = await admin.from('orders').update({
+            payment_status: wasCancelled ? 'failed' : 'paid',
+            status: wasCancelled ? 'cancelled' : (order.status === 'awaiting_payment' ? 'pending' : order.status),
+            paid_at: wasCancelled ? null : completedAt,
+            payment_reference: checkoutSessionId || undefined,
+            cancel_reason: wasCancelled
+                ? `${order.cancel_reason || 'Order was cancelled'}; Payment completed after cancellation — manual refund required.`
+                : order.cancel_reason
+        }).eq('id', order.id).neq('payment_status', 'paid');
+        if (error) console.error('Could not update order payment state:', error);
+
+        if (wasCancelled) {
+            await admin.from('notifications').insert({
+                audience: 'admin',
+                event_type: 'payment_after_cancellation',
+                title: 'Manual refund required',
+                body: `Payment completed after order ${order.id} was cancelled. Review and refund manually.`,
+                entity_type: 'order',
+                entity_id: order.id
+            });
         }
+    } else if (isFailed && order.payment_status !== 'paid' && order.status === 'awaiting_payment') {
+        const { error } = await admin.from('orders').update({
+            status: 'cancelled',
+            payment_status: 'failed',
+            cancel_reason: 'Payment failed',
+            cancelled_at: completedAt
+        }).eq('id', order.id).eq('status', 'awaiting_payment');
+        if (error) console.error('Could not cancel failed payment order:', error);
     }
 
     return jsonAck({ received: true, processed: isPaid || isFailed, paymentId });

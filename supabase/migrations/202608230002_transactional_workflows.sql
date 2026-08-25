@@ -306,6 +306,15 @@ begin
         cancelled_at = case when p_new_status = 'cancelled' then coalesce(cancelled_at, now()) else cancelled_at end
     where id = p_order_id
     returning * into v_order;
+
+    if p_new_status = 'cancelled' then
+        update public.payment_attempts
+           set status = 'cancelled',
+               completed_at = coalesce(completed_at, now())
+         where order_id = p_order_id
+           and status = 'created';
+    end if;
+
     return v_order;
 end;
 $$;
@@ -347,6 +356,22 @@ begin
           and p_booking_time < b.booking_time + make_interval(mins => coalesce(nullif(regexp_replace(b.service_duration, '[^0-9]', '', 'g'), '')::integer, 60))
           and b.booking_time < p_booking_time + make_interval(mins => v_duration)
     ) then raise exception 'The selected barber already has an overlapping appointment.' using errcode = 'P0001'; end if;
+
+    if not exists (
+        select 1 from public.barber_schedules s
+        where s.barber_id = v_barber_id
+          and s.day_of_week = extract(dow from p_booking_date)::integer
+          and s.is_active
+          and p_booking_time >= s.open_time
+          and p_booking_time + make_interval(mins => v_duration) <= s.close_time
+    ) then raise exception 'That time is outside the barber schedule.' using errcode = 'P0001'; end if;
+
+    if exists (
+        select 1 from public.barber_blocked_times bt
+        where bt.barber_id = v_barber_id
+          and bt.starts_at < ((p_booking_date + p_booking_time) at time zone 'Asia/Manila') + make_interval(mins => v_duration)
+          and bt.ends_at > ((p_booking_date + p_booking_time) at time zone 'Asia/Manila')
+    ) then raise exception 'The selected barber is blocked at that time.' using errcode = 'P0001'; end if;
 
     update public.bookings set
         status = p_new_status,

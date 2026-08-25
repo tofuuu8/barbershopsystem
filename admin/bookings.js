@@ -349,18 +349,13 @@ async function updateBookingStatus(newStatus) {
         p_admin_notes: payload.admin_notes
     });
 
-    let data = rpcResult.data;
-    let error = rpcResult.error;
-    if (error && /update_booking_admin|PGRST202|does not exist/i.test(error.message || '')) {
-        // Compatibility path for databases that have the admin columns but
-        // have not yet installed the optional conflict-safe RPC. The normal
-        // path remains the RPC above; this fallback keeps status edits usable.
-        const directResult = await supabaseClient.from('bookings').update(payload).eq('id', activeBookingId).select().single();
-        data = directResult.data;
-        error = directResult.error;
+    const { data, error } = rpcResult;
+    if (error || !data) {
+        if (/update_booking_admin|PGRST202|does not exist/i.test(error?.message || '')) {
+            throw new Error('Secure appointment update is not installed. Apply the latest Supabase migrations first.');
+        }
+        throw error || new Error('Could not update appointment.');
     }
-
-    if (error || !data) throw error || new Error('Could not update appointment.');
 
     const booking = allBookings.find(b => b.id === activeBookingId);
     if (booking) Object.assign(booking, data);

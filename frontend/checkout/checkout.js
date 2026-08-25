@@ -108,9 +108,14 @@ document.addEventListener('DOMContentLoaded', async function () {
         return;
     }
 
+    let cancellationSucceeded = null;
+    if (returningOrderId && paymentResult === 'cancelled') {
+        cancellationSucceeded = await cancelReturnedPaymentOrder(returningOrderId);
+    }
+
     if (!getCart().length) {
         showEmptyCart();
-        if (paymentResult === 'cancelled') showCancelledEmptyNote();
+        if (paymentResult === 'cancelled') showCancelledEmptyNote(cancellationSucceeded);
         return;
     }
 
@@ -137,9 +142,32 @@ document.addEventListener('DOMContentLoaded', async function () {
 // cart (it was cleared before the redirect), so the normal empty-cart
 // state already shows — this just swaps in copy that explains why,
 // instead of the generic "you haven't added anything" message.
-function showCancelledEmptyNote() {
-    setText('checkoutEmptyTitle', 'Payment Cancelled');
-    setText('checkoutEmptyText', 'Nothing was charged, and the order was released. Head back to Products whenever you\u2019re ready to try again.');
+async function cancelReturnedPaymentOrder(orderId) {
+    const { data, error } = await supabaseClient.rpc('cancel_order_atomic', {
+        p_order_id: orderId,
+        p_cancel_reason: 'Payment cancelled by customer'
+    });
+    if (error) {
+        const { data: order } = await supabaseClient
+            .from('orders')
+            .select('status, payment_status')
+            .eq('id', orderId)
+            .maybeSingle();
+        if (order?.status === 'cancelled' && order.payment_status !== 'paid') return true;
+        console.error('Could not cancel returned payment order:', error);
+        return false;
+    }
+    return !!data;
+}
+
+function showCancelledEmptyNote(cancelled) {
+    if (cancelled) {
+        setText('checkoutEmptyTitle', 'Payment Cancelled');
+        setText('checkoutEmptyText', 'No payment was completed. The order and payment attempt were cancelled. Head back to Products whenever you\u2019re ready to try again.');
+    } else {
+        setText('checkoutEmptyTitle', 'Payment Status Pending');
+        setText('checkoutEmptyText', 'The payment was cancelled, but the order is still being reconciled. Please check My Orders or contact the studio before trying again.');
+    }
 }
 
 function showCheckoutGate() {

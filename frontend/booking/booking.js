@@ -976,7 +976,7 @@ async function loadBarbersForBooking() {
     try {
         const { data, error } = await supabaseClient
             .from('barbers')
-            .select('id, name, title, image_url, rating')
+            .select('id, name, title, image_url, rating, service_gender')
             .eq('is_active', true)
             .order('name');
 
@@ -1021,7 +1021,7 @@ async function renderBarberCardsDynamic() {
         const title = barber.title || 'Barber';
         
         html += `
-            <button type="button" class="booking-barber-card" data-barber-id="${barber.id}">
+                <button type="button" class="booking-barber-card" data-barber-id="${escapeHtml(barber.id)}" data-service-gender="${escapeHtml(barber.service_gender || 'all')}">
                 <img src="${imageSrc}" alt="" class="booking-barber-photo" loading="lazy" 
                      onerror="this.src='../images/team.jpg'" />
                 <span class="booking-barber-name">${escapeHtml(barber.name)}</span>
@@ -1084,32 +1084,21 @@ function updateBarberVisibilityForGender() {
     
     const cards = grid.querySelectorAll('.booking-barber-card');
     cards.forEach(card => {
-        const barberId = card.dataset.barberId;
-        // For women's haircuts, only Barber Klark is available
-        const unavailable = currentGender === 'women' && barberId && barberId !== 'klark-dizon';
+        const serviceGender = card.dataset.serviceGender || 'all';
+        const unavailable = currentGender !== 'men' && currentGender !== 'women'
+            ? true
+            : serviceGender !== 'all' && serviceGender !== currentGender;
         card.classList.toggle('is-unavailable', unavailable);
         card.setAttribute('aria-disabled', String(unavailable));
     });
 
-    // If the currently selected barber just became unavailable, fall back to Random
-    if (selectedBarberId && currentGender === 'women' && selectedBarberId !== 'klark-dizon') {
-        const randomCard = grid.querySelector('.booking-barber-card[data-barber-id=""]');
-        if (randomCard) selectBarberCard(randomCard);
+    // If the currently selected barber just became unavailable, fall back to Random.
+    if (selectedBarberId) {
+        const selectedCard = grid.querySelector(`.booking-barber-card[data-barber-id="${CSS.escape(selectedBarberId)}"]`);
+        if (selectedCard?.classList.contains('is-unavailable')) {
+            const randomCard = grid.querySelector('.booking-barber-card[data-barber-id=""]');
+            if (randomCard) selectBarberCard(randomCard);
+        }
     }
 }
 
-// ============================================================
-// INIT BARBER CARDS (UPDATED — FROM SUPABASE)
-// ============================================================
-
-function initBarberCards() {
-    // Use the dynamic version instead of hardcoded
-    renderBarberCardsDynamic();
-    
-    // Listen for gender changes
-    document.querySelectorAll('.booking-gender-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            setTimeout(updateBarberVisibilityForGender, 50);
-        });
-    });
-}

@@ -264,28 +264,25 @@ async function handleCancelOrder(orderId, btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Cancelling...';
 
-    const { data, error } = await supabaseClient
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('id', orderId)
-        .select();
+    const { data, error } = await supabaseClient.rpc('cancel_order_atomic', {
+        p_order_id: orderId,
+        p_cancel_reason: 'Cancelled by customer'
+    });
 
     if (error) {
         console.error(error);
         alert(
-            /row-level security|permission denied/i.test(error.message || '')
-                ? 'Cancelling isn\u2019t enabled for customer accounts yet \u2014 please contact the studio to cancel this order.'
-                : (error.message || 'Something went wrong \u2014 please try again.')
+            /cancel_order_atomic|PGRST202|does not exist/i.test(error.message || '')
+                ? 'Secure order cancellation is not installed yet — please contact the studio.'
+                : (error.message || 'Something went wrong — please try again.')
         );
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
         return false;
     }
 
-    if (!data || !data.length) {
-        // RLS silently matched zero rows — same as a blocked policy,
-        // since Postgres never surfaces this as an error on its own.
-        alert('Cancelling isn\u2019t enabled for customer accounts yet \u2014 please contact the studio to cancel this order.');
+    if (!data) {
+        alert('The order could not be cancelled. Please refresh and try again.');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
         return false;

@@ -111,6 +111,22 @@
             <label for="barberTitleInput">Title / Position</label>
             <input type="text" id="barberTitleInput" class="admin-input" placeholder="e.g. Owner and Master Barber" />
         </div>
+        <div class="admin-drawer-field">
+            <label for="barberEmailInput">Email</label>
+            <input type="email" id="barberEmailInput" class="admin-input" placeholder="barber@example.com" autocomplete="email" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberPhoneInput">Phone</label>
+            <input type="tel" id="barberPhoneInput" class="admin-input" placeholder="09XX XXX XXXX" autocomplete="tel" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberGenderInput">Services For</label>
+            <select id="barberGenderInput" class="admin-input">
+                <option value="all">All services</option>
+                <option value="men">Men’s services</option>
+                <option value="women">Women’s services</option>
+            </select>
+        </div>
         <div class="admin-drawer-field admin-drawer-field--full">
             <label for="barberBioInput">Bio</label>
             <textarea id="barberBioInput" class="admin-input" rows="3" placeholder="Short bio about the barber"></textarea>
@@ -163,7 +179,7 @@
     </p>
 </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
     <script src="supabase.js"></script>
     <script src="admin-auth.js"></script>
     <script src="notifications.js"></script>

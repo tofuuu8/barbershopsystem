@@ -1,7 +1,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+const ALLOWED_ORIGIN = Deno.env.get('SITE_URL')?.replace(/\/$/, '') || 'null';
 const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
@@ -155,7 +156,7 @@ Deno.serve(async (req) => {
                     reference_number: order.id,
                     send_email_receipt: true,
                     success_url: `${siteUrl}/checkout/checkout.html?order=${order.id}&payment=success`,
-                    cancel_url: `${siteUrl}/myorders/myorders.html?order=${order.id}&payment=cancelled`
+                    cancel_url: `${siteUrl}/checkout/checkout.html?order=${order.id}&payment=cancelled`
                 }
             }
         })
@@ -187,7 +188,13 @@ Deno.serve(async (req) => {
 
     if (updateError || attemptError) {
         console.error('Could not record payment attempt:', updateError || attemptError);
-        return jsonResponse({ error: 'Payment started, but we could not record the attempt. Please contact the studio if needed.' }, 500);
+        await admin.from('orders').update({
+            status: 'cancelled',
+            payment_status: 'failed',
+            cancel_reason: 'Payment attempt could not be recorded',
+            cancelled_at: new Date().toISOString()
+        }).eq('id', order.id).eq('status', 'awaiting_payment');
+        return jsonResponse({ error: 'Could not record the payment attempt. Please try again.' }, 500);
     }
 
     return jsonResponse({ orderId: order.id, checkoutUrl: session.attributes.checkout_url });
