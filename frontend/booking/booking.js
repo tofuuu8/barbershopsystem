@@ -352,64 +352,15 @@ function renderServiceCard() {
 // BARBER CARDS
 // ============================================
 function initBarberCards() {
-    const grid = document.getElementById('bookingBarberGrid');
-    if (!grid) return;
-
-    // For women's haircuts, only Barber Klark is available
-    // Hide/disable other barbers when women's is selected
-    function updateBarberVisibility() {
-        const cards = grid.querySelectorAll('.booking-barber-card');
-        cards.forEach(card => {
-            const barberId = card.dataset.barberId;
-            const unavailable = currentGender === 'women' && barberId && barberId !== 'klark-dizon';
-            card.classList.toggle('is-unavailable', unavailable);
-            card.setAttribute('aria-disabled', String(unavailable));
-        });
-
-        // If the currently selected barber just became unavailable, fall
-        // back to Random rather than leaving a disabled card selected.
-        if (selectedBarberId && currentGender === 'women' && selectedBarberId !== 'klark-dizon') {
-            const randomCard = grid.querySelector('.booking-barber-card[data-barber-id=""]');
-            if (randomCard) selectCard(randomCard);
-        }
-    }
-
-    function selectCard(card) {
-        grid.querySelectorAll('.booking-barber-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selectedBarberId = card.dataset.barberId || null;
-        selectedBarberName = card.querySelector('.booking-barber-name')
-            ? card.querySelector('.booking-barber-name').textContent
-            : 'Random';
-        refreshTimeSlots();
-        updateSummary();
-    }
-
-    grid.querySelectorAll('.booking-barber-card').forEach(card => {
-        card.addEventListener('click', function () {
-            if (card.classList.contains('is-unavailable')) return;
-            selectCard(card);
+    // Use the dynamic version instead of hardcoded
+    renderBarberCardsDynamic();
+    
+    // Listen for gender changes
+    document.querySelectorAll('.booking-gender-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            setTimeout(updateBarberVisibilityForGender, 50);
         });
     });
-
-    // Apply a ?barber= deep link once the cards exist
-    if (selectedBarberId) {
-        const match = grid.querySelector(`.booking-barber-card[data-barber-id="${selectedBarberId}"]`);
-        if (match && !match.classList.contains('is-unavailable')) selectCard(match);
-    } else {
-        const randomCard = grid.querySelector('.booking-barber-card[data-barber-id=""]');
-        if (randomCard) selectCard(randomCard);
-    }
-
-    // Update visibility when gender changes
-    const genderTabs = document.querySelectorAll('.booking-gender-tab');
-    genderTabs.forEach(tab => {
-        tab.addEventListener('click', function () {
-            setTimeout(updateBarberVisibility, 50);
-        });
-    });
-
-    updateBarberVisibility();
 }
 
 // ============================================
@@ -1013,4 +964,152 @@ async function cancelBooking(id, btn) {
 
     loadUpcomingBookings();
     refreshTimeSlots();
+}
+
+// ============================================================
+// LOAD BARBERS FROM SUPABASE (FOR BOOKING PAGE)
+// ============================================================
+
+async function loadBarbersForBooking() {
+    console.log('🔄 Loading barbers for booking...');
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('barbers')
+            .select('id, name, title, image_url, rating')
+            .eq('is_active', true)
+            .order('name');
+
+        if (error) {
+            console.error('❌ Error loading barbers:', error);
+            return [];
+        }
+
+        console.log('✅ Loaded barbers for booking:', data.length);
+        return data || [];
+        
+    } catch (error) {
+        console.error('❌ Error:', error);
+        return [];
+    }
+}
+
+// ============================================================
+// RENDER BARBER CARDS (Dynamic from Supabase)
+// ============================================================
+
+async function renderBarberCardsDynamic() {
+    const grid = document.getElementById('bookingBarberGrid');
+    if (!grid) return;
+
+    const barbers = await loadBarbersForBooking();
+
+    // Build the grid HTML
+    let html = `
+        <!-- Random option -->
+        <button type="button" class="booking-barber-card booking-barber-card--random" data-barber-id="">
+            <span class="booking-barber-none-icon"><i class="fas fa-shuffle" aria-hidden="true"></i></span>
+            <span class="booking-barber-name">Random</span>
+            <span class="booking-barber-role">We'll pick for you</span>
+        </button>
+    `;
+
+    // Add barbers from database
+    barbers.forEach(barber => {
+        const imageSrc = barber.image_url || '../images/owner.jpg';
+        const rating = barber.rating || 0;
+        const title = barber.title || 'Barber';
+        
+        html += `
+            <button type="button" class="booking-barber-card" data-barber-id="${barber.id}">
+                <img src="${imageSrc}" alt="" class="booking-barber-photo" loading="lazy" 
+                     onerror="this.src='../images/owner.jpg'" />
+                <span class="booking-barber-name">${escapeHtml(barber.name)}</span>
+                <span class="booking-barber-role">${escapeHtml(title)}</span>
+                <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> ${rating}</span>
+            </button>
+        `;
+    });
+
+    grid.innerHTML = html;
+
+    // Re-attach event listeners
+    grid.querySelectorAll('.booking-barber-card').forEach(card => {
+        card.addEventListener('click', function() {
+            if (this.classList.contains('is-unavailable')) return;
+            selectBarberCard(this);
+        });
+    });
+
+    // Re-apply gender restrictions
+    updateBarberVisibilityForGender();
+    
+    // Restore selected barber if any
+    if (selectedBarberId) {
+        const match = grid.querySelector(`.booking-barber-card[data-barber-id="${selectedBarberId}"]`);
+        if (match && !match.classList.contains('is-unavailable')) {
+            selectBarberCard(match);
+        } else {
+            const randomCard = grid.querySelector('.booking-barber-card[data-barber-id=""]');
+            if (randomCard) selectBarberCard(randomCard);
+        }
+    }
+}
+
+// ============================================================
+// SELECT BARBER CARD
+// ============================================================
+
+function selectBarberCard(card) {
+    const grid = document.getElementById('bookingBarberGrid');
+    if (!grid) return;
+    
+    grid.querySelectorAll('.booking-barber-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedBarberId = card.dataset.barberId || null;
+    selectedBarberName = card.querySelector('.booking-barber-name') 
+        ? card.querySelector('.booking-barber-name').textContent 
+        : 'Random';
+    refreshTimeSlots();
+    updateSummary();
+}
+
+// ============================================================
+// UPDATE BARBER VISIBILITY FOR GENDER
+// ============================================================
+
+function updateBarberVisibilityForGender() {
+    const grid = document.getElementById('bookingBarberGrid');
+    if (!grid) return;
+    
+    const cards = grid.querySelectorAll('.booking-barber-card');
+    cards.forEach(card => {
+        const barberId = card.dataset.barberId;
+        // For women's haircuts, only Barber Klark is available
+        const unavailable = currentGender === 'women' && barberId && barberId !== 'klark-dizon';
+        card.classList.toggle('is-unavailable', unavailable);
+        card.setAttribute('aria-disabled', String(unavailable));
+    });
+
+    // If the currently selected barber just became unavailable, fall back to Random
+    if (selectedBarberId && currentGender === 'women' && selectedBarberId !== 'klark-dizon') {
+        const randomCard = grid.querySelector('.booking-barber-card[data-barber-id=""]');
+        if (randomCard) selectBarberCard(randomCard);
+    }
+}
+
+// ============================================================
+// INIT BARBER CARDS (UPDATED — FROM SUPABASE)
+// ============================================================
+
+function initBarberCards() {
+    // Use the dynamic version instead of hardcoded
+    renderBarberCardsDynamic();
+    
+    // Listen for gender changes
+    document.querySelectorAll('.booking-gender-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            setTimeout(updateBarberVisibilityForGender, 50);
+        });
+    });
 }

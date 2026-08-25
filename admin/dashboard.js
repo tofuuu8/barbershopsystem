@@ -28,6 +28,13 @@ async function loadDashboard() {
     await loadTotalUsers();
     await loadBookingStats();
     await loadLowStockCount();
+    
+    // ============================================
+    // NEW FUNCTIONS
+    // ============================================
+    await loadTopServices();
+    await loadTopBarbers();
+    await loadRecentOrders();
 }
 
 // --------------------------------------------
@@ -36,38 +43,129 @@ async function loadDashboard() {
 // and the Recent Bookings list.
 // --------------------------------------------
 async function loadBookingStats() {
-    const [bookingsRes, profilesRes] = await Promise.all([
-        supabaseClient
-            .from('bookings')
-            .select('id, user_id, service_name, barber_name, booking_date, booking_time, total_price, status, created_at')
-            .order('created_at', { ascending: false })
-            .limit(500),
-        supabaseClient
-            .from('profiles')
-            .select('id, full_name')
-    ]);
+    const todayStr = new Date().toISOString().slice(0, 10);
 
-    if (bookingsRes.error) {
-        console.error(bookingsRes.error);
+    // ============================================
+    // LOAD BOOKINGS TODAY
+    // ============================================
+    const { data: bookings, error: bookingsError } = await supabaseClient
+        .from('bookings')
+        .select('id, user_id, service_name, barber_name, booking_date, booking_time, total_price, status, created_at')
+        .eq('booking_date', todayStr)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+    if (bookingsError) {
+        console.error('Error loading bookings:', bookingsError);
         return;
     }
 
-    const bookings = bookingsRes.data || [];
-    const profilesById = {};
-    (profilesRes.data || []).forEach(function (p) { profilesById[p.id] = p; });
+    // ============================================
+    // LOAD ORDERS TODAY
+    // ============================================
+    const { data: orders, error: ordersError } = await supabaseClient
+        .from('orders')
+        .select('id, customer_name, total_price, status, created_at')
+        .gte('created_at', todayStr + 'T00:00:00')
+        .lte('created_at', todayStr + 'T23:59:59')
+        .limit(500);
 
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const todaysBookings = bookings.filter(b => b.booking_date === todayStr && b.status !== 'cancelled');
-    const pending = bookings.filter(b => b.status === 'pending');
+    if (ordersError) {
+        console.error('Error loading orders:', ordersError);
+    }
 
-    const revenueToday = todaysBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+    // ============================================
+    // CALCULATE REVENUE (Bookings + Orders)
+    // ============================================
+    const todaysBookings = (bookings || []).filter(b => b.status !== 'cancelled');
+    const todaysOrders = (orders || []).filter(o => o.status === 'completed');
 
-    setText('statRevenueToday', 'PHP ' + revenueToday.toLocaleString('en-PH'));
+    // Revenue from bookings (confirmed + completed)
+    const bookingRevenue = todaysBookings
+        .filter(b => b.status === 'confirmed' || b.status === 'completed')
+        .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
+    // Revenue from orders (completed only)
+    const orderRevenue = todaysOrders
+        .reduce((sum, o) => sum + (Number(o.total_price) || 0), 0);
+
+    // Total revenue = bookings + orders
+    const totalRevenue = bookingRevenue + orderRevenue;
+
+    const pending = (bookings || []).filter(b => b.status === 'pending');
+
+    // ============================================
+    // UPDATE STATS
+    // ============================================
+    setText('statRevenueToday', 'PHP ' + totalRevenue.toLocaleString('en-PH'));
     setText('statAppointmentsToday', todaysBookings.length);
     setText('statPendingAppointments', pending.length);
 
-    renderWeeklyRevenueChart(bookings);
-    renderRecentBookings(bookings.slice(0, 5), profilesById);
+    // ============================================
+    // LOAD PROFILES FOR RECENT BOOKINGS
+    // ============================================
+    const userIds = (bookings || []).map(b => b.user_id).filter(Boolean);
+    let profilesById = {};
+    if (userIds.length) {
+        const { data: profiles } = await supabaseClient
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIds);
+        if (profiles) {
+            profilesById = Object.fromEntries(profiles.map(p => [p.id, p]));
+        }
+    }
+
+    // ============================================
+    // RENDER RECENT BOOKINGS (Exclude cancelled)
+    // ============================================
+    const recentBookings = (bookings || [])
+        .filter(b => b.status !== 'cancelled')
+        .slice(0, 5);
+    renderRecentBookings(recentBookings, profilesById);
+
+    // ============================================
+    // RENDER WEEKLY REVENUE CHART
+    // ============================================
+    // Load more bookings for the chart (last 7 days)
+    const { data: weekBookings } = await supabaseClient
+        .from('bookings')
+        .select('booking_date, total_price, status')
+        .gte('booking_date', getDateDaysAgo(7))
+        .lte('booking_date', todayStr)
+        .in('status', ['confirmed', 'completed']);
+
+    const { data: weekOrders } = await supabaseClient
+        .from('orders')
+        .select('created_at, total_price, status')
+        .gte('created_at', getDateDaysAgo(7) + 'T00:00:00')
+        .lte('created_at', todayStr + 'T23:59:59')
+        .eq('status', 'completed');
+
+    const combinedRevenue = {};
+    
+    // Add bookings
+    (weekBookings || []).forEach(b => {
+        const date = b.booking_date;
+        combinedRevenue[date] = (combinedRevenue[date] || 0) + (Number(b.total_price) || 0);
+    });
+
+    // Add orders
+    (weekOrders || []).forEach(o => {
+        const date = o.created_at.split('T')[0];
+        combinedRevenue[date] = (combinedRevenue[date] || 0) + (Number(o.total_price) || 0);
+    });
+
+    renderWeeklyRevenueChart(combinedRevenue);
+}
+
+// ============================================================
+// HELPER: Get date days ago
+// ============================================================
+function getDateDaysAgo(days) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
 }
 
 // --------------------------------------------
@@ -75,7 +173,7 @@ async function loadBookingStats() {
 // confirmed + completed bookings only (pending/cancelled aren't real
 // revenue yet).
 // --------------------------------------------
-function renderWeeklyRevenueChart(bookings) {
+function renderWeeklyRevenueChart(dailyTotals) {
     const chartEl = document.getElementById('weeklyRevenueChart');
     const barsWrap = chartEl ? chartEl.querySelector('.admin-chart-bars') : null;
     const emptyEl = chartEl ? chartEl.querySelector('.admin-chart-empty') : null;
@@ -90,9 +188,7 @@ function renderWeeklyRevenueChart(bookings) {
 
     const dayTotals = days.map(function (d) {
         const dateStr = d.toISOString().slice(0, 10);
-        const total = bookings
-            .filter(b => b.booking_date === dateStr && (b.status === 'confirmed' || b.status === 'completed'))
-            .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+        const total = dailyTotals[dateStr] || 0;
         return { date: d, total: total };
     });
 
@@ -115,7 +211,6 @@ function renderWeeklyRevenueChart(bookings) {
         </div>`;
     }).join('');
 }
-
 // --------------------------------------------
 // Recent Bookings list
 // --------------------------------------------
@@ -135,16 +230,33 @@ function renderRecentBookings(bookings, profilesById) {
 
     listEl.innerHTML = bookings.map(function (b) {
         const client = profilesById[b.user_id] || {};
+        // ✅ FIX: Get proper status badge
+        const statusBadge = getStatusBadge(b.status);
+        
         return `
             <div class="admin-recent-item">
                 <div>
                     <div class="admin-recent-item-name">${escapeHtmlDash(client.full_name || 'Unnamed')}</div>
                     <div class="admin-recent-item-meta">${escapeHtmlDash(b.service_name || '\u2014')} with ${escapeHtmlDash(b.barber_name || '\u2014')}</div>
                 </div>
-                <span class="admin-status-badge admin-status-${b.status}">${b.status}</span>
+                ${statusBadge}
             </div>
         `;
     }).join('');
+}
+
+// ✅ ADD THIS HELPER
+function getStatusBadge(status) {
+    const labels = {
+        'pending': 'Pending',
+        'confirmed': 'Confirmed',
+        'completed': 'Completed',
+        'cancelled': 'Cancelled'
+    };
+    const safeStatus = status || 'unknown';
+    const label = labels[safeStatus] || status || 'Unknown';
+    const colorClass = `admin-status-${safeStatus}`;
+    return `<span class="admin-status-badge ${colorClass}">${label}</span>`;
 }
 
 function escapeHtmlDash(str) {
@@ -200,4 +312,145 @@ async function loadLowStockCount() {
 function setText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value;
+}
+
+async function loadTopServices() {
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .select('service_name, total_price, status')
+        .in('status', ['completed', 'confirmed'])
+        .gte('booking_date', getDateDaysAgo(30));
+
+    if (error) {
+        console.error('Error loading top services:', error);
+        return;
+    }
+
+    // Count services
+    const serviceCounts = {};
+    (data || []).forEach(b => {
+        const name = b.service_name || 'Unknown';
+        serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+    });
+
+    // Sort and get top 5
+    const sorted = Object.entries(serviceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const listEl = document.getElementById('topServicesList');
+    if (!listEl) return;
+
+    if (!sorted.length) {
+        listEl.innerHTML = `
+            <div class="admin-recent-empty">
+                <i class="fas fa-scissors" aria-hidden="true"></i>
+                <p>No service data yet</p>
+                <span>Popular services will appear here once you have bookings.</span>
+            </div>`;
+        return;
+    }
+
+    listEl.innerHTML = sorted.map(([name, count], index) => `
+        <div class="admin-recent-item">
+            <div>
+                <div class="admin-recent-item-name">${index + 1}. ${escapeHtml(name)}</div>
+                <div class="admin-recent-item-meta">${count} bookings</div>
+            </div>
+            <span class="admin-badge">${count}x</span>
+        </div>
+    `).join('');
+}
+
+// ============================================================
+// TOP BARBERS
+// ============================================================
+async function loadTopBarbers() {
+    const { data, error } = await supabaseClient
+        .from('bookings')
+        .select('barber_name, status')
+        .in('status', ['completed', 'confirmed'])
+        .gte('booking_date', getDateDaysAgo(30))
+        .not('barber_name', 'is', null);
+
+    if (error) {
+        console.error('Error loading top barbers:', error);
+        return;
+    }
+
+    const barberCounts = {};
+    (data || []).forEach(b => {
+        const name = b.barber_name || 'Unknown';
+        barberCounts[name] = (barberCounts[name] || 0) + 1;
+    });
+
+    const sorted = Object.entries(barberCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    const listEl = document.getElementById('topBarbersList');
+    if (!listEl) return;
+
+    if (!sorted.length) {
+        listEl.innerHTML = `
+            <div class="admin-recent-empty">
+                <i class="fas fa-user-tie" aria-hidden="true"></i>
+                <p>No barber data yet</p>
+                <span>Barber performance will appear here once you have bookings.</span>
+            </div>`;
+        return;
+    }
+
+    listEl.innerHTML = sorted.map(([name, count], index) => `
+        <div class="admin-recent-item">
+            <div>
+                <div class="admin-recent-item-name">${index + 1}. ${escapeHtml(name)}</div>
+                <div class="admin-recent-item-meta">${count} bookings</div>
+            </div>
+            <span class="admin-badge">${count}x</span>
+        </div>
+    `).join('');
+}
+// ============================================================
+// RECENT ORDERS
+// ============================================================
+async function loadRecentOrders() {
+    const { data, error } = await supabaseClient
+        .from('orders')
+        .select('id, customer_name, total_price, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+    if (error) {
+        console.error('Error loading recent orders:', error);
+        return;
+    }
+
+    const listEl = document.getElementById('recentOrdersList');
+    if (!listEl) return;
+
+    if (!data || !data.length) {
+        listEl.innerHTML = `
+            <div class="admin-recent-empty">
+                <i class="fas fa-box" aria-hidden="true"></i>
+                <p>No orders yet</p>
+                <span>Orders will appear here once customers start ordering.</span>
+            </div>`;
+        return;
+    }
+
+    listEl.innerHTML = data.map(order => `
+        <div class="admin-recent-item">
+            <div>
+                <div class="admin-recent-item-name">${escapeHtml(order.customer_name || 'Guest')}</div>
+                <div class="admin-recent-item-meta">${formatPHP(order.total_price)}</div>
+            </div>
+            <span class="admin-status-badge admin-status-${order.status || 'pending'}">${order.status || 'Pending'}</span>
+        </div>
+    `).join('');
+}
+function getDateDaysAgo(days) {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
 }

@@ -234,41 +234,21 @@
                                 <div class="booking-service-grid" id="bookingServiceGrid"></div>
                             </div>
 
-                            <!-- STEP 3 — BARBER -->
-                            <div class="booking-card" data-step="3">
-                                <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">3</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Pick a Barber</h2>
+                           <!-- STEP 3 — BARBER -->
+<div class="booking-card" data-step="3">
+    <h2 class="booking-card-title">
+        <span class="booking-step-number">
+            <span class="booking-step-num">3</span>
+            <i class="fas fa-check booking-step-check" aria-hidden="true"></i>
+        </span> 
+        Pick a Barber
+    </h2>
 
-                                <div class="booking-barber-grid" id="bookingBarberGrid">
-                                    <button type="button" class="booking-barber-card booking-barber-card--random" data-barber-id="">
-                                        <span class="booking-barber-none-icon"><i class="fas fa-shuffle" aria-hidden="true"></i></span>
-                                        <span class="booking-barber-name">Random</span>
-                                        <span class="booking-barber-role">We'll pick for you</span>
-                                    </button>
-
-                                    <button type="button" class="booking-barber-card" data-barber-id="barber-russel">
-                                        <img src="../images/team.jpg" alt="" class="booking-barber-photo" loading="lazy" onerror="this.src='https://placehold.co/56x56/232323/666?text=%20'" />
-                                        <span class="booking-barber-name">Barber Russel</span>
-                                        <span class="booking-barber-role">Barber and Stylist</span>
-                                        <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.9</span>
-                                        <span class="booking-barber-badge">Women's: Klark only</span>
-                                    </button>
-
-                                    <button type="button" class="booking-barber-card" data-barber-id="klark-dizon">
-                                        <img src="../images/team1.jpg" alt="" class="booking-barber-photo" loading="lazy" onerror="this.src='https://placehold.co/56x56/232323/666?text=%20'" />
-                                        <span class="booking-barber-name">Barber Klark</span>
-                                        <span class="booking-barber-role">Owner and Master Barber</span>
-                                        <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.8</span>
-                                    </button>
-
-                                    <button type="button" class="booking-barber-card" data-barber-id="barber-jon">
-                                        <img src="../images/team1.jpg" alt="" class="booking-barber-photo" loading="lazy" onerror="this.src='https://placehold.co/56x56/232323/666?text=%20'" />
-                                        <span class="booking-barber-name">Barber Jon</span>
-                                        <span class="booking-barber-role">Barber and Stylist</span>
-                                        <span class="booking-barber-rating"><i class="fas fa-star" aria-hidden="true"></i> 4.9</span>
-                                        <span class="booking-barber-badge">Women's: Klark only</span>
-                                    </button>
-                                </div>
-                            </div>
+    <div class="booking-barber-grid" id="bookingBarberGrid">
+        <!-- Dynamic content from booking.js -->
+        <!-- The JavaScript will load barbers from Supabase and render them here -->
+    </div>
+</div>
 
                             <!-- STEP 4 — DATE & TIME -->
                             <div class="booking-card" data-step="4">

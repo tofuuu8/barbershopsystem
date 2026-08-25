@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barbers - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="assets/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+            <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+                <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+                <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+                <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+                <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="admin-main admin-main-wide">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Barbers</h1>
+                    <p class="admin-page-sub">Manage your team of barbers and their schedules.</p>
+                </div>
+                <button type="button" class="admin-drawer-save" id="addBarberBtn" style="width:auto; padding:10px 24px;">
+                    <i class="fas fa-plus"></i> Add Barber
+                </button>
+            </div>
+
+            <div class="admin-stat-row">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statTotalBarbers">—</div>
+                    <div class="admin-stat-label">Total Barbers</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statActiveBarbers">—</div>
+                    <div class="admin-stat-label">Active</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statInactiveBarbers">—</div>
+                    <div class="admin-stat-label">Inactive</div>
+                </div>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Barber</th>
+                            <th>Specialties</th>
+                            <th>Schedule</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="barbersTableBody">
+                        <tr class="admin-empty-row"><td colspan="5">Loading barbers...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+<!-- ADD/EDIT BARBER MODAL -->
+<div class="admin-modal-backdrop" id="barberModalBackdrop" hidden></div>
+<div class="admin-modal admin-modal--wide" id="barberModal" hidden>
+    <button type="button" class="admin-drawer-close" id="barberModalCloseBtn">
+        <i class="fas fa-xmark"></i>
+    </button>
+    <h3 class="admin-modal-title" id="barberModalTitle">Add Barber</h3>
+    <p class="admin-modal-sub">Fill in the barber's details.</p>
+
+    <div class="admin-form-grid">
+        <div class="admin-drawer-field">
+            <label for="barberNameInput">Full Name *</label>
+            <input type="text" id="barberNameInput" class="admin-input" placeholder="e.g. Barber Klark" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberTitleInput">Title / Position</label>
+            <input type="text" id="barberTitleInput" class="admin-input" placeholder="e.g. Owner and Master Barber" />
+        </div>
+        <div class="admin-drawer-field admin-drawer-field--full">
+            <label for="barberBioInput">Bio</label>
+            <textarea id="barberBioInput" class="admin-input" rows="3" placeholder="Short bio about the barber"></textarea>
+        </div>
+        <div class="admin-drawer-field admin-drawer-field--full">
+            <label for="barberSpecialtiesInput">Specialties (comma separated)</label>
+            <input type="text" id="barberSpecialtiesInput" class="admin-input" placeholder="e.g. Fades, Beard Sculpting, Classic Cuts" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberExperienceInput">Years Experience</label>
+            <input type="number" id="barberExperienceInput" class="admin-input" placeholder="6" min="0" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberRatingInput">Rating (out of 5)</label>
+            <input type="number" id="barberRatingInput" class="admin-input" placeholder="4.8" min="0" max="5" step="0.1" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberReviewsInput">Number of Reviews</label>
+            <input type="number" id="barberReviewsInput" class="admin-input" placeholder="98" min="0" />
+        </div>
+        <div class="admin-drawer-field">
+            <label for="barberImageInput">Profile Image</label>
+            <input type="file" id="barberImageInput" class="admin-input" accept="image/*" />
+            <p style="font-size:0.7rem; color:var(--dim); margin-top:4px;">
+                Upload a photo (JPG, PNG, WEBP — max 2MB)
+            </p>
+            <div id="imagePreview" style="margin-top:8px; display:none;">
+                <img id="imagePreviewImg" src="" alt="Preview" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:2px solid var(--line);" />
+                <button type="button" id="removeImageBtn" style="margin-left:8px; background:var(--bad); color:white; border:none; border-radius:4px; padding:4px 8px; cursor:pointer;">Remove</button>
+            </div>
+        </div>
+        <div class="admin-drawer-field admin-drawer-field--full">
+            <div class="admin-checkbox-field">
+                <input type="checkbox" id="barberActiveInput" checked />
+                <label for="barberActiveInput">Active (available for bookings)</label>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" class="admin-drawer-save" id="barberSaveBtn">Save Barber</button>
+    <p class="admin-drawer-save-status" id="barberSaveStatus"></p>
+</div>
+
+<!-- ID Field (optional, auto-generated kung walang laman) -->
+<div class="admin-drawer-field">
+    <label for="barberIdInput">Barber ID (optional)</label>
+    <input type="text" id="barberIdInput" class="admin-input" placeholder="e.g. barber-barko" />
+    <p style="font-size:0.7rem; color:var(--dim); margin-top:4px;">
+        Leave blank to auto-generate. Use lowercase letters, numbers, and hyphens only.
+    </p>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="barbers.js"></script>
+</body>
+</html>
