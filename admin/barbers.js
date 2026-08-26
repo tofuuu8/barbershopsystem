@@ -235,8 +235,8 @@ function openEditBarberModal(id) {
     document.getElementById('barberBioInput').value = barber.bio || '';
     document.getElementById('barberSpecialtiesInput').value = barber.specialties || '';
     document.getElementById('barberExperienceInput').value = barber.experience || '';
-    document.getElementById('barberRatingInput').value = barber.rating || '';
-    document.getElementById('barberReviewsInput').value = barber.reviews || '';
+    document.getElementById('barberRatingReviewsDisplay').textContent =
+        `⭐ ${barber.rating || 0} · ${barber.reviews || 0} review${barber.reviews === 1 ? '' : 's'}`;
     document.getElementById('barberActiveInput').checked = barber.is_active;
     document.getElementById('barberSaveStatus').textContent = '';
 
@@ -322,8 +322,7 @@ function openAddBarberModal() {
     document.getElementById('barberBioInput').value = '';
     document.getElementById('barberSpecialtiesInput').value = '';
     document.getElementById('barberExperienceInput').value = '';     // NEW
-    document.getElementById('barberRatingInput').value = '';         // NEW
-    document.getElementById('barberReviewsInput').value = '';        // NEW
+    document.getElementById('barberRatingReviewsDisplay').textContent = '⭐ 0 · 0 reviews (none yet)';
     document.getElementById('barberImageInput').value = '';          // NEW
     document.getElementById('barberActiveInput').checked = true;
     document.getElementById('barberSaveStatus').textContent = '';
@@ -344,8 +343,9 @@ async function saveBarber() {
     const bio = document.getElementById('barberBioInput').value.trim();
     const specialties = document.getElementById('barberSpecialtiesInput').value.trim();
     const experience = parseInt(document.getElementById('barberExperienceInput').value) || 0;
-    const rating = parseFloat(document.getElementById('barberRatingInput').value) || 0;
-    const reviews = parseInt(document.getElementById('barberReviewsInput').value) || 0;
+    // rating/reviews are no longer editable here — they're auto-calculated
+    // from the reviews table by a Supabase trigger (see reviews-rating-sync.sql)
+    // and left untouched on every save.
     const isActive = document.getElementById('barberActiveInput').checked;
     
     // Get image file
@@ -439,8 +439,8 @@ async function saveBarber() {
         bio: bio || null,
         specialties: specialties || null,
         experience,
-        rating,
-        reviews,
+        // rating/reviews intentionally omitted — auto-calculated by
+        // the reviews-rating-sync.sql trigger, not set from the admin form.
         image_url: imageUrl || null,
         is_active: isActive
     };

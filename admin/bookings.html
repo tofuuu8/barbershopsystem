@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="admin.css" />
+    <link rel="stylesheet" href="bookings-receipt.css" />
 </head>
 <body>
 
@@ -248,7 +249,49 @@
             <button type="button" class="admin-drawer-save" id="bookingSaveBtn">Save Status</button>
             <button type="button" class="admin-modal-cancel-btn" id="bookingCancelBtn">Cancel Booking</button>
         </div>
+        <button type="button" class="admin-receipt-view-btn" id="bookingViewReceiptBtn">
+            <i class="fas fa-qrcode" aria-hidden="true"></i> View Receipt
+        </button>
         <p class="admin-drawer-save-status" id="bookingSaveStatus"></p>
+    </div>
+
+    <!-- ========================================
+    RECEIPT MODAL — same digital QR receipt the customer gets
+    (see booking.html / myappointments.html), viewable here for
+    front-desk verification without recreating anything.
+    ======================================== -->
+    <div class="admin-receipt-backdrop" id="bookingReceiptBackdrop" hidden></div>
+    <div class="admin-receipt-modal" id="bookingReceiptModal" hidden role="dialog" aria-label="Booking receipt">
+        <button type="button" class="admin-receipt-close" id="bookingReceiptCloseBtn" aria-label="Close">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+
+        <div class="admin-receipt-capture" id="bookingReceiptCapture">
+            <div class="admin-receipt-icon"><i class="fas fa-ticket" aria-hidden="true"></i></div>
+            <h2 class="admin-receipt-title">Appointment Receipt</h2>
+            <p class="admin-receipt-client" id="bookingReceiptClient">&mdash;</p>
+
+            <div class="admin-receipt-divider" aria-hidden="true"></div>
+
+            <div class="admin-receipt-details">
+                <div class="admin-receipt-row"><span>Service</span><span id="bookingReceiptService"></span></div>
+                <div class="admin-receipt-row"><span>Barber</span><span id="bookingReceiptBarber"></span></div>
+                <div class="admin-receipt-row"><span>Location</span><span id="bookingReceiptLocation"></span></div>
+                <div class="admin-receipt-row"><span>Date &amp; Time</span><span id="bookingReceiptDateTime"></span></div>
+                <div class="admin-receipt-row"><span>Status</span><span id="bookingReceiptStatus"></span></div>
+            </div>
+
+            <div class="admin-receipt-divider" aria-hidden="true"></div>
+
+            <div class="admin-receipt-qr-wrap">
+                <div class="admin-receipt-qr-code" id="bookingReceiptQr"></div>
+                <span class="admin-receipt-ref">Ref&nbsp;<strong id="bookingReceiptId">&mdash;</strong></span>
+            </div>
+        </div>
+
+        <button type="button" class="admin-receipt-download-btn" id="bookingReceiptDownloadBtn">
+            <i class="fas fa-download" aria-hidden="true"></i> Save Receipt
+        </button>
     </div>
 
     <!-- SCRIPTS -->
@@ -256,6 +299,9 @@
     <script src="supabase.js"></script>
     <script src="admin-auth.js"></script>
     <script src="notifications.js"></script>
+    <!-- Digital receipt: QR code generation + "Save Receipt" screenshot-to-PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="bookings.js"></script>
 </body>
 </html>

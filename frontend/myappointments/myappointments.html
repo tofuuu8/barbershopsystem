@@ -226,6 +226,83 @@
     </footer>
 
     <!-- ==========================================
+    RECEIPT MODAL — reopenable QR proof-of-booking,
+    same ticket shown right after booking (see booking.html).
+    ========================================== -->
+    <div class="myappt-receipt-backdrop" id="apptReceiptBackdrop" hidden></div>
+    <div class="myappt-receipt-modal" id="apptReceiptModal" hidden role="dialog" aria-label="Appointment receipt">
+        <button type="button" class="myappt-receipt-close" id="apptReceiptCloseBtn" aria-label="Close">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+
+        <div class="myappt-receipt-capture" id="apptReceiptCapture">
+            <div class="myappt-receipt-icon"><i class="fas fa-ticket" aria-hidden="true"></i></div>
+            <h2 class="myappt-receipt-title">Appointment Receipt</h2>
+            <p class="myappt-receipt-status">Status: <span id="apptReceiptStatus">—</span></p>
+
+            <div class="myappt-receipt-divider" aria-hidden="true"></div>
+
+            <div class="myappt-receipt-details">
+                <div class="myappt-receipt-row"><span>Service</span><span id="apptReceiptService"></span></div>
+                <div class="myappt-receipt-row"><span>Barber</span><span id="apptReceiptBarber"></span></div>
+                <div class="myappt-receipt-row"><span>Location</span><span id="apptReceiptLocation"></span></div>
+                <div class="myappt-receipt-row"><span>Date &amp; Time</span><span id="apptReceiptDateTime"></span></div>
+                <div class="myappt-receipt-row"><span>Contact</span><span id="apptReceiptContact"></span></div>
+            </div>
+
+            <div class="myappt-receipt-divider" aria-hidden="true"></div>
+
+            <div class="myappt-receipt-qr-wrap">
+                <div class="myappt-receipt-qr-code" id="apptReceiptQr"></div>
+                <span class="myappt-receipt-ref">Ref&nbsp;<strong id="apptReceiptId">—</strong></span>
+                <span class="myappt-receipt-caption">Scan or save this as proof of your booking</span>
+            </div>
+        </div>
+
+        <button type="button" class="btn-secondary myappt-receipt-download-btn" id="apptReceiptDownloadBtn">
+            <i class="fas fa-download" aria-hidden="true"></i> Save Receipt
+        </button>
+    </div>
+
+    <!-- ==========================================
+    REVIEW MODAL — rate & comment on a completed
+    appointment. One review per booking, enforced
+    server-side by submit_booking_review() (see
+    reviews_setup.sql).
+    ========================================== -->
+    <div class="myappt-review-backdrop" id="apptReviewBackdrop" hidden></div>
+    <div class="myappt-review-modal" id="apptReviewModal" hidden role="dialog" aria-label="Leave a review">
+        <button type="button" class="myappt-review-close" id="apptReviewCloseBtn" aria-label="Close">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+
+        <div class="myappt-review-icon"><i class="fas fa-star" aria-hidden="true"></i></div>
+        <h2 class="myappt-review-title">Rate Your Visit</h2>
+        <p class="myappt-review-subtitle">with <span id="apptReviewBarber">—</span></p>
+
+        <div class="myappt-review-star-picker" id="apptReviewStarPicker" role="radiogroup" aria-label="Star rating">
+            <button type="button" class="myappt-review-star" data-value="1" role="radio" aria-checked="false" aria-label="1 star"><i class="fas fa-star" aria-hidden="true"></i></button>
+            <button type="button" class="myappt-review-star" data-value="2" role="radio" aria-checked="false" aria-label="2 stars"><i class="fas fa-star" aria-hidden="true"></i></button>
+            <button type="button" class="myappt-review-star" data-value="3" role="radio" aria-checked="false" aria-label="3 stars"><i class="fas fa-star" aria-hidden="true"></i></button>
+            <button type="button" class="myappt-review-star" data-value="4" role="radio" aria-checked="false" aria-label="4 stars"><i class="fas fa-star" aria-hidden="true"></i></button>
+            <button type="button" class="myappt-review-star" data-value="5" role="radio" aria-checked="false" aria-label="5 stars"><i class="fas fa-star" aria-hidden="true"></i></button>
+        </div>
+
+        <div class="myappt-review-field">
+            <label for="apptReviewComment">Comment <span class="account-field-optional">(optional)</span></label>
+            <textarea id="apptReviewComment" class="myappt-review-textarea" maxlength="500" placeholder="How was your cut? Anything the barber should know for next time?"></textarea>
+            <span class="myappt-review-count" id="apptReviewCount">0/500</span>
+        </div>
+
+        <p class="myappt-review-error" id="apptReviewError" role="alert" hidden></p>
+
+        <button type="button" class="btn-primary myappt-review-submit-btn" id="apptReviewSubmitBtn">
+            <span class="myappt-review-submit-text">Submit Review</span>
+            <i class="fas fa-circle-notch fa-spin myappt-review-submit-spinner" aria-hidden="true" hidden></i>
+        </button>
+    </div>
+
+    <!-- ==========================================
     AI CHAT WIDGET
     ========================================== -->
     <div class="chat-widget" id="chatWidget">
@@ -254,6 +331,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/main.js"></script>
+    <!-- Digital receipt: QR code generation + "Save Receipt" screenshot-to-PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="myappointments.js"></script>
     <script src="../js/order-notifications.js"></script>
 </body>

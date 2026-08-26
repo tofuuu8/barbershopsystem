@@ -305,14 +305,6 @@
     font-style: normal;
 }
 
-.myappt-card-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line);
-}
-
 .myappt-cancel-btn {
     display: inline-flex;
     align-items: center;
@@ -369,6 +361,277 @@
     cursor: default;
 }
 
+.myappt-receipt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 22px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 50px;
+    color: var(--off);
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myappt-receipt-btn:hover {
+    border-color: var(--white);
+    color: var(--white);
+}
+
+/* --------------------------------------------
+   Review button / "already reviewed" badge —
+   sits in the same footer slot as cancel/delete,
+   since a completed booking never shows those.
+   -------------------------------------------- */
+.myappt-review-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 22px;
+    background: transparent;
+    border: 1px solid rgba(240, 180, 41, 0.4);
+    border-radius: 50px;
+    color: #f0b429;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myappt-review-btn:hover {
+    background: #f0b429;
+    border-color: #f0b429;
+    color: var(--black);
+}
+
+.myappt-review-submitted {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--dim);
+}
+
+.myappt-review-stars {
+    color: #f0b429;
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+}
+
+.myappt-review-stars .myappt-star-empty {
+    color: var(--line);
+}
+
+/* Footer holds the (always-present) receipt button plus whatever
+   status action applies — space-between keeps them at opposite ends
+   even when only the receipt button is present. */
+.myappt-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
+
+/* ============================================
+   RECEIPT MODAL — same digital QR ticket shown right
+   after booking, reopenable any time from this page.
+   ============================================ */
+.myappt-receipt-backdrop[hidden],
+.myappt-receipt-modal[hidden] {
+    display: none;
+}
+
+.myappt-receipt-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 1000;
+}
+
+.myappt-receipt-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    width: calc(100% - 32px);
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 44px 30px 30px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.myappt-receipt-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    color: var(--off);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myappt-receipt-close:hover {
+    color: var(--white);
+    border-color: var(--white);
+}
+
+.myappt-receipt-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--white);
+}
+
+.myappt-receipt-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.4rem;
+    color: var(--white);
+    margin-bottom: 6px;
+}
+
+.myappt-receipt-status {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--dim);
+    margin-bottom: 4px;
+}
+
+.myappt-receipt-status span {
+    color: var(--off);
+    font-style: italic;
+}
+
+.myappt-receipt-divider {
+    position: relative;
+    height: 0;
+    border-top: 1px dashed var(--line);
+    margin: 22px -30px;
+}
+
+.myappt-receipt-divider::before,
+.myappt-receipt-divider::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--black);
+}
+
+.myappt-receipt-divider::before { left: -10px; }
+.myappt-receipt-divider::after { right: -10px; }
+
+.myappt-receipt-details {
+    text-align: left;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.myappt-receipt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+}
+
+.myappt-receipt-row span:first-child {
+    color: var(--dim);
+    flex-shrink: 0;
+}
+
+.myappt-receipt-row span:last-child {
+    color: var(--white);
+    text-align: right;
+}
+
+.myappt-receipt-qr-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.myappt-receipt-qr-code {
+    padding: 12px;
+    background: var(--white);
+    border-radius: var(--radius);
+    line-height: 0;
+}
+
+.myappt-receipt-qr-code img,
+.myappt-receipt-qr-code canvas {
+    display: block;
+    width: 132px;
+    height: 132px;
+}
+
+.myappt-receipt-ref {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--dim);
+}
+
+.myappt-receipt-ref strong {
+    font-family: var(--font-display);
+    letter-spacing: 1.5px;
+    color: var(--white);
+}
+
+.myappt-receipt-caption {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--dim);
+    max-width: 280px;
+    text-align: center;
+}
+
+.myappt-receipt-download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 26px;
+}
+
 /* Loading / error text (no dedicated card wrapper needed) */
 .myappointments-status-text {
     text-align: center;
@@ -376,6 +639,186 @@
     font-family: var(--font-body);
     font-size: 0.92rem;
     padding: 20px 0;
+}
+
+/* ============================================
+   REVIEW MODAL — same shell recipe as the
+   receipt modal, star picker + optional comment.
+   ============================================ */
+.myappt-review-backdrop[hidden],
+.myappt-review-modal[hidden] {
+    display: none;
+}
+
+.myappt-review-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 1000;
+}
+
+.myappt-review-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    width: calc(100% - 32px);
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 44px 30px 30px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.myappt-review-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    color: var(--off);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.myappt-review-close:hover {
+    color: var(--white);
+    border-color: var(--white);
+}
+
+.myappt-review-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: rgba(240, 180, 41, 0.12);
+    border: 1px solid rgba(240, 180, 41, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #f0b429;
+}
+
+.myappt-review-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.4rem;
+    color: var(--white);
+    margin-bottom: 6px;
+}
+
+.myappt-review-subtitle {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--dim);
+    margin-bottom: 24px;
+}
+
+.myappt-review-subtitle span {
+    color: var(--off);
+    font-style: italic;
+}
+
+.myappt-review-star-picker {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 26px;
+}
+
+.myappt-review-star {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    font-size: 1.7rem;
+    line-height: 1;
+    color: var(--line);
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.myappt-review-star:hover {
+    transform: scale(1.12);
+}
+
+.myappt-review-star.is-filled {
+    color: #f0b429;
+}
+
+.myappt-review-field {
+    text-align: left;
+    margin-bottom: 8px;
+}
+
+.myappt-review-field label {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--off);
+    margin-bottom: 8px;
+}
+
+.myappt-review-textarea {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.myappt-review-textarea:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.myappt-review-count {
+    display: block;
+    text-align: right;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--dim);
+    margin-top: 6px;
+}
+
+.myappt-review-error[hidden] {
+    display: none;
+}
+
+.myappt-review-error {
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: #e05a5a;
+    margin: 4px 0 18px;
+}
+
+.myappt-review-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+@media (max-width: 480px) {
+    .myappt-review-modal { padding: 36px 22px 24px; }
+    .myappt-review-star { font-size: 1.5rem; }
 }
 
 /* ============================================
@@ -389,4 +832,7 @@
     .myappointments-gate-panel { padding: 36px 24px 30px; }
     .myappt-card { padding: 20px 18px; }
     .myappt-card-header { flex-direction: column; }
+    .myappt-card-footer { flex-wrap: wrap; }
+    .myappt-receipt-modal { padding: 36px 22px 24px; }
+    .myappt-receipt-divider { margin: 18px -22px; }
 }

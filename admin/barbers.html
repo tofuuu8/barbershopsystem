@@ -139,13 +139,14 @@
             <label for="barberExperienceInput">Years Experience</label>
             <input type="number" id="barberExperienceInput" class="admin-input" placeholder="6" min="0" />
         </div>
-        <div class="admin-drawer-field">
-            <label for="barberRatingInput">Rating (out of 5)</label>
-            <input type="number" id="barberRatingInput" class="admin-input" placeholder="4.8" min="0" max="5" step="0.1" />
-        </div>
-        <div class="admin-drawer-field">
-            <label for="barberReviewsInput">Number of Reviews</label>
-            <input type="number" id="barberReviewsInput" class="admin-input" placeholder="98" min="0" />
+        <div class="admin-drawer-field admin-drawer-field--full">
+            <label>Rating &amp; Reviews</label>
+            <p id="barberRatingReviewsDisplay" style="margin:0; font-size:0.95rem; color:var(--off);">
+                ⭐ — · — reviews
+            </p>
+            <p style="font-size:0.7rem; color:var(--dim); margin-top:4px;">
+                Calculated automatically from customer reviews — not editable here.
+            </p>
         </div>
         <div class="admin-drawer-field">
             <label for="barberImageInput">Profile Image</label>

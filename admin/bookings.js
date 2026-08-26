@@ -246,6 +246,7 @@ function initBookingModal() {
     const closeBtn = document.getElementById('bookingModalCloseBtn');
     const saveBtn = document.getElementById('bookingSaveBtn');
     const cancelBtn = document.getElementById('bookingCancelBtn');
+    const viewReceiptBtn = document.getElementById('bookingViewReceiptBtn');
 
     if (backdrop) backdrop.addEventListener('click', closeBookingModal);
     if (closeBtn) closeBtn.addEventListener('click', closeBookingModal);
@@ -254,6 +255,11 @@ function initBookingModal() {
     });
     if (saveBtn) saveBtn.addEventListener('click', saveBookingStatus);
     if (cancelBtn) cancelBtn.addEventListener('click', cancelBookingFromModal);
+    if (viewReceiptBtn) viewReceiptBtn.addEventListener('click', function () {
+        if (activeBookingId) openBookingReceipt(activeBookingId);
+    });
+
+    initBookingReceiptModal();
 }
 
 function openBookingModal(bookingId) {
@@ -325,6 +331,134 @@ function closeBookingModal() {
     document.getElementById('bookingModalBackdrop').hidden = true;
     document.getElementById('bookingModal').hidden = true;
     activeBookingId = null;
+}
+
+// --------------------------------------------
+// Receipt modal — same digital QR receipt the customer sees on
+// booking.html / myappointments.html, viewable here too so front
+// desk can verify a visitor's proof-of-booking without asking them
+// to pull it up themselves.
+// --------------------------------------------
+function initBookingReceiptModal() {
+    const backdrop = document.getElementById('bookingReceiptBackdrop');
+    const closeBtn = document.getElementById('bookingReceiptCloseBtn');
+    const downloadBtn = document.getElementById('bookingReceiptDownloadBtn');
+
+    if (backdrop) backdrop.addEventListener('click', closeBookingReceipt);
+    if (closeBtn) closeBtn.addEventListener('click', closeBookingReceipt);
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeBookingReceipt();
+    });
+    if (downloadBtn) downloadBtn.addEventListener('click', downloadBookingReceipt);
+}
+
+function openBookingReceipt(bookingId) {
+    const booking = allBookings.find(b => b.id === bookingId);
+    if (!booking) return;
+
+    const client = profilesById[booking.user_id] || {};
+    const refId = String(booking.id || '').slice(0, 8).toUpperCase();
+    const statusLabels = { pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed', cancelled: 'Cancelled' };
+    const statusLabel = statusLabels[booking.status] || booking.status || 'Unknown';
+
+    setText('bookingReceiptClient', client.full_name || client.email || client.phone || 'Unnamed client');
+    setText('bookingReceiptService', `${booking.service_name || '\u2014'}${booking.service_duration ? ' (' + booking.service_duration + ')' : ''}`);
+    setText('bookingReceiptBarber', booking.barber_name || '\u2014');
+    setText('bookingReceiptLocation', booking.location_type === 'home'
+        ? `Home Service${booking.area ? ' \u2014 ' + booking.area : ''}${booking.address ? ', ' + booking.address : ''}`
+        : 'In-Studio');
+    setText('bookingReceiptDateTime', formatDateTime(booking.booking_date, booking.booking_time));
+    setText('bookingReceiptStatus', statusLabel);
+    setText('bookingReceiptId', refId || '\u2014');
+
+    // Open the modal FIRST, then render the QR — same fix as the
+    // customer-facing myappointments.js. new QRCode(...) can throw
+    // ("code length overflow") when the payload is too long for the
+    // QR version it auto-selects, and an uncaught throw before these
+    // two lines used to abort the whole function, so the modal never
+    // opened and the View Receipt button looked dead.
+    document.getElementById('bookingReceiptBackdrop').hidden = false;
+    document.getElementById('bookingReceiptModal').hidden = false;
+
+    renderBookingReceiptQr(booking, client, refId, statusLabel);
+}
+
+function closeBookingReceipt() {
+    const backdrop = document.getElementById('bookingReceiptBackdrop');
+    const modal = document.getElementById('bookingReceiptModal');
+    if (backdrop) backdrop.hidden = true;
+    if (modal) modal.hidden = true;
+}
+
+function renderBookingReceiptQr(booking, client, refId, statusLabel) {
+    const container = document.getElementById('bookingReceiptQr');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (typeof QRCode === 'undefined') {
+        container.textContent = 'QR unavailable';
+        return;
+    }
+
+    // Keep this short and capped — the bundled qrcode.min.js throws
+    // ("code length overflow") instead of degrading gracefully once
+    // the payload is too long for the QR version it auto-selects, and
+    // an uncaught throw here used to blow up the whole receipt-opening
+    // flow (see openBookingReceipt). Ref/Booking ID alone are enough
+    // to look this appointment up in the admin panel.
+    const qrPayload = [
+        'TOUGHCUTS APPOINTMENT',
+        `Ref: ${refId}`,
+        `Booking ID: ${booking.id}`
+    ].join('\n').slice(0, 200);
+
+    try {
+        new QRCode(container, {
+            text: qrPayload,
+            width: 126,
+            height: 126,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    } catch (err) {
+        console.error('QR render failed:', err);
+        container.textContent = 'QR unavailable';
+    }
+}
+
+async function downloadBookingReceipt() {
+    const node = document.getElementById('bookingReceiptCapture');
+    const btn = document.getElementById('bookingReceiptDownloadBtn');
+    if (!node || typeof html2canvas === 'undefined') {
+        alert('Saving isn\u2019t available right now \u2014 please take a screenshot instead.');
+        return;
+    }
+
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Preparing...';
+    }
+
+    try {
+        const canvas = await html2canvas(node, { backgroundColor: '#17171a', scale: 2, useCORS: true });
+        const refEl = document.getElementById('bookingReceiptId');
+        const refText = (refEl && refEl.textContent && refEl.textContent !== '\u2014') ? refEl.textContent : 'receipt';
+
+        const link = document.createElement('a');
+        link.download = `toughcuts-appointment-${refText}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    } catch (err) {
+        console.error(err);
+        alert('Couldn\u2019t save the receipt \u2014 please try taking a screenshot instead.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
 }
 
 async function updateBookingStatus(newStatus) {

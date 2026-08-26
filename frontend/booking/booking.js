@@ -94,6 +94,23 @@ function areaLabel(area) {
 // BUSINESS HOURS -> TIME SLOTS
 // Matches the footer's posted hours: Mon-Fri 9am-8pm, Sat 9am-6pm, Sun closed.
 // --------------------------------------------
+// Local (not UTC) YYYY-MM-DD for "today" — new Date().toISOString()
+// gives the UTC date, which runs a day behind Philippine local time
+// (UTC+8) during the early-morning window (~12:00am-7:59am PH time).
+// Using the UTC string as "today" in that window would let the date
+// picker's min go a day stale, make the isToday check in
+// refreshTimeSlots() miss today entirely (so already-passed times
+// wouldn't get filtered out), and make loadUpcomingBookings()'s
+// "upcoming" cutoff a day too early (so a booking from yesterday could
+// still show as upcoming). Building the string from local
+// getFullYear/getMonth/getDate avoids all three.
+function localDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 function hoursForDate(dateStr) {
     const day = new Date(dateStr + 'T00:00:00').getDay(); // 0 = Sunday
     if (day === 0) return null;
@@ -205,6 +222,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initNotesCounter();
     initBookingForm();
     initResetButton();
+    initReceiptDownloadButton();
     applyLocationToUI();
     applyGenderToUI();
     renderServiceCard();
@@ -514,11 +532,11 @@ async function initDateTimeInputs() {
     if (!dateInput) return;
 
     const today = new Date();
-    dateInput.min = today.toISOString().slice(0, 10);
+    dateInput.min = localDateStr(today);
 
     const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + MAX_BOOKING_DAYS_AHEAD);
-    dateInput.max = maxDate.toISOString().slice(0, 10);
+    dateInput.max = localDateStr(maxDate);
 
     dateInput.addEventListener('change', refreshTimeSlots);
     document.getElementById('bookingTimeSelect') &&
@@ -555,7 +573,7 @@ async function refreshTimeSlots() {
     const durationMinutes = service ? parseDurationMinutes(service.duration) : 60;
 
     const today = new Date();
-    const isToday = dateStr === today.toISOString().slice(0, 10);
+    const isToday = dateStr === localDateStr(today);
     const nowMinutes = today.getHours() * 60 + today.getMinutes();
 
     const availableSlots = await fetchAvailableBookingSlots(selectedBarberId, dateStr, durationMinutes);
@@ -1027,7 +1045,112 @@ function showBookingSuccess(booking, sel) {
         ? `Email: ${sel.email}`
         : `Phone: ${booking.contact_phone || sel.phone}`);
 
+    renderReceiptQr(booking, sel);
+
     success.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// --------------------------------------------
+// DIGITAL RECEIPT — QR code proof-of-booking
+// --------------------------------------------
+// Encodes the booking's own reference + details into a QR code, purely
+// client-side (via the qrcodejs library loaded in booking.html) — no
+// external QR API call, so nothing about the booking leaves the
+// browser just to render the code. Scanning it just reveals the same
+// plain-text summary a staff member could ask the visitor to read out
+// loud; it isn't a signed/verifiable token, just a fast, legible way to
+// carry the same proof shown in "Your Upcoming Appointments" and on
+// this receipt.
+function renderReceiptQr(booking, sel) {
+    const container = document.getElementById('bookingReceiptQr');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const refId = String(booking.id || '').slice(0, 8).toUpperCase();
+    setText('bookingReceiptId', refId || '\u2014');
+
+    if (typeof QRCode === 'undefined') {
+        // QR library failed to load (offline CDN, blocked script, etc.) —
+        // the reference ID above still stands as proof, just without the
+        // scannable code.
+        container.textContent = 'QR unavailable';
+        return;
+    }
+
+    // Keep this short and capped — the bundled qrcode.min.js throws
+    // ("code length overflow") instead of degrading gracefully once the
+    // payload is too long for the QR version it auto-selects. Left
+    // unguarded, that throw would propagate all the way up through
+    // showBookingSuccess() into the form submit handler, skipping the
+    // loadUpcomingBookings() call right after it — so a successful
+    // booking could end up not refreshing the visitor's appointment
+    // list, on top of losing the QR itself. Ref/Booking ID alone are
+    // enough to look this appointment up.
+    const qrPayload = [
+        'TOUGHCUTS APPOINTMENT',
+        `Ref: ${refId}`,
+        `Booking ID: ${booking.id}`
+    ].join('\n').slice(0, 200);
+
+    try {
+        new QRCode(container, {
+            text: qrPayload,
+            width: 132,
+            height: 132,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    } catch (err) {
+        console.error('QR render failed:', err);
+        container.textContent = 'QR unavailable';
+    }
+}
+
+// "Save Receipt" — screenshots the ticket (icon, details, and QR —
+// everything inside #bookingReceiptCapture, not the action buttons)
+// and downloads it as a PNG the visitor can keep, print, or show at
+// check-in.
+function initReceiptDownloadButton() {
+    const btn = document.getElementById('bookingSuccessDownload');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function () {
+        const node = document.getElementById('bookingReceiptCapture');
+        if (!node || typeof html2canvas === 'undefined') {
+            alert('Saving isn\u2019t available right now \u2014 please take a screenshot instead.');
+            return;
+        }
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Preparing...';
+
+        try {
+            const cardBg = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#141414';
+            const canvas = await html2canvas(node, {
+                backgroundColor: cardBg,
+                scale: 2,
+                useCORS: true
+            });
+
+            const refId = document.getElementById('bookingReceiptId');
+            const refText = (refId && refId.textContent && refId.textContent !== '\u2014')
+                ? refId.textContent
+                : 'receipt';
+
+            const link = document.createElement('a');
+            link.download = `toughcuts-appointment-${refText}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        } catch (err) {
+            console.error(err);
+            alert('Couldn\u2019t save the receipt \u2014 please try taking a screenshot instead.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
 }
 
 // "Book Another Appointment" — resets the form
@@ -1069,6 +1192,10 @@ function initResetButton() {
         updateSummary();
         initNotesCounter();
 
+        const qrContainer = document.getElementById('bookingReceiptQr');
+        if (qrContainer) qrContainer.innerHTML = '';
+        setText('bookingReceiptId', '\u2014');
+
         document.getElementById('bookingSuccess').hidden = true;
         document.getElementById('bookingFormWrap').hidden = false;
         document.getElementById('bookingFormWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1097,7 +1224,7 @@ async function loadUpcomingBookings() {
     const user = getCurrentUser();
     if (!user) return;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDateStr(new Date());
 
     const { data, error } = await supabaseClient
         .from('bookings')

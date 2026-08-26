@@ -287,6 +287,58 @@
 }
 
 /* ============================================
+   DIGITAL RECEIPT — QR code + "Save Receipt"
+   ============================================ */
+.booking-receipt-qr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.booking-receipt-qr-code {
+    padding: 12px;
+    background: var(--white);
+    border-radius: var(--radius);
+    line-height: 0;
+}
+
+.booking-receipt-qr-code img,
+.booking-receipt-qr-code canvas {
+    display: block;
+    width: 132px;
+    height: 132px;
+}
+
+.booking-receipt-ref {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--dim);
+}
+
+.booking-receipt-ref strong {
+    font-family: var(--font-display);
+    letter-spacing: 1.5px;
+    color: var(--white);
+}
+
+.booking-receipt-caption {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--dim);
+    max-width: 300px;
+    text-align: center;
+}
+
+.booking-receipt-download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* ============================================
    FORM LAYOUT
    ============================================ */
 .booking-form-wrap[hidden] {

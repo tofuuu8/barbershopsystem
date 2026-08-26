@@ -144,21 +144,37 @@
             <!-- ============ SUCCESS STATE ============ -->
             <div class="booking-success" id="bookingSuccess" hidden>
                 <div class="booking-success-panel">
-                    <div class="booking-success-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
-                    <h2 class="booking-success-title">Booking Confirmed!</h2>
-                    <p class="booking-success-text">We've got you down — you'll see this appointment under "Your Upcoming Appointments" below.</p>
+                    <div class="booking-receipt-capture" id="bookingReceiptCapture">
+                        <div class="booking-success-icon"><i class="fas fa-circle-check" aria-hidden="true"></i></div>
+                        <h2 class="booking-success-title">Booking Confirmed!</h2>
+                        <p class="booking-success-text">We've got you down — you'll see this appointment under "Your Upcoming Appointments" below.</p>
 
-                    <div class="booking-ticket-divider" aria-hidden="true"></div>
+                        <div class="booking-ticket-divider" aria-hidden="true"></div>
 
-                    <div class="booking-success-details">
-                        <div class="booking-success-row"><span>Service</span><span id="bookingSuccessService"></span></div>
-                        <div class="booking-success-row"><span>Barber</span><span id="bookingSuccessBarber"></span></div>
-                        <div class="booking-success-row"><span>Location</span><span id="bookingSuccessLocation"></span></div>
-                        <div class="booking-success-row"><span>Date &amp; Time</span><span id="bookingSuccessDateTime"></span></div>
-                        <div class="booking-success-row"><span>Contact</span><span id="bookingSuccessContact"></span></div>
+                        <div class="booking-success-details">
+                            <div class="booking-success-row"><span>Service</span><span id="bookingSuccessService"></span></div>
+                            <div class="booking-success-row"><span>Barber</span><span id="bookingSuccessBarber"></span></div>
+                            <div class="booking-success-row"><span>Location</span><span id="bookingSuccessLocation"></span></div>
+                            <div class="booking-success-row"><span>Date &amp; Time</span><span id="bookingSuccessDateTime"></span></div>
+                            <div class="booking-success-row"><span>Contact</span><span id="bookingSuccessContact"></span></div>
+                        </div>
+
+                        <div class="booking-ticket-divider" aria-hidden="true"></div>
+
+                        <!-- Digital-receipt QR — encodes the booking reference so
+                        the visitor has scannable proof of exactly what/when they
+                        booked, on-screen or printed/saved as an image. -->
+                        <div class="booking-receipt-qr">
+                            <div class="booking-receipt-qr-code" id="bookingReceiptQr"></div>
+                            <span class="booking-receipt-ref">Ref&nbsp;<strong id="bookingReceiptId">—</strong></span>
+                            <span class="booking-receipt-caption">Scan or save this as proof of your booking</span>
+                        </div>
                     </div>
 
                     <div class="booking-success-actions">
+                        <button type="button" class="btn-secondary booking-receipt-download-btn" id="bookingSuccessDownload">
+                            <i class="fas fa-download" aria-hidden="true"></i> Save Receipt
+                        </button>
                         <button type="button" class="btn-primary" id="bookingSuccessReset">Book Another Appointment</button>
                         <a href="../index.html" class="btn-secondary">Back to Home</a>
                     </div>
@@ -476,6 +492,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/main.js"></script>
+    <!-- Digital receipt: QR code generation + "Save Receipt" screenshot-to-PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="booking.js"></script>
     <script src="../js/order-notifications.js"></script>
 </body>

@@ -1,0 +1,235 @@
+/* ============================================================
+   BOOKINGS — RECEIPT MODAL (admin side)
+   ============================================================
+   Kept in its own file rather than folded into admin.css, since
+   this was added without access to that file's existing rules —
+   safer not to guess at conflicting class/variable names there.
+   Scoped entirely under .admin-receipt-* so nothing here can
+   collide with admin.css.
+
+   Colors are hard-coded to match the dark admin theme visible
+   elsewhere on this page (dark panels, white text, subtle
+   borders) rather than relying on CSS custom properties that may
+   or may not be defined the same way in admin.css.
+   ============================================================ */
+
+.admin-receipt-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    color: #f2f2f2;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-receipt-view-btn:hover {
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+/* ------------------------------------------------------------
+   Modal shell
+   ------------------------------------------------------------ */
+.admin-receipt-backdrop[hidden],
+.admin-receipt-modal[hidden] {
+    display: none;
+}
+
+.admin-receipt-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+}
+
+.admin-receipt-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2001;
+    width: calc(100% - 32px);
+    max-width: 420px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #17171a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 42px 28px 28px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.admin-receipt-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #b8b8b8;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-receipt-close:hover {
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+.admin-receipt-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #ffffff;
+}
+
+.admin-receipt-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.admin-receipt-client {
+    font-size: 0.85rem;
+    color: #9a9a9a;
+    font-style: italic;
+    margin-bottom: 2px;
+}
+
+.admin-receipt-divider {
+    position: relative;
+    height: 0;
+    border-top: 1px dashed rgba(255, 255, 255, 0.16);
+    margin: 20px -28px;
+}
+
+.admin-receipt-divider::before,
+.admin-receipt-divider::after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #0c0c0d;
+}
+
+.admin-receipt-divider::before { left: -10px; }
+.admin-receipt-divider::after { right: -10px; }
+
+.admin-receipt-details {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.admin-receipt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 0.85rem;
+}
+
+.admin-receipt-row span:first-child {
+    color: #9a9a9a;
+    flex-shrink: 0;
+}
+
+.admin-receipt-row span:last-child {
+    color: #ffffff;
+    text-align: right;
+}
+
+.admin-receipt-qr-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-receipt-qr-code {
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 10px;
+    line-height: 0;
+}
+
+.admin-receipt-qr-code img,
+.admin-receipt-qr-code canvas {
+    display: block;
+    width: 126px;
+    height: 126px;
+}
+
+.admin-receipt-ref {
+    font-size: 0.8rem;
+    color: #9a9a9a;
+}
+
+.admin-receipt-ref strong {
+    letter-spacing: 1.5px;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.admin-receipt-download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 24px;
+    padding: 12px 20px;
+    background: #ffffff;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    color: #0c0c0d;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.admin-receipt-download-btn:hover {
+    opacity: 0.85;
+}
+
+.admin-receipt-download-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+@media (max-width: 480px) {
+    .admin-receipt-modal { padding: 34px 20px 22px; }
+    .admin-receipt-divider { margin: 16px -20px; }
+}
