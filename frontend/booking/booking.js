@@ -22,6 +22,14 @@
 // column — when contact_preference is 'email', the email is just
 // profiles.email for whoever's signed in, so it isn't duplicated onto
 // every booking row.
+//
+// SLOT HOLDS — once a date + time are picked, this file requests a real
+// 10-minute hold on that barber/slot via the create_booking_hold RPC
+// (see migration 202608260001_booking_slot_holds.sql), so nobody else
+// can book it out from under this visitor while they finish the form.
+// This degrades gracefully if that migration hasn't been applied yet —
+// see the "SLOT HOLD" section below — the booking flow works exactly
+// as before, just without the countdown/reservation.
 
 // --------------------------------------------
 // SERVICE CATALOG
@@ -147,6 +155,24 @@ let currentTravelFee = 0;
 // since that isn't tied to one barber's calendar.
 let barberBookedRanges = [];
 
+// --------------------------------------------
+// SLOT HOLD STATE
+// --------------------------------------------
+// A hold is a real row in Supabase's booking_holds table (see
+// 202608260001_booking_slot_holds.sql) that blocks the exact
+// barber/date/time from being taken by anyone else while this visitor
+// finishes the form. activeHoldKey is a fingerprint of whatever
+// selection the current hold was created for, so updateSummary() only
+// bothers the server again when something that actually matters
+// (barber/date/time/gender/duration) has changed — not on every
+// keystroke elsewhere on the page.
+let activeHoldId = null;
+let activeHoldExpiresAt = null;
+let activeHoldKey = null;
+let holdCountdownInterval = null;
+let holdRequestInFlight = false;
+let holdFeatureUnavailable = false; // set true if the migration hasn't been applied yet
+
 function visibleServices() {
     const byGender = BOOKING_SERVICES.filter(s => s.gender === currentGender);
     if (currentLocation === 'home') {
@@ -202,6 +228,16 @@ document.addEventListener('DOMContentLoaded', async function () {
                 loadUpcomingBookings();
             }
         });
+    }
+});
+
+// Best-effort release if the visitor leaves mid-booking without
+// confirming or explicitly changing their selection. Not guaranteed to
+// complete (the tab may already be gone by the time this fires) — if it
+// doesn't, the hold just expires on its own after its 10-minute window.
+window.addEventListener('pagehide', function () {
+    if (activeHoldId && typeof supabaseClient !== 'undefined') {
+        supabaseClient.rpc('release_booking_hold', { p_hold_id: activeHoldId });
     }
 });
 
@@ -618,6 +654,7 @@ function updateSummary() {
     if (confirmBtn) confirmBtn.disabled = !isSelectionComplete(sel);
 
     updateStepProgress(sel);
+    maybeRefreshHold();
 }
 
 // --------------------------------------------
@@ -663,6 +700,195 @@ function isSelectionComplete(sel) {
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
+}
+
+// ============================================
+// SLOT HOLD — countdown + server-side reservation
+// ============================================
+// Flow: once a date + time are both picked, we ask the server to hold
+// that exact barber/slot for 10 minutes (create_booking_hold RPC).
+// While the hold is active, get_available_booking_slots() hides that
+// slot from every OTHER signed-in visitor, so it can't be double-booked
+// out from under this one. Changing barber/date/time/gender releases
+// the old hold and requests a fresh one for the new selection.
+
+function hideHoldBanner() {
+    const el = document.getElementById('bookingHoldBanner');
+    if (el) el.hidden = true;
+}
+
+function hideHoldExpiredNotice() {
+    const el = document.getElementById('bookingHoldExpired');
+    if (el) el.hidden = true;
+}
+
+function showHoldExpiredNotice() {
+    hideHoldBanner();
+    const el = document.getElementById('bookingHoldExpired');
+    if (el) el.hidden = false;
+}
+
+function stopHoldCountdown() {
+    if (holdCountdownInterval) {
+        clearInterval(holdCountdownInterval);
+        holdCountdownInterval = null;
+    }
+}
+
+// Clears all client-side hold state without talking to the server —
+// used once a hold has already been consumed (booking confirmed) or is
+// known to be gone already.
+function forgetActiveHold() {
+    stopHoldCountdown();
+    activeHoldId = null;
+    activeHoldExpiresAt = null;
+    activeHoldKey = null;
+    hideHoldBanner();
+}
+
+// Best-effort release — fire-and-forget so callers (including the
+// pagehide listener) never have to await this.
+function releaseActiveHold() {
+    if (!activeHoldId || typeof supabaseClient === 'undefined') {
+        forgetActiveHold();
+        return;
+    }
+    const holdId = activeHoldId;
+    forgetActiveHold();
+    supabaseClient.rpc('release_booking_hold', { p_hold_id: holdId }).then(function (res) {
+        if (res && res.error) console.warn('Could not release booking hold:', res.error);
+    });
+}
+
+function startHoldCountdown(expiresAtIso) {
+    stopHoldCountdown();
+    activeHoldExpiresAt = new Date(expiresAtIso).getTime();
+
+    const timerEl = document.getElementById('bookingHoldTimer');
+    const bannerEl = document.getElementById('bookingHoldBanner');
+
+    function tick() {
+        const msLeft = activeHoldExpiresAt - Date.now();
+        if (msLeft <= 0) {
+            stopHoldCountdown();
+            // The hold just lapsed — try to silently re-hold the exact
+            // same selection so someone still typing their phone number
+            // isn't interrupted. If that fails (slot's genuinely gone
+            // now), tell them plainly.
+            renewExpiredHold();
+            return;
+        }
+        const totalSeconds = Math.ceil(msLeft / 1000);
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        if (timerEl) timerEl.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
+        if (bannerEl) bannerEl.classList.toggle('is-low', totalSeconds <= 60);
+    }
+
+    tick();
+    holdCountdownInterval = setInterval(tick, 1000);
+
+    hideHoldExpiredNotice();
+    if (bannerEl) bannerEl.hidden = false;
+}
+
+async function renewExpiredHold() {
+    const key = activeHoldKey;
+    const previousHoldId = activeHoldId;
+    activeHoldId = null; // the old hold is gone server-side too once expired
+    if (!key) return;
+
+    const sel = currentSelection();
+    // Bail quietly if the selection has already moved on since the hold
+    // was created (e.g. they picked a new time right as the old one
+    // lapsed) — the regular change-triggered flow will handle it.
+    if (currentHoldKey(sel) !== key) return;
+
+    const result = await requestHold(sel, previousHoldId);
+    if (!result) {
+        showHoldExpiredNotice();
+        await refreshTimeSlots();
+    }
+}
+
+// Fingerprint of everything that would change which slot is actually
+// being held, so re-selecting the same thing twice in a row (e.g.
+// updateSummary() firing from an unrelated field) doesn't spam the RPC.
+function currentHoldKey(sel) {
+    if (!sel.date || !sel.time || !sel.service) return null;
+    return [currentGender, selectedBarberId || '', sel.date, sel.time, sel.service.id].join('|');
+}
+
+async function requestHold(sel, previousHoldId) {
+    if (holdFeatureUnavailable || typeof supabaseClient === 'undefined') return null;
+    if (holdRequestInFlight) return null;
+    holdRequestInFlight = true;
+
+    const durationMinutes = parseDurationMinutes(sel.service.duration);
+    const key = currentHoldKey(sel);
+
+    const { data, error } = await supabaseClient.rpc('create_booking_hold', {
+        p_gender: currentGender,
+        p_barber_id: selectedBarberId,
+        p_booking_date: sel.date,
+        p_booking_time: sel.time,
+        p_service_duration_minutes: durationMinutes,
+        p_previous_hold_id: previousHoldId || null
+    });
+
+    holdRequestInFlight = false;
+
+    if (error || !data) {
+        if (/create_booking_hold|does not exist|could not find the function/i.test(error?.message || '')) {
+            // Migration hasn't been applied yet — degrade silently rather
+            // than nag the customer about an internal detail. Booking
+            // still works end-to-end without a hold.
+            holdFeatureUnavailable = true;
+        } else if (/booked|held|available|schedule/i.test(error?.message || '')) {
+            // A genuine conflict — surface this like any other slot
+            // becoming unavailable, via the normal time-slot refresh.
+            return null;
+        } else {
+            console.warn('Could not hold this slot:', error);
+        }
+        return null;
+    }
+
+    activeHoldId = data.hold_id;
+    activeHoldKey = key;
+    startHoldCountdown(data.expires_at);
+    return data;
+}
+
+// Called from updateSummary() on every state-changing action (gender
+// tab, location toggle, barber pick, date/time pick). Only actually
+// talks to the server when the fingerprinted selection changed.
+async function maybeRefreshHold() {
+    if (holdFeatureUnavailable) return;
+
+    const sel = currentSelection();
+    const key = currentHoldKey(sel);
+
+    if (!key) {
+        // Selection is incomplete (no date/time/service yet) — nothing
+        // worth holding. Release whatever hold might still be active.
+        if (activeHoldId) releaseActiveHold();
+        hideHoldExpiredNotice();
+        return;
+    }
+
+    if (key === activeHoldKey && activeHoldId) return; // nothing changed
+
+    hideHoldExpiredNotice();
+    const previousHoldId = activeHoldId;
+    // Clear local state up front so a slow/failed request doesn't leave
+    // a stale countdown running against the old selection.
+    stopHoldCountdown();
+    activeHoldId = null;
+    activeHoldKey = null;
+
+    const result = await requestHold(sel, previousHoldId);
+    if (!result) hideHoldBanner();
 }
 
 // ============================================
@@ -730,7 +956,12 @@ function initBookingForm() {
         if (btnText) btnText.textContent = 'Booking...';
         if (spinner) spinner.hidden = false;
 
-        const { data, error } = await supabaseClient.rpc('create_booking_atomic', {
+        // p_hold_id is only included when we actually have an active hold.
+        // Omitting the key entirely (rather than sending null) keeps this
+        // call compatible with the pre-hold-feature 11-arg version of
+        // create_booking_atomic, in case that migration hasn't been
+        // applied yet — the hold is a pure enhancement, never required.
+        const bookingParams = {
             p_gender: currentGender,
             p_service_id: sel.service.id,
             p_barber_id: selectedBarberId,
@@ -742,7 +973,10 @@ function initBookingForm() {
             p_contact_phone: contactMethod === 'phone' ? sel.phone : null,
             p_contact_preference: contactMethod,
             p_notes: sel.notes.trim() || null
-        });
+        };
+        if (activeHoldId) bookingParams.p_hold_id = activeHoldId;
+
+        const { data, error } = await supabaseClient.rpc('create_booking_atomic', bookingParams);
 
         if (error || !data) {
             confirmBtn.disabled = false;
@@ -756,6 +990,10 @@ function initBookingForm() {
                         ? 'Secure booking availability is not installed yet — run the latest Supabase migrations first.'
                         : (error?.message || 'Something went wrong. Please try again.')
             );
+            // Whatever hold we had didn't get us through — drop it and
+            // let refreshTimeSlots()/updateSummary() sort out whether a
+            // fresh hold on the (now re-checked) slot is still possible.
+            forgetActiveHold();
             await refreshTimeSlots();
             return;
         }
@@ -763,6 +1001,10 @@ function initBookingForm() {
         confirmBtn.disabled = false;
         if (btnText) btnText.textContent = 'Confirm Booking';
         if (spinner) spinner.hidden = true;
+
+        // The hold (if any) was already consumed server-side inside
+        // create_booking_atomic — just drop the client-side countdown.
+        forgetActiveHold();
 
         showBookingSuccess(data, sel);
         loadUpcomingBookings();
@@ -793,6 +1035,11 @@ function initResetButton() {
     const btn = document.getElementById('bookingSuccessReset');
     if (!btn) return;
     btn.addEventListener('click', async function () {
+        // Any hold from the just-completed booking was already consumed
+        // server-side; this only matters if they'd changed the selection
+        // again before clicking "Book Another Appointment".
+        releaseActiveHold();
+
         selectedServiceId = null;
         selectedBarberId = null;
         selectedBarberName = 'Random';
@@ -1101,4 +1348,3 @@ function updateBarberVisibilityForGender() {
         }
     }
 }
-

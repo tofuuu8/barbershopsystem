@@ -2586,6 +2586,15 @@ input:focus-visible {
     color: var(--white);
     border-bottom-left-radius: 4px;
 }
+.message.bot p a {
+    color: var(--white);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 600;
+}
+.message.bot p a:hover {
+    opacity: 0.8;
+}
 .message.user p {
     background: var(--white);
     color: var(--black);
@@ -2632,6 +2641,36 @@ input:focus-visible {
 
 .chat-input button:hover {
     background: var(--steel);
+}
+
+.chat-input input:disabled,
+.chat-input button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Typing indicator (three bouncing dots) shown while waiting on the AI reply */
+.typing-indicator p.typing-dots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 14px;
+}
+
+.typing-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--dim);
+    animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
 }
 
 /* ============================================

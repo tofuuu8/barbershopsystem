@@ -319,6 +319,15 @@
                         <aside class="booking-summary">
                             <h3>Booking Summary</h3>
 
+                            <div class="booking-hold-banner" id="bookingHoldBanner" hidden>
+                                <i class="fas fa-lock" aria-hidden="true"></i>
+                                <span>We'll hold this slot for <strong id="bookingHoldTimer">10:00</strong></span>
+                            </div>
+                            <div class="booking-hold-expired" id="bookingHoldExpired" role="alert" hidden>
+                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                                <span>This time was just taken — please pick another slot.</span>
+                            </div>
+
                             <div class="booking-summary-row">
                                 <span>Service</span>
                                 <span id="bookingSummaryService">Not selected yet</span>

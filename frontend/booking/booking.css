@@ -1078,6 +1078,71 @@
     display: none;
 }
 
+/* ============================================
+   SLOT HOLD COUNTDOWN
+   Shown once a date + time have been picked and the server has
+   confirmed a real hold on that barber/slot (see booking.js's
+   maybeRefreshHold()). Sits above the summary rows, mirroring where a
+   "we'll hold your slot" notice reads best in the panel.
+   ============================================ */
+.booking-hold-banner[hidden],
+.booking-hold-expired[hidden] {
+    display: none;
+}
+
+.booking-hold-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(216, 210, 196, 0.08);
+    border: 1px solid var(--line);
+    border-radius: 50px;
+    padding: 10px 16px;
+    margin-bottom: 18px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--off);
+    line-height: 1.4;
+}
+
+.booking-hold-banner i {
+    color: var(--steel);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.booking-hold-banner strong {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    color: var(--steel);
+}
+
+.booking-hold-banner.is-low strong {
+    color: #e0685f;
+}
+
+.booking-hold-expired {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(224, 90, 90, 0.1);
+    border: 1px solid rgba(224, 90, 90, 0.35);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: #f2a6a1;
+    line-height: 1.5;
+}
+
+.booking-hold-expired i {
+    color: #e05a5a;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
 .booking-confirm-btn {
     width: 100%;
     display: flex;

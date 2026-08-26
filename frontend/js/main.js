@@ -792,6 +792,13 @@ function initScrollAutoplay(videoIds) {
 // ============================================
 // CHAT WIDGET
 // ============================================
+// Talks to the "chat-assistant" Supabase Edge Function, which calls
+// Claude server-side (API key never touches the browser). See
+// supabase/functions/chat-assistant/index.ts for the backend half.
+//
+// SUPABASE_URL / SUPABASE_ANON_KEY come from supabase.js, loaded before
+// this file — both are top-level `const` in a classic <script>, so they're
+// visible here as page-global bindings.
 function initChatWidget() {
     const toggle = document.getElementById('chatToggle');
     const container = document.getElementById('chatContainer');
@@ -801,6 +808,41 @@ function initChatWidget() {
     const messages = document.getElementById('chatMessages');
 
     if (!toggle || !container) return;
+
+    const CHAT_ENDPOINT = `${SUPABASE_URL}/functions/v1/chat-assistant`;
+    const FALLBACK_REPLY = "Sorry, I'm having trouble connecting right now. You can reach us directly at info@toughcuts.com, or browse Services and Booking from the menu.";
+
+    // Exact allowlist of internal paths the bot is allowed to link to (kept
+    // in sync with the SITE MAP in supabase/functions/chat-assistant's
+    // system prompt). Anything the model writes that isn't an exact match
+    // renders as plain text, never as a clickable link — this is the only
+    // thing standing between "the model wrote a link" and "the browser
+    // navigates somewhere." Never relax this to a prefix/regex match on
+    // arbitrary paths.
+    const ALLOWED_CHAT_LINKS = new Set([
+        'index.html',
+        'studio/studio.html',
+        'products/products.html',
+        'services/services.html',
+        'aboutus/about.html',
+        'booking/booking.html',
+        'login/login.html',
+        'login/signup.html',
+        'cart/cart.html',
+        'checkout/checkout.html',
+        'account/account.html',
+        'myappointments/myappointments.html',
+        'myorders/myorders.html'
+    ]);
+
+    // Matches markdown-style [label](path) links only — nothing else about
+    // the bot's output is ever treated as markup.
+    const LINK_PATTERN = /\[([^\]\n]+)\]\(([^()\s]+)\)/g;
+
+    // In-memory conversation history for this page load only (no
+    // localStorage — keeps things simple and avoids stale/stuck chats).
+    let history = [];
+    let isSending = false;
 
     toggle.addEventListener('click', function() {
         container.classList.toggle('active');
@@ -815,39 +857,120 @@ function initChatWidget() {
         });
     }
 
+    function formatTime() {
+        return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+
+    // Renders text into `container` as a mix of text nodes and <a> elements,
+    // built entirely with DOM APIs (no innerHTML, ever). Only exact matches
+    // against ALLOWED_CHAT_LINKS become real links; everything else —
+    // including any stray [text](url) the model writes to a path that
+    // isn't on the list — is left as plain visible text, not markup.
+    function renderSafeContent(container, text) {
+        let lastIndex = 0;
+        let match;
+        LINK_PATTERN.lastIndex = 0;
+
+        while ((match = LINK_PATTERN.exec(text)) !== null) {
+            const [fullMatch, label, path] = match;
+
+            if (match.index > lastIndex) {
+                container.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+            }
+
+            if (ALLOWED_CHAT_LINKS.has(path)) {
+                const a = document.createElement('a');
+                a.href = path;
+                a.textContent = label;
+                container.appendChild(a);
+            } else {
+                // Not an allowlisted path — show the literal text, don't linkify.
+                container.appendChild(document.createTextNode(fullMatch));
+            }
+
+            lastIndex = match.index + fullMatch.length;
+        }
+
+        if (lastIndex < text.length) {
+            container.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+    }
+
     function appendMessage(role, text) {
         const wrap = document.createElement('div');
         wrap.className = `message ${role}`;
 
         const p = document.createElement('p');
-        p.textContent = text; // textContent, not innerHTML — avoids XSS from typed input
+        if (role === 'bot') {
+            renderSafeContent(p, text); // may include allowlisted links
+        } else {
+            p.textContent = text; // user's own input, always literal
+        }
 
         const small = document.createElement('small');
-        small.textContent = 'Just now';
+        small.textContent = formatTime();
 
         wrap.append(p, small);
         messages.appendChild(wrap);
         messages.scrollTop = messages.scrollHeight;
+        return wrap;
     }
 
-    const sendMessage = function() {
+    function showTypingIndicator() {
+        const wrap = document.createElement('div');
+        wrap.className = 'message bot typing-indicator';
+        wrap.innerHTML = '<p class="typing-dots"><span></span><span></span><span></span></p>';
+        messages.appendChild(wrap);
+        messages.scrollTop = messages.scrollHeight;
+        return wrap;
+    }
+
+    function setSendingState(sending) {
+        isSending = sending;
+        if (input) input.disabled = sending;
+        if (send) send.disabled = sending;
+    }
+
+    async function sendMessage() {
         const text = input.value.trim();
-        if (!text) return;
+        if (!text || isSending) return;
 
         appendMessage('user', text);
+        history.push({ role: 'user', content: text });
         input.value = '';
+        setSendingState(true);
 
-        setTimeout(() => {
-            const responses = [
-                "Thanks for reaching out! How can I help you with your grooming needs today?",
-                "Great question! Would you like to book an appointment or learn about our services?",
-                "I'd be happy to help! Our services include precision cuts, beard grooming, and more.",
-                "You can book an appointment online or walk into any of our studios!",
-                "We offer both in-studio and home service options. What works best for you?"
-            ];
-            appendMessage('bot', responses[Math.floor(Math.random() * responses.length)]);
-        }, 800);
-    };
+        const typingEl = showTypingIndicator();
+
+        try {
+            const res = await fetch(CHAT_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                body: JSON.stringify({ messages: history })
+            });
+
+            const data = await res.json().catch(() => ({}));
+            typingEl.remove();
+
+            if (!res.ok || !data.reply) {
+                appendMessage('bot', data.error || FALLBACK_REPLY);
+                return;
+            }
+
+            appendMessage('bot', data.reply);
+            history.push({ role: 'assistant', content: data.reply });
+        } catch (err) {
+            typingEl.remove();
+            appendMessage('bot', FALLBACK_REPLY);
+        } finally {
+            setSendingState(false);
+            input.focus();
+        }
+    }
 
     if (send) send.addEventListener('click', sendMessage);
     if (input) {
