@@ -114,12 +114,22 @@ function hideCustomerNotificationBadge() {
     document.querySelectorAll('.account-icon .order-notif-dot').forEach(dot => dot.remove());
 }
 
+// Anchors the toast just under the sticky site header (announce bar +
+// nav) instead of a fixed pixel value — header height isn't the same on
+// every page (the announce bar's line can wrap on narrow screens) and
+// .site-header-group is `position: sticky; top: 0`, so once it's stuck,
+// its bottom edge is a stable place to hang the toast off of.
+function getHeaderBottomOffset() {
+    const headerGroup = document.querySelector('.site-header-group');
+    return headerGroup ? Math.round(headerGroup.getBoundingClientRect().bottom) + 12 : 90;
+}
+
 function showCustomerNotificationToast(notification) {
     let toast = document.getElementById('customerNotificationToast');
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'customerNotificationToast';
-        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;max-width:340px;padding:14px 18px;border-radius:12px;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);color:#fff;font-family:system-ui,sans-serif;font-size:.85rem;line-height:1.5;z-index:9999;box-shadow:0 12px 30px rgba(0,0,0,.4);cursor:pointer;transition:opacity .3s ease,transform .3s ease;';
+        toast.style.cssText = 'position:fixed;right:24px;max-width:340px;padding:14px 18px;border-radius:12px;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);color:#fff;font-family:system-ui,sans-serif;font-size:.85rem;line-height:1.5;z-index:9999;box-shadow:0 12px 30px rgba(0,0,0,.4);cursor:pointer;transition:opacity .3s ease,transform .3s ease;opacity:0;transform:translateY(-12px);';
         toast.addEventListener('click', function () {
             window.location.href = window.location.pathname.includes('/myorders/') ? 'myorders.html' : '../myorders/myorders.html';
         });
@@ -130,11 +140,16 @@ function showCustomerNotificationToast(notification) {
     title.textContent = CUSTOMER_NOTIFICATION_LABELS[notification.event_type] || notification.title || 'Toughcuts update';
     const body = document.createTextNode(` — ${notification.body || 'Open your account to view the latest update.'}`);
     toast.append(title, body);
+
+    // Recomputed every show (not just once) since the header's height can
+    // change between page loads, and on resize while it's still visible.
+    toast.style.top = `${getHeaderBottomOffset()}px`;
     toast.style.opacity = '1';
     toast.style.transform = 'translateY(0)';
+
     clearTimeout(toast._hideTimeout);
     toast._hideTimeout = setTimeout(function () {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateY(12px)';
+        toast.style.transform = 'translateY(-12px)';
     }, 6000);
 }

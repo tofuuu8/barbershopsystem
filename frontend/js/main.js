@@ -798,6 +798,13 @@ function initScrollAutoplay(videoIds) {
 // customers. See supabase/functions/chat-assistant/index.ts for the
 // backend half.
 //
+// CHAT_STORAGE_KEY lives at module scope (not inside initChatWidget)
+// specifically so logOut() below can clear it too — logging out should
+// reset the widget back to its default greeting instead of carrying a
+// signed-in visitor's conversation (and any live staff handoff) over to
+// whoever uses the browser next.
+const CHAT_STORAGE_KEY = 'toughcuts_chat_session';
+//
 // SUPABASE_URL / SUPABASE_ANON_KEY come from supabase.js, loaded before
 // this file — both are top-level `const` in a classic <script>, so they're
 // visible here as page-global bindings.
@@ -844,12 +851,13 @@ function initChatWidget() {
     const LINK_PATTERN = /\[([^\]\n]+)\]\(([^()\s]+)\)/g;
 
     // Conversation history + any active live-support handoff persist to
-    // sessionStorage under CHAT_STORAGE_KEY, so refreshing the page (or an
-    // accidental reload mid-conversation) doesn't drop the transcript or
-    // silently disconnect from staff. sessionStorage (not localStorage) is
-    // deliberate — it clears itself once the tab/browser closes, so a
-    // stale/abandoned chat doesn't linger forever.
-    const CHAT_STORAGE_KEY = 'toughcuts_chat_session';
+    // sessionStorage under CHAT_STORAGE_KEY (declared at module scope,
+    // above), so refreshing the page (or an accidental reload mid-
+    // conversation) doesn't drop the transcript or silently disconnect
+    // from staff. sessionStorage (not localStorage) is deliberate — it
+    // clears itself once the tab/browser closes, so a stale/abandoned
+    // chat doesn't linger forever. logOut() below clears this same key
+    // on demand instead of waiting for the tab to close.
     const MAX_STORED_MESSAGES = 200;
 
     let history = [];
@@ -1394,6 +1402,17 @@ function getCurrentUser() {
 async function logOut() {
     if (typeof supabaseClient === 'undefined') return;
     await supabaseClient.auth.signOut();
+
+    // Reset the chat widget too — otherwise the signed-out visitor (or
+    // the next person on a shared computer) would land on index.html
+    // and see the previous account's messages/staff handoff restored
+    // straight out of sessionStorage.
+    try {
+        sessionStorage.removeItem(CHAT_STORAGE_KEY);
+    } catch (e) {
+        // Storage unavailable — nothing to clear, logout still proceeds.
+    }
+
     window.location.href = SITE_BASE + 'index.html';
 }
 
