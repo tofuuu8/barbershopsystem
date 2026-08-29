@@ -793,8 +793,10 @@ function initScrollAutoplay(videoIds) {
 // CHAT WIDGET
 // ============================================
 // Talks to the "chat-assistant" Supabase Edge Function, which calls
-// Claude server-side (API key never touches the browser). See
-// supabase/functions/chat-assistant/index.ts for the backend half.
+// Gemini server-side (API key never touches the browser), streams the
+// reply back token-by-token, and personalizes answers for logged-in
+// customers. See supabase/functions/chat-assistant/index.ts for the
+// backend half.
 //
 // SUPABASE_URL / SUPABASE_ANON_KEY come from supabase.js, loaded before
 // this file — both are top-level `const` in a classic <script>, so they're
@@ -810,7 +812,9 @@ function initChatWidget() {
     if (!toggle || !container) return;
 
     const CHAT_ENDPOINT = `${SUPABASE_URL}/functions/v1/chat-assistant`;
+    const SUPPORT_ENDPOINT = `${SUPABASE_URL}/functions/v1/support-chat`;
     const FALLBACK_REPLY = "Sorry, I'm having trouble connecting right now. You can reach us directly at info@toughcuts.com, or browse Services and Booking from the menu.";
+    const SUPPORT_POLL_INTERVAL_MS = 4000;
 
     // Exact allowlist of internal paths the bot is allowed to link to (kept
     // in sync with the SITE MAP in supabase/functions/chat-assistant's
@@ -839,10 +843,47 @@ function initChatWidget() {
     // the bot's output is ever treated as markup.
     const LINK_PATTERN = /\[([^\]\n]+)\]\(([^()\s]+)\)/g;
 
-    // In-memory conversation history for this page load only (no
-    // localStorage — keeps things simple and avoids stale/stuck chats).
+    // Conversation history + any active live-support handoff persist to
+    // sessionStorage under CHAT_STORAGE_KEY, so refreshing the page (or an
+    // accidental reload mid-conversation) doesn't drop the transcript or
+    // silently disconnect from staff. sessionStorage (not localStorage) is
+    // deliberate — it clears itself once the tab/browser closes, so a
+    // stale/abandoned chat doesn't linger forever.
+    const CHAT_STORAGE_KEY = 'toughcuts_chat_session';
+    const MAX_STORED_MESSAGES = 200;
+
     let history = [];
     let isSending = false;
+    let storedMessages = []; // mirrors what's rendered in `messages`, for persistence/replay
+
+    function loadStoredChatState() {
+        try {
+            const raw = sessionStorage.getItem(CHAT_STORAGE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed && Array.isArray(parsed.messages) ? parsed : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function persistChatState() {
+        try {
+            sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({
+                messages: storedMessages.slice(-MAX_STORED_MESSAGES),
+                history: history.slice(-MAX_STORED_MESSAGES),
+                support: {
+                    mode: supportMode,
+                    conversationId: supportConversationId,
+                    guestToken: supportGuestToken,
+                    lastMessageAt: supportLastMessageAt
+                }
+            }));
+        } catch (e) {
+            // Storage full/unavailable (e.g. private browsing) — chat still
+            // works for this page view, it just won't survive a refresh.
+        }
+    }
 
     toggle.addEventListener('click', function() {
         container.classList.toggle('active');
@@ -896,7 +937,7 @@ function initChatWidget() {
         }
     }
 
-    function appendMessage(role, text) {
+    function renderMessageBubble(role, text, time) {
         const wrap = document.createElement('div');
         wrap.className = `message ${role}`;
 
@@ -908,11 +949,19 @@ function initChatWidget() {
         }
 
         const small = document.createElement('small');
-        small.textContent = formatTime();
+        small.textContent = time;
 
         wrap.append(p, small);
         messages.appendChild(wrap);
         messages.scrollTop = messages.scrollHeight;
+        return wrap;
+    }
+
+    function appendMessage(role, text) {
+        const time = formatTime();
+        const wrap = renderMessageBubble(role, text, time);
+        storedMessages.push({ kind: role, text, time });
+        persistChatState();
         return wrap;
     }
 
@@ -931,38 +980,315 @@ function initChatWidget() {
         if (send) send.disabled = sending;
     }
 
+    // If the customer explicitly asks for a human, skip the AI entirely
+    // and start a live handoff — a deterministic backstop alongside the
+    // model's own <<ESCALATE>> signal (stripped server-side, never seen
+    // here) for when the model can't help but the customer didn't ask by
+    // name.
+    const ESCALATION_KEYWORDS = /\b(human|agent|representative|customer service|real person|totoong tao|kausapin ang tao)\b/i;
+
+    // --------------------------------------------
+    // Live support handoff — talks to the "support-chat" Edge Function.
+    // Once a conversation is open, ALL further messages in this widget
+    // session go to staff instead of the AI, until staff closes it (at
+    // which point the widget hands back to the AI automatically).
+    // --------------------------------------------
+    let supportConversationId = null;
+    let supportGuestToken = null;
+    let supportPollTimer = null;
+    let supportLastMessageAt = null;
+    let supportMode = false;
+
+    // --------------------------------------------
+    // Restore chat + support-handoff state after a refresh. Runs once,
+    // synchronously, before anything else touches `messages`/`history`.
+    // --------------------------------------------
+    (function restoreChatState() {
+        const saved = loadStoredChatState();
+
+        if (!saved) {
+            // Nothing to restore — capture the static greeting already in
+            // the markup so the very first save (once the visitor sends a
+            // message) doesn't lose it.
+            const greetingP = messages.querySelector('.message.bot p');
+            const greetingSmall = messages.querySelector('.message.bot small');
+            if (greetingP) {
+                storedMessages.push({
+                    kind: 'bot',
+                    text: greetingP.textContent,
+                    time: greetingSmall ? greetingSmall.textContent : formatTime()
+                });
+            }
+            return;
+        }
+
+        messages.innerHTML = ''; // out with the static HTML greeting
+        saved.messages.forEach(function (m) {
+            if (m.kind === 'user' || m.kind === 'bot') {
+                renderMessageBubble(m.kind, m.text, m.time || formatTime());
+            } else if (m.kind === 'staff') {
+                renderStaffBubble(m.text, m.time || formatTime());
+            } else if (m.kind === 'system') {
+                renderSystemNotice(m.text);
+            }
+        });
+        storedMessages = saved.messages.slice();
+        history = Array.isArray(saved.history) ? saved.history.slice() : [];
+
+        if (saved.support && saved.support.mode && saved.support.conversationId) {
+            supportMode = true;
+            supportConversationId = saved.support.conversationId;
+            supportGuestToken = saved.support.guestToken || null;
+            supportLastMessageAt = saved.support.lastMessageAt || null;
+            startSupportPolling(); // resume — reconnect notice already lives in the replayed transcript
+        }
+    })();
+
+    async function getAuthToken() {
+        try {
+            const { data: { session } = {} } = await supabaseClient.auth.getSession();
+            if (session?.access_token) return session.access_token;
+        } catch (e) {
+            // Not logged in, or auth not ready yet — anon key is the correct fallback.
+        }
+        return SUPABASE_ANON_KEY;
+    }
+
+    async function callSupportEndpoint(payload) {
+        const authToken = await getAuthToken();
+        const res = await fetch(SUPPORT_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        return { ok: res.ok, data };
+    }
+
+    function renderSystemNotice(text) {
+        const notice = document.createElement('div');
+        notice.className = 'chat-system-notice';
+        notice.textContent = text;
+        messages.appendChild(notice);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function appendSystemNotice(text) {
+        renderSystemNotice(text);
+        storedMessages.push({ kind: 'system', text });
+        persistChatState();
+    }
+
+    function renderStaffBubble(text, time) {
+        const wrap = document.createElement('div');
+        wrap.className = 'message bot staff';
+
+        const label = document.createElement('small');
+        label.className = 'chat-sender-label';
+        label.textContent = 'Toughcuts Team';
+
+        const p = document.createElement('p');
+        renderSafeContent(p, text);
+
+        const timeEl = document.createElement('small');
+        timeEl.textContent = time;
+
+        wrap.append(label, p, timeEl);
+        messages.appendChild(wrap);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    function appendStaffMessage(text) {
+        const time = formatTime();
+        renderStaffBubble(text, time);
+        storedMessages.push({ kind: 'staff', text, time });
+        persistChatState();
+    }
+
+    function stopSupportPolling() {
+        if (supportPollTimer) {
+            clearInterval(supportPollTimer);
+            supportPollTimer = null;
+        }
+    }
+
+    async function pollSupportMessages() {
+        if (!supportConversationId) return;
+        const { ok, data } = await callSupportEndpoint({
+            action: 'poll',
+            conversationId: supportConversationId,
+            guestToken: supportGuestToken || undefined,
+            after: supportLastMessageAt || undefined
+        });
+        if (!ok) return; // transient error — next poll will retry
+
+        (data.messages || []).forEach(function (m) {
+            supportLastMessageAt = m.created_at;
+            appendStaffMessage(m.content);
+        });
+
+        if (data.status === 'closed') {
+            stopSupportPolling();
+            supportMode = false;
+            supportConversationId = null;
+            supportGuestToken = null;
+            appendSystemNotice("This conversation has been closed by our team. You're back with the AI assistant — feel free to keep chatting.");
+        }
+    }
+
+    function startSupportPolling() {
+        stopSupportPolling();
+        supportPollTimer = setInterval(pollSupportMessages, SUPPORT_POLL_INTERVAL_MS);
+        pollSupportMessages(); // check immediately rather than waiting a full interval
+    }
+
+    async function startSupportHandoff() {
+        if (supportMode) return; // already connected this session
+        supportMode = true;
+        appendSystemNotice('Connecting you with our team…');
+
+        const { ok, data } = await callSupportEndpoint({ action: 'escalate', transcript: history });
+
+        if (!ok || !data.conversationId) {
+            supportMode = false;
+            appendSystemNotice("Couldn't connect you to our team right now — please email info@toughcuts.com.");
+            return;
+        }
+
+        supportConversationId = data.conversationId;
+        supportGuestToken = data.guestToken || null;
+        appendSystemNotice("You're connected — our team will reply here. Feel free to keep typing.");
+        startSupportPolling();
+    }
+
+    async function sendSupportMessage(text) {
+        const { ok, data } = await callSupportEndpoint({
+            action: 'send',
+            conversationId: supportConversationId,
+            guestToken: supportGuestToken || undefined,
+            content: text
+        });
+        if (!ok) {
+            appendSystemNotice(data.error || "Couldn't send that — please try again.");
+        }
+    }
+
     async function sendMessage() {
         const text = input.value.trim();
         if (!text || isSending) return;
 
         appendMessage('user', text);
         history.push({ role: 'user', content: text });
+        persistChatState();
         input.value = '';
         setSendingState(true);
 
+        // Already handed off to staff — every further message goes to
+        // them, not the AI, until they close the conversation.
+        if (supportMode) {
+            await sendSupportMessage(text);
+            setSendingState(false);
+            input.focus();
+            return;
+        }
+
+        // Customer explicitly asked for a person — skip the AI this turn
+        // and connect them straight away, rather than making them wait
+        // through a bot reply first.
+        if (ESCALATION_KEYWORDS.test(text)) {
+            await startSupportHandoff();
+            setSendingState(false);
+            input.focus();
+            return;
+        }
+
         const typingEl = showTypingIndicator();
+        let botTextEl = null;
+        let streamedText = '';
+        let shouldEscalate = false;
+        let streamErrorMessage = null;
 
         try {
+            // Logged-in customers send their own session token so the
+            // backend can look up their own bookings/orders (via RLS);
+            // guests fall back to the public anon key.
+            const authToken = await getAuthToken();
+
             const res = await fetch(CHAT_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'apikey': SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify({ messages: history })
             });
 
-            const data = await res.json().catch(() => ({}));
-            typingEl.remove();
-
-            if (!res.ok || !data.reply) {
+            if (!res.ok || !res.body) {
+                const data = await res.json().catch(() => ({}));
+                typingEl.remove();
                 appendMessage('bot', data.error || FALLBACK_REPLY);
                 return;
             }
 
-            appendMessage('bot', data.reply);
-            history.push({ role: 'assistant', content: data.reply });
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                let newlineIdx;
+                while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+                    const line = buffer.slice(0, newlineIdx).trim();
+                    buffer = buffer.slice(newlineIdx + 1);
+                    if (!line) continue;
+
+                    let msg;
+                    try {
+                        msg = JSON.parse(line);
+                    } catch {
+                        continue; // ignore malformed line, don't break the stream
+                    }
+
+                    if (msg.type === 'text') {
+                        if (!botTextEl) {
+                            typingEl.remove();
+                            const wrap = appendMessage('bot', ''); // creates the bubble
+                            botTextEl = wrap.querySelector('p');
+                        }
+                        streamedText += msg.value;
+                        botTextEl.textContent = streamedText; // plain text while streaming
+                        messages.scrollTop = messages.scrollHeight;
+                    } else if (msg.type === 'escalate') {
+                        shouldEscalate = true;
+                    } else if (msg.type === 'error') {
+                        streamErrorMessage = msg.message;
+                    }
+                    // 'done' needs no handling — the read loop ends naturally.
+                }
+            }
+
+            typingEl.remove();
+
+            if (!streamedText) {
+                appendMessage('bot', streamErrorMessage || FALLBACK_REPLY);
+            } else {
+                // Final safe-render pass: swap the plain-text streaming
+                // preview for the fully link-parsed version.
+                botTextEl.textContent = '';
+                renderSafeContent(botTextEl, streamedText);
+                history.push({ role: 'assistant', content: streamedText });
+                persistChatState();
+            }
+
+            if (shouldEscalate) await startSupportHandoff();
         } catch (err) {
             typingEl.remove();
             appendMessage('bot', FALLBACK_REPLY);

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Support - Toughcuts Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="icon" type="image/png" href="assets/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Oswald:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="admin.css" />
+
+    <!--
+        Scoped, structural styles for the two-pane inbox layout below.
+        Uses admin.css's own design tokens (--card, --line, --steel, etc.)
+        so this matches the rest of the dashboard exactly rather than
+        guessing at colors.
+    -->
+    <style>
+        .admin-support-grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .admin-support-grid { grid-template-columns: 1fr; }
+        }
+
+        .admin-support-list {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .admin-support-convo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+            background: var(--card-light);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .admin-support-convo:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            background: var(--card-lighter);
+        }
+        .admin-support-convo.active {
+            border-color: var(--steel);
+            background: var(--card-lighter);
+            box-shadow: inset 3px 0 0 var(--steel);
+        }
+        .admin-support-convo-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-ui);
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: var(--white);
+        }
+        .admin-support-convo-preview {
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            color: var(--dim);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .admin-support-convo-meta {
+            font-family: var(--font-ui);
+            font-size: 0.62rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--dim);
+            display: flex;
+            justify-content: space-between;
+        }
+        .admin-support-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 50px;
+            font-family: var(--font-ui);
+            font-weight: 700;
+            font-size: 0.6rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+        .admin-support-pill.open {
+            color: #e6c37a;
+            background: rgba(230, 195, 122, 0.12);
+            border: 1px solid rgba(230, 195, 122, 0.35);
+        }
+        .admin-support-pill.closed {
+            color: var(--dim);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--line);
+        }
+
+        .admin-support-thread-wrap {
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+        }
+        .admin-support-thread-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 14px;
+        }
+        .admin-support-thread-header strong {
+            font-family: var(--font-ui);
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--white);
+        }
+
+        /* Header action buttons — a text+icon button (unlike the
+           icon-only 32x32 .admin-action-btn used in row actions
+           elsewhere), so it gets its own sizing here. */
+        .admin-support-header-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 34px;
+            padding: 0 14px;
+            border-radius: 8px;
+            background: var(--card-light);
+            border: 1px solid var(--line);
+            color: var(--off);
+            font-family: var(--font-ui);
+            font-weight: 600;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: var(--transition);
+        }
+        .admin-support-header-btn:hover { background: var(--card-lighter); color: var(--white); }
+        .admin-support-header-btn:disabled { opacity: 0.5; cursor: default; }
+        .admin-support-header-btn:disabled:hover { background: var(--card-light); color: var(--off); }
+        #claimBtn:not(:disabled):hover { border-color: var(--good); color: var(--good); }
+        #closeConvoBtn:not(:disabled):hover { border-color: var(--bad); color: #f2a6a1; }
+
+        .admin-support-thread {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 4px;
+        }
+        .admin-support-msg {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: var(--off);
+        }
+        .admin-support-msg .admin-support-msg-time {
+            display: block;
+            font-family: var(--font-ui);
+            font-size: 0.62rem;
+            letter-spacing: 0.4px;
+            color: var(--dim);
+            margin-top: 4px;
+        }
+        .admin-support-msg.customer {
+            align-self: flex-start;
+            background: var(--card-light);
+            border: 1px solid var(--line);
+        }
+        .admin-support-msg.staff {
+            align-self: flex-end;
+            background: rgba(216, 210, 196, 0.08);
+            border: 1px solid rgba(216, 210, 196, 0.35);
+            color: var(--white);
+        }
+        .admin-support-msg.system {
+            align-self: stretch;
+            max-width: 100%;
+            margin: 0;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 2px solid var(--line);
+            color: var(--dim);
+            font-family: var(--font-body);
+            font-size: 0.78rem;
+            font-style: italic;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .admin-support-reply-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .admin-support-reply-row textarea {
+            flex: 1;
+            resize: none;
+            min-height: 44px;
+        }
+        .admin-support-empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            color: var(--dim);
+            text-align: center;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .admin-support-empty-state i { color: var(--faint); }
+    </style>
+</head>
+<body>
+
+    <div class="admin-shell">
+
+        <!-- ========================================
+        SIDEBAR
+        ======================================== -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <i class="fas fa-scissors" aria-hidden="true"></i>
+                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+            </div>
+
+           <nav class="admin-nav">
+                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+                <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+                <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+                <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+                <a href="support.html" class="admin-nav-link"><i class="fas fa-headset"></i> Support</a>
+                <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- ========================================
+        MAIN
+        ======================================== -->
+        <main class="admin-main">
+            <div class="admin-page-header">
+                <div>
+                    <h1 class="admin-page-title">Support</h1>
+                    <p class="admin-page-sub">Live chats handed off from the AI assistant.</p>
+                </div>
+
+                <div class="admin-notif-wrap">
+                    <button type="button" class="admin-notif-btn" id="notifBtn" aria-label="Notifications">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span class="admin-notif-badge" id="notifBadge" hidden>0</span>
+                    </button>
+                    <div class="admin-notif-panel" id="notifPanel" hidden>
+                        <div class="admin-notif-panel-header">Notifications</div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-user-plus" aria-hidden="true"></i> Accounts</div>
+                            <div class="admin-notif-list" id="notifAccounts">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</div>
+                            <div class="admin-notif-list" id="notifBookings">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
+                            <div class="admin-notif-list" id="notifProducts">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-notif-section">
+                            <div class="admin-notif-section-title"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</div>
+                            <div class="admin-notif-list" id="notifOrders">
+                                <div class="admin-notif-empty">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-stat-row">
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statOpenConvos">—</div>
+                    <div class="admin-stat-label">Open Conversations</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statUnclaimed">—</div>
+                    <div class="admin-stat-label">Unclaimed</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div class="admin-stat-value" id="statClosedToday">—</div>
+                    <div class="admin-stat-label">Closed Today</div>
+                </div>
+            </div>
+
+            <div class="admin-support-grid">
+                <!-- Conversation list -->
+                <div class="admin-panel">
+                    <div class="admin-panel-header">
+                        <h3>Conversations</h3>
+                        <span class="admin-panel-sub" id="convoListCount"></span>
+                    </div>
+                    <div class="admin-toolbar" style="padding: 0 0 10px;">
+                        <select id="convoFilter" class="admin-select" style="max-width: 160px;">
+                            <option value="open" selected>Open</option>
+                            <option value="closed">Closed</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                    <div class="admin-support-list" id="convoList">
+                        <div class="admin-recent-empty">
+                            <i class="fas fa-headset" aria-hidden="true"></i>
+                            <p>Loading conversations…</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active thread -->
+                <div class="admin-panel">
+                    <div id="threadEmptyState" class="admin-support-empty-state">
+                        <i class="fas fa-comments" aria-hidden="true" style="font-size: 28px;"></i>
+                        <p>Select a conversation to view and reply.</p>
+                    </div>
+
+                    <div id="threadWrap" class="admin-support-thread-wrap" hidden>
+                        <div class="admin-support-thread-header">
+                            <div>
+                                <strong id="threadCustomerName">—</strong>
+                                <div style="font-size: 0.75rem; opacity: 0.65;" id="threadCustomerMeta">—</div>
+                            </div>
+                            <div class="admin-action-btns">
+                                <button type="button" class="admin-support-header-btn" id="claimBtn" title="Claim this conversation">
+                                    <i class="fas fa-hand" aria-hidden="true"></i> Claim
+                                </button>
+                                <button type="button" class="admin-support-header-btn" id="closeConvoBtn" title="Close conversation">
+                                    <i class="fas fa-circle-check" aria-hidden="true"></i> Close
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="admin-support-thread" id="threadMessages"></div>
+
+                        <div class="admin-support-reply-row">
+                            <textarea id="replyInput" class="admin-input" placeholder="Type a reply…" rows="2"></textarea>
+                            <button type="button" class="admin-submit" id="replySendBtn" style="width: auto; padding: 0 20px;">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+    <script src="supabase.js"></script>
+    <script src="admin-auth.js"></script>
+    <script src="notifications.js"></script>
+    <script src="support.js"></script>
+</body>
+</html>

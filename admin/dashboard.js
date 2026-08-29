@@ -25,16 +25,24 @@ function initLogout() {
 }
 
 async function loadDashboard() {
-    await loadTotalUsers();
-    await loadBookingStats();
-    await loadLowStockCount();
-    
-    // ============================================
-    // NEW FUNCTIONS
-    // ============================================
-    await loadTopServices();
-    await loadTopBarbers();
-    await loadRecentOrders();
+    // Each of these hits its own tables and updates its own DOM section,
+    // so they're independent — run them in parallel instead of one
+    // sequential await chain. allSettled also means a failure in one
+    // (e.g. a missing table, a thrown error) can no longer silently
+    // block the loaders queued after it, the way loadTopBarbers throwing
+    // used to prevent loadRecentOrders from ever running.
+    const results = await Promise.allSettled([
+        loadTotalUsers(),
+        loadBookingStats(),
+        loadLowStockCount(),
+        loadTopServices(),
+        loadTopBarbers(),
+        loadRecentOrders()
+    ]);
+
+    results.forEach(function (r) {
+        if (r.status === 'rejected') console.error('Dashboard section failed to load:', r.reason);
+    });
 }
 
 // --------------------------------------------
@@ -43,7 +51,7 @@ async function loadDashboard() {
 // and the Recent Bookings list.
 // --------------------------------------------
 async function loadBookingStats() {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = manilaDateStr(0);
 
     // ============================================
     // LOAD BOOKINGS TODAY
@@ -66,8 +74,8 @@ async function loadBookingStats() {
     const { data: orders, error: ordersError } = await supabaseClient
         .from('orders')
         .select('id, customer_name, total_price, status, created_at')
-        .gte('created_at', todayStr + 'T00:00:00')
-        .lte('created_at', todayStr + 'T23:59:59')
+        .gte('created_at', todayStr + 'T00:00:00+08:00')
+        .lte('created_at', todayStr + 'T23:59:59+08:00')
         .limit(500);
 
     if (ordersError) {
@@ -138,8 +146,8 @@ async function loadBookingStats() {
     const { data: weekOrders } = await supabaseClient
         .from('orders')
         .select('created_at, total_price, status')
-        .gte('created_at', getDateDaysAgo(7) + 'T00:00:00')
-        .lte('created_at', todayStr + 'T23:59:59')
+        .gte('created_at', getDateDaysAgo(7) + 'T00:00:00+08:00')
+        .lte('created_at', todayStr + 'T23:59:59+08:00')
         .eq('status', 'completed');
 
     const combinedRevenue = {};
@@ -150,9 +158,10 @@ async function loadBookingStats() {
         combinedRevenue[date] = (combinedRevenue[date] || 0) + (Number(b.total_price) || 0);
     });
 
-    // Add orders
+    // Add orders — bucket by the Manila calendar date the order falls on,
+    // not created_at's raw UTC date (which can be off by a day near midnight).
     (weekOrders || []).forEach(o => {
-        const date = o.created_at.split('T')[0];
+        const date = toManilaDateStr(o.created_at);
         combinedRevenue[date] = (combinedRevenue[date] || 0) + (Number(o.total_price) || 0);
     });
 
@@ -160,12 +169,46 @@ async function loadBookingStats() {
 }
 
 // ============================================================
-// HELPER: Get date days ago
+// HELPER: Manila-timezone-aware dates
 // ============================================================
+// The business runs on Philippine time (UTC+8), but new Date().toISOString()
+// always gives the UTC calendar date. Near midnight PH time (which is still
+// mid-afternoon/morning UTC on the other side of the date line) that used to
+// make "today" resolve to the wrong day, skewing Revenue/Appointments Today
+// and mis-bucketing the weekly chart. These helpers anchor everything to the
+// Manila calendar date instead.
+
+// Returns a Date object at UTC-midnight representing the Manila calendar
+// date `offsetDays` away from now (0 = today, -7 = a week ago, etc).
+function manilaDateParts(offsetDays) {
+    offsetDays = offsetDays || 0;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const map = {};
+    parts.forEach(function (p) { map[p.type] = p.value; });
+    const base = new Date(Date.UTC(Number(map.year), Number(map.month) - 1, Number(map.day)));
+    base.setUTCDate(base.getUTCDate() + offsetDays);
+    return base;
+}
+
+// 'YYYY-MM-DD' string for the Manila calendar date `offsetDays` away from now.
+function manilaDateStr(offsetDays) {
+    return manilaDateParts(offsetDays).toISOString().slice(0, 10);
+}
+
+// Converts a timestamptz string (e.g. an order's created_at, stored in UTC)
+// into the 'YYYY-MM-DD' it falls on in Manila time — NOT the same as
+// timestamp.split('T')[0], which gives the UTC date.
+function toManilaDateStr(isoTimestamp) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date(isoTimestamp));
+}
+
+// Kept for the two callers (loadTopServices/loadTopBarbers) that only need
+// a "N days ago" boundary for a .gte() filter on a plain date column.
 function getDateDaysAgo(days) {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return d.toISOString().split('T')[0];
+    return manilaDateStr(-days);
 }
 
 // --------------------------------------------
@@ -181,9 +224,7 @@ function renderWeeklyRevenueChart(dailyTotals) {
 
     const days = [];
     for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        days.push(d);
+        days.push(manilaDateParts(-i));
     }
 
     const dayTotals = days.map(function (d) {
@@ -204,7 +245,7 @@ function renderWeeklyRevenueChart(dailyTotals) {
 
     barsWrap.innerHTML = dayTotals.map(function (d) {
         const heightPct = maxTotal > 0 ? Math.max((d.total / maxTotal) * 100, 4) : 4;
-        const label = d.date.toLocaleDateString('en-PH', { weekday: 'short' });
+        const label = d.date.toLocaleDateString('en-PH', { weekday: 'short', timeZone: 'UTC' });
         return `<div class="admin-chart-bar-col" title="${label}: PHP ${d.total.toLocaleString('en-PH')}">
             <div class="admin-chart-bar" style="height: ${heightPct}%;"></div>
             <span>${label}</span>
@@ -236,8 +277,8 @@ function renderRecentBookings(bookings, profilesById) {
         return `
             <div class="admin-recent-item">
                 <div>
-                    <div class="admin-recent-item-name">${escapeHtmlDash(client.full_name || 'Unnamed')}</div>
-                    <div class="admin-recent-item-meta">${escapeHtmlDash(b.service_name || '\u2014')} with ${escapeHtmlDash(b.barber_name || '\u2014')}</div>
+                    <div class="admin-recent-item-name">${escapeHtml(client.full_name || 'Unnamed')}</div>
+                    <div class="admin-recent-item-meta">${escapeHtml(b.service_name || '\u2014')} with ${escapeHtml(b.barber_name || '\u2014')}</div>
                 </div>
                 ${statusBadge}
             </div>
@@ -259,10 +300,22 @@ function getStatusBadge(status) {
     return `<span class="admin-status-badge ${colorClass}">${label}</span>`;
 }
 
-function escapeHtmlDash(str) {
+// Canonical escaping helper for this page. dashboard.html does NOT load
+// main.js, so we can't rely on main.js's escapeHtml() — every render
+// function below uses this one instead (renderRecentBookings used to
+// call a separate escapeHtmlDash(); loadTopBarbers/loadRecentOrders used
+// to call the undefined main.js escapeHtml(), which threw and silently
+// killed everything queued after it in loadDashboard()).
+function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = String(str);
     return div.innerHTML;
+}
+
+// Was called by loadRecentOrders() but never defined anywhere in the
+// admin JS — every "Recent Orders" render threw a ReferenceError.
+function formatPHP(amount) {
+    return 'PHP ' + (Number(amount) || 0).toLocaleString('en-PH');
 }
 
 // --------------------------------------------

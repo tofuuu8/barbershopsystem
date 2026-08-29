@@ -328,6 +328,16 @@ input, select, textarea { font: inherit; }
     padding: 24px 18px;
     display: flex;
     flex-direction: column;
+    /* Pinned to the viewport, not the grid row — without this, a tall
+       main panel (e.g. the support inbox's two 70vh chat columns) makes
+       the whole page taller than one screen, and since a plain grid item
+       stretches to match its row, the sidebar becomes just as tall and
+       scrolls away with everything else instead of staying put. */
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 .admin-sidebar-brand {
@@ -1249,7 +1259,7 @@ input, select, textarea { font: inherit; }
 /* --------------------------------------------
    Booking status badges (Pending / Confirmed / Completed / Cancelled)
    -------------------------------------------- */
-./* Status badges for recent bookings */
+/* Status badges for recent bookings */
 .admin-status-pending {
     color: #f2c96b;
     background: rgba(242, 201, 107, 0.12);
@@ -1885,6 +1895,9 @@ input, select, textarea { font: inherit; }
         align-items: center;
         overflow-x: auto;
         padding: 14px 16px;
+        position: static;
+        align-self: auto;
+        height: auto;
     }
     .admin-sidebar-brand { border-bottom: none; padding: 0 16px 0 0; margin: 0 16px 0 0; border-right: 1px solid var(--line); }
     .admin-nav { flex-direction: row; }

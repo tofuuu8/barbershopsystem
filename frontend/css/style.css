@@ -2673,6 +2673,33 @@ input:focus-visible {
     30% { transform: translateY(-4px); opacity: 1; }
 }
 
+/* Live "talk to a human" handoff — small centered system notices
+   ("Connecting you...", "Conversation closed", etc.) and staff replies,
+   visually distinguished from AI replies via an accent border + label. */
+.chat-system-notice {
+    margin: 8px auto;
+    padding: 6px 12px;
+    max-width: 90%;
+    text-align: center;
+    font-size: 12px;
+    color: var(--dim);
+    background: transparent;
+}
+
+.message.bot.staff p {
+    border-left: 3px solid var(--steel);
+}
+
+.message.bot.staff .chat-sender-label {
+    display: block;
+    margin: 0 0 4px 2px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--steel);
+}
+
 /* ============================================
    RESPONSIVE (global)
    ============================================ */
@@ -2828,11 +2855,20 @@ input:focus-visible {
     .section-title { font-size: 2rem; }
 
     .chat-container {
-        width: 100%;
+        position: fixed;
+        left: 0;
         right: 0;
-        bottom: 64px;
-        height: 380px;
+        bottom: 0;
+        width: auto;
+        height: min(70vh, 460px);
         border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    /* The panel now covers the toggle button's spot on small screens,
+       so hide the round launcher while the panel is open to avoid it
+       floating on top of the chat input. */
+    .chat-toggle:has(~ .chat-container.active) {
+        display: none;
     }
 
     .reasons { padding: 30px 0 60px; }
