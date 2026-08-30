@@ -138,19 +138,19 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    background: rgba(224, 90, 90, 0.1);
-    border: 1px solid rgba(224, 90, 90, 0.35);
+    background: var(--rust-bg);
+    border: 1px solid rgba(197, 87, 76, 0.35);
     border-radius: var(--radius);
     padding: 14px 16px;
     margin-bottom: 24px;
     font-family: var(--font-body);
     font-size: 0.85rem;
-    color: #f2a6a1;
+    color: var(--rust);
     line-height: 1.5;
 }
 
 .booking-error i {
-    color: #e05a5a;
+    color: var(--rust);
     margin-top: 2px;
 }
 
@@ -219,13 +219,13 @@
     height: 68px;
     margin: 0 auto 22px;
     border-radius: 50%;
-    background: rgba(76, 175, 125, 0.12);
-    border: 1px solid rgba(76, 175, 125, 0.35);
+    background: var(--olive-bg);
+    border: 1px solid rgba(135, 160, 107, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.7rem;
-    color: #4caf7d;
+    color: var(--olive);
 }
 
 .booking-success-title {
@@ -412,11 +412,11 @@
 }
 
 .booking-card.is-done {
-    border-color: rgba(76, 175, 125, 0.3);
+    border-color: rgba(135, 160, 107, 0.3);
 }
 
 .booking-card.is-done .booking-step-number {
-    background: #4caf7d;
+    background: var(--olive);
 }
 
 .booking-card.is-done .booking-step-num {
@@ -592,6 +592,14 @@
     border-color: rgba(255, 255, 255, 0.4);
 }
 
+.booking-select:focus-visible,
+.booking-input:focus-visible,
+.booking-textarea:focus-visible {
+    outline: none;
+    border-color: var(--steel);
+    box-shadow: 0 0 0 3px rgba(216, 210, 196, 0.14);
+}
+
 .booking-textarea {
     resize: vertical;
     min-height: 76px;
@@ -746,6 +754,22 @@
     font-style: italic;
     color: var(--dim);
     grid-column: 1 / -1;
+}
+
+.booking-inline-retry {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--steel);
+    font-family: var(--font-body);
+    font-style: normal;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.booking-inline-retry:hover {
+    color: var(--white);
 }
 
 .booking-service-icon {
@@ -937,6 +961,72 @@
 }
 
 /* --------------------------------------------
+   Loading skeletons — barber grid (Supabase fetch) and upcoming
+   appointments list. Both used to render nothing but the "Random"
+   card / an empty <div> while their fetch was in flight; these give
+   the same shimmer treatment account.css already uses elsewhere on
+   the site, so a slow connection reads as "loading" not "broken".
+   -------------------------------------------- */
+@keyframes bookingShimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
+}
+
+.booking-skeleton-shimmer {
+    background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.05) 0px,
+        rgba(255, 255, 255, 0.12) 40px,
+        rgba(255, 255, 255, 0.05) 80px
+    );
+    background-size: 400px 100%;
+    animation: bookingShimmer 1.4s ease-in-out infinite;
+}
+
+.booking-barber-card.skeleton {
+    cursor: default;
+    pointer-events: none;
+    align-items: center;
+}
+
+.booking-barber-card.skeleton .booking-barber-photo-skel {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+}
+
+.booking-barber-card.skeleton .booking-skel-line {
+    height: 10px;
+    width: 70%;
+    border-radius: 4px;
+}
+
+.booking-barber-card.skeleton .booking-skel-line--short {
+    width: 45%;
+    height: 8px;
+}
+
+.booking-history-item.skeleton {
+    pointer-events: none;
+}
+
+.booking-history-skel-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.booking-history-item.skeleton .booking-skel-line {
+    display: block;
+    height: 12px;
+    border-radius: 4px;
+}
+
+.booking-skel-line--wide { width: 45%; }
+.booking-skel-line--medium { width: 65%; }
+
+/* --------------------------------------------
    Date & time
    -------------------------------------------- */
 .booking-datetime-row {
@@ -955,7 +1045,7 @@
     font-family: var(--font-body);
     font-size: 0.8rem;
     font-style: italic;
-    color: #f2a6a1;
+    color: var(--rust);
 }
 
 /* --------------------------------------------
@@ -1130,6 +1220,15 @@
     display: none;
 }
 
+/* --------------------------------------------
+   Mobile summary toggle — hidden on desktop, where every row is
+   already visible in the sticky sidebar. Only does something once
+   the ≤768px block below turns the sidebar into a fixed sheet.
+   -------------------------------------------- */
+.booking-summary-toggle {
+    display: none;
+}
+
 /* ============================================
    SLOT HOLD COUNTDOWN
    Shown once a date + time have been picked and the server has
@@ -1171,26 +1270,26 @@
 }
 
 .booking-hold-banner.is-low strong {
-    color: #e0685f;
+    color: var(--rust);
 }
 
 .booking-hold-expired {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    background: rgba(224, 90, 90, 0.1);
-    border: 1px solid rgba(224, 90, 90, 0.35);
+    background: var(--rust-bg);
+    border: 1px solid rgba(197, 87, 76, 0.35);
     border-radius: var(--radius);
     padding: 12px 14px;
     margin-bottom: 18px;
     font-family: var(--font-body);
     font-size: 0.8rem;
-    color: #f2a6a1;
+    color: var(--rust);
     line-height: 1.5;
 }
 
 .booking-hold-expired i {
-    color: #e05a5a;
+    color: var(--rust);
     margin-top: 2px;
     flex-shrink: 0;
 }
@@ -1209,7 +1308,7 @@
 }
 
 .booking-confirm-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: default;
     transform: none !important;
 }
@@ -1297,15 +1396,15 @@
 }
 
 .booking-history-status--pending {
-    color: #f2c96b;
-    border-color: rgba(242, 201, 107, 0.35);
-    background: rgba(242, 201, 107, 0.08);
+    color: var(--amber);
+    border-color: rgba(201, 162, 77, 0.35);
+    background: var(--amber-bg);
 }
 
 .booking-history-status--confirmed {
-    color: #8fd6b3;
-    border-color: rgba(76, 175, 125, 0.35);
-    background: rgba(76, 175, 125, 0.08);
+    color: var(--olive);
+    border-color: rgba(135, 160, 107, 0.35);
+    background: var(--olive-bg);
 }
 
 .booking-history-status--completed {
@@ -1314,9 +1413,9 @@
 
 .booking-history-cancel {
     background: transparent;
-    border: 1px solid rgba(224, 90, 90, 0.4);
+    border: 1px solid rgba(197, 87, 76, 0.4);
     border-radius: 50px;
-    color: #f2a6a1;
+    color: var(--rust);
     font-family: var(--font-ui);
     font-weight: 600;
     font-size: 0.68rem;
@@ -1328,8 +1427,8 @@
 }
 
 .booking-history-cancel:hover {
-    background: rgba(224, 90, 90, 0.12);
-    border-color: #e05a5a;
+    background: var(--rust-bg);
+    border-color: var(--rust);
     color: #ffffff;
 }
 
@@ -1343,9 +1442,37 @@
 .booking-location-btn:focus-visible,
 .booking-gender-tab:focus-visible,
 .booking-contact-method-btn:focus-visible,
+.booking-summary-toggle:focus-visible,
 .booking-history-cancel:focus-visible {
     outline: 2px solid var(--steel);
     outline-offset: 2px;
+}
+
+/* --------------------------------------------
+   Press feedback — every step control above had a hover state but
+   nothing that confirms a tap actually registered before the
+   selection visually updates a moment later. Kept subtle (a small
+   settle, not a jump) since several of these sit right next to each
+   other and a big shift would feel noisy.
+   -------------------------------------------- */
+.booking-location-btn:active,
+.booking-gender-tab:active,
+.booking-contact-method-btn:active,
+.booking-summary-toggle:active,
+.booking-history-cancel:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+.booking-service-card:not(.selected):active,
+.booking-barber-card:not(.selected):active {
+    transform: scale(0.99);
+    transition-duration: 0.08s;
+}
+
+.booking-confirm-btn:not(:disabled):active {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
 }
 
 /* ============================================
@@ -1369,6 +1496,107 @@
     .booking-service-grid { grid-template-columns: repeat(2, 1fr); }
     .booking-datetime-row { grid-template-columns: 1fr; }
     .booking-contact-method { grid-template-columns: 1fr; }
+
+    /* ----------------------------------------
+       Summary becomes a fixed bottom sheet — the mobile-specific
+       interaction model swap. Scrolling a 6-step form to find the
+       total and Confirm button (the old behavior once the sidebar
+       fell out of its sticky column at ≤1024px) doesn't fit how
+       people actually use a phone: this keeps the total + primary
+       CTA pinned within thumb reach the entire time, with the
+       itemized breakdown tucked behind a tap so the bar stays
+       compact. Desktop keeps its always-expanded sticky sidebar
+       untouched — this block only fires below 768px.
+
+       This breakpoint overlaps the global mobile bottom-nav's own
+       range (≤900px, style.css), which is ALSO fixed to bottom:0 —
+       at z-index:1500, well above this bar's z-index:60. Left alone,
+       the tab bar paints directly over the lower part of this sheet,
+       including the Confirm Booking button. The fix: lift this sheet
+       to sit on TOP of the tab bar instead of underneath it, using
+       the exact same tab-bar-height offset style.css already uses for
+       the chat widget at this breakpoint, so the two stay stacked
+       instead of overlapping.
+       ---------------------------------------- */
+    .booking-layout {
+        /* old summary height (~168px) + the tab bar it now sits above */
+        padding-bottom: calc(168px + 58px + env(safe-area-inset-bottom, 0));
+    }
+
+    .booking-summary {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(58px + env(safe-area-inset-bottom, 0));
+        z-index: 1400; /* stays just under the tab bar's 1500, never under it */
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+        padding: 14px 18px 14px;
+        max-height: 76vh;
+        overflow-y: auto;
+    }
+
+    /* This page already has its own primary CTA (Confirm Booking, right
+       above) — the global "Book Appointment" FAB would float right on
+       top of it saying the same thing twice. */
+    .page-booking .bottom-nav-fab {
+        display: none;
+    }
+
+    .booking-summary::before {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .booking-summary h3 {
+        display: none;
+    }
+
+    .booking-summary-details {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .booking-summary-details.is-expanded {
+        max-height: 320px;
+        overflow-y: auto;
+    }
+
+    .booking-summary-toggle {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        background: none;
+        border: none;
+        border-top: 1px dashed var(--line);
+        padding: 12px 2px;
+        margin-top: 2px;
+        color: var(--off);
+        font-family: var(--font-ui);
+        font-weight: 600;
+        font-size: 0.7rem;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    .booking-summary-toggle i {
+        color: var(--dim);
+        transition: transform 0.25s ease;
+    }
+
+    .booking-summary-toggle[aria-expanded="true"] i {
+        transform: rotate(180deg);
+    }
+
+    .booking-summary-row--total {
+        padding-top: 12px;
+    }
+
+    .booking-confirm-btn {
+        margin-top: 12px;
+    }
 }
 
 @media (max-width: 640px) {

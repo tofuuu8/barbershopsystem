@@ -633,3 +633,25 @@
         padding: 18px 32px !important;
     }
 }
+
+/* ============================================
+   ACCESSIBILITY & MICRO-INTERACTIONS
+   ============================================ */
+.service-type-btn:focus-visible,
+.gender-tab:focus-visible,
+.home-availability-geo-btn:focus-visible,
+.home-availability-row select:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+}
+
+.service-type-btn:active,
+.gender-tab:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+.home-availability-row select:focus-visible {
+    outline-offset: -2px;
+    border-color: var(--steel);
+}

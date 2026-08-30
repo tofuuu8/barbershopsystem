@@ -898,6 +898,7 @@ function initChatWidget() {
         container.classList.toggle('active');
         if (container.classList.contains('active')) {
             input.focus();
+            clearUnreadBadge();
         }
     });
 
@@ -905,6 +906,39 @@ function initChatWidget() {
         close.addEventListener('click', function() {
             container.classList.remove('active');
         });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && container.classList.contains('active')) {
+            container.classList.remove('active');
+            toggle.focus();
+        }
+    });
+
+    // --------------------------------------------
+    // Unread indicator — a small badge on the launcher button so a
+    // reply that arrives while the panel is closed (an async AI
+    // response, or a staff message during a live handoff) doesn't go
+    // unnoticed. Cleared the moment the panel is opened.
+    // --------------------------------------------
+    const unreadBadge = document.getElementById('chatUnreadBadge');
+    let unreadCount = 0;
+
+    function markUnread() {
+        if (container.classList.contains('active')) return;
+        unreadCount += 1;
+        if (unreadBadge) {
+            unreadBadge.hidden = false;
+            unreadBadge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+        }
+    }
+
+    function clearUnreadBadge() {
+        unreadCount = 0;
+        if (unreadBadge) {
+            unreadBadge.hidden = true;
+            unreadBadge.textContent = '';
+        }
     }
 
     function formatTime() {
@@ -971,6 +1005,7 @@ function initChatWidget() {
         const wrap = renderMessageBubble(role, text, time);
         storedMessages.push({ kind: role, text, time });
         persistChatState();
+        if (role === 'bot') markUnread();
         return wrap;
     }
 
@@ -1116,6 +1151,7 @@ function initChatWidget() {
         renderStaffBubble(text, time);
         storedMessages.push({ kind: 'staff', text, time });
         persistChatState();
+        markUnread();
     }
 
     function stopSupportPolling() {

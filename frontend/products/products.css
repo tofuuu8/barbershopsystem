@@ -571,3 +571,28 @@
 .product-modal-actions button[aria-disabled="true"] {
     pointer-events: none;
 }
+
+/* ============================================
+   ACCESSIBILITY & MICRO-INTERACTIONS
+   ============================================ */
+.product-view-more:focus-visible,
+.product-modal-close:focus-visible,
+.product-modal-gallery-thumbs button:focus-visible,
+.product-modal-cart-btn:focus-visible,
+.product-modal-buy-btn:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+}
+
+.product-view-more:active,
+.product-modal-close:active,
+.product-modal-gallery-thumbs button:active {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
+}
+
+.product-modal-cart-btn:not(:disabled):active,
+.product-modal-buy-btn:not(:disabled):active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.08s;
+}

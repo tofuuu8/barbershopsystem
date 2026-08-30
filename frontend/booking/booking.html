@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="booking.css" />
 </head>
-<body>
+<body class="page-booking">
 
     <!-- ==========================================
     ANNOUNCEMENT BAR + HEADER
@@ -344,30 +344,43 @@
                                 <span>This time was just taken — please pick another slot.</span>
                             </div>
 
-                            <div class="booking-summary-row">
-                                <span>Service</span>
-                                <span id="bookingSummaryService">Not selected yet</span>
+                            <!-- Collapsible on mobile only (see booking.css's ≤768px block +
+                                 initMobileSummarySheet() in booking.js) — the itemized rows
+                                 tuck behind a "View full breakdown" toggle so the fixed bottom
+                                 bar stays compact, while the total + Confirm button (below,
+                                 outside this wrapper) stay pinned and visible at all times. -->
+                            <div class="booking-summary-details" id="bookingSummaryDetails">
+                                <div class="booking-summary-row">
+                                    <span>Service</span>
+                                    <span id="bookingSummaryService">Not selected yet</span>
+                                </div>
+                                <div class="booking-summary-row">
+                                    <span>Barber</span>
+                                    <span id="bookingSummaryBarber">Random</span>
+                                </div>
+                                <div class="booking-summary-row">
+                                    <span>Location</span>
+                                    <span id="bookingSummaryLocation">In-Studio</span>
+                                </div>
+                                <div class="booking-summary-row">
+                                    <span>Date &amp; Time</span>
+                                    <span id="bookingSummaryDateTime">Not selected yet</span>
+                                </div>
+                                <div class="booking-summary-row">
+                                    <span>Contact</span>
+                                    <span id="bookingSummaryContact">Not entered yet</span>
+                                </div>
+                                <div class="booking-summary-row booking-summary-fee-row" id="bookingSummaryFeeRow" hidden>
+                                    <span>Travel Fee</span>
+                                    <span id="bookingSummaryFee">PHP 0</span>
+                                </div>
                             </div>
-                            <div class="booking-summary-row">
-                                <span>Barber</span>
-                                <span id="bookingSummaryBarber">Random</span>
-                            </div>
-                            <div class="booking-summary-row">
-                                <span>Location</span>
-                                <span id="bookingSummaryLocation">In-Studio</span>
-                            </div>
-                            <div class="booking-summary-row">
-                                <span>Date &amp; Time</span>
-                                <span id="bookingSummaryDateTime">Not selected yet</span>
-                            </div>
-                            <div class="booking-summary-row">
-                                <span>Contact</span>
-                                <span id="bookingSummaryContact">Not entered yet</span>
-                            </div>
-                            <div class="booking-summary-row booking-summary-fee-row" id="bookingSummaryFeeRow" hidden>
-                                <span>Travel Fee</span>
-                                <span id="bookingSummaryFee">PHP 0</span>
-                            </div>
+
+                            <button type="button" class="booking-summary-toggle" id="bookingSummaryToggle" aria-expanded="false" aria-controls="bookingSummaryDetails">
+                                <span>View full breakdown</span>
+                                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                            </button>
+
                             <div class="booking-summary-row booking-summary-row--total">
                                 <span>Total</span>
                                 <span id="bookingSummaryTotal">PHP 0</span>
@@ -467,19 +480,25 @@
     AI CHAT WIDGET
     ========================================== -->
     <div class="chat-widget" id="chatWidget">
-        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open Tough AI chat" title="Chat with Tough AI">
             <i class="fas fa-comment-dots" aria-hidden="true"></i>
+            <span class="chat-unread-badge" id="chatUnreadBadge" hidden></span>
         </button>
         <div class="chat-container" id="chatContainer">
             <div class="chat-header">
-                <i class="fas fa-robot" aria-hidden="true"></i>
-                <span>Toughcuts AI</span>
-                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+                <span class="chat-header-avatar"><i class="fas fa-robot" aria-hidden="true"></i></span>
+                <div class="chat-header-info">
+                    <span class="chat-header-name">Tough AI</span>
+                    <span class="chat-header-status"><i class="chat-status-dot" aria-hidden="true"></i>Online now</span>
+                </div>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="message bot">
-                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
-                    <small>Ask about services, booking, or products</small>
+                    <p>Hi, I'm Tough AI. Ask me about services, booking, or products.</p>
+                    <small>Usually replies in a few seconds</small>
                 </div>
             </div>
             <div class="chat-input">

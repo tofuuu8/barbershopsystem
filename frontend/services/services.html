@@ -325,19 +325,25 @@
     AI CHAT WIDGET
     ========================================== -->
     <div class="chat-widget" id="chatWidget">
-        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open Tough AI chat" title="Chat with Tough AI">
             <i class="fas fa-comment-dots" aria-hidden="true"></i>
+            <span class="chat-unread-badge" id="chatUnreadBadge" hidden></span>
         </button>
         <div class="chat-container" id="chatContainer">
             <div class="chat-header">
-                <i class="fas fa-robot" aria-hidden="true"></i>
-                <span>Toughcuts AI</span>
-                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+                <span class="chat-header-avatar"><i class="fas fa-robot" aria-hidden="true"></i></span>
+                <div class="chat-header-info">
+                    <span class="chat-header-name">Tough AI</span>
+                    <span class="chat-header-status"><i class="chat-status-dot" aria-hidden="true"></i>Online now</span>
+                </div>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="message bot">
-                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
-                    <small>Ask about services, booking, or products</small>
+                    <p>Hi, I'm Tough AI. Ask me about services, booking, or products.</p>
+                    <small>Usually replies in a few seconds</small>
                 </div>
             </div>
             <div class="chat-input">

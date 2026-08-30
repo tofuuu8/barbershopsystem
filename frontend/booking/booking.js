@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initBookingForm();
     initResetButton();
     initReceiptDownloadButton();
+    initMobileSummarySheet();
     applyLocationToUI();
     applyGenderToUI();
     renderServiceCard();
@@ -400,6 +401,26 @@ function renderServiceCard() {
             </span>
         </div>
     ` : '<p class="booking-service-empty">No service available for this selection.</p>';
+}
+
+// ============================================
+// MOBILE SUMMARY SHEET
+// ============================================
+// The toggle only exists visually on mobile (booking.css's ≤768px
+// block turns .booking-summary into a fixed bottom sheet), but the
+// listener is harmless to attach unconditionally — on desktop the
+// button stays display:none and is never reachable by mouse or tab.
+function initMobileSummarySheet() {
+    const toggle = document.getElementById('bookingSummaryToggle');
+    const details = document.getElementById('bookingSummaryDetails');
+    if (!toggle || !details) return;
+
+    toggle.addEventListener('click', function () {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!expanded));
+        details.classList.toggle('is-expanded', !expanded);
+        toggle.querySelector('span').textContent = expanded ? 'View full breakdown' : 'Hide breakdown';
+    });
 }
 
 // ============================================
@@ -1224,6 +1245,20 @@ async function loadUpcomingBookings() {
     const user = getCurrentUser();
     if (!user) return;
 
+    // Shimmer placeholders while the fetch is in flight, same pattern
+    // as the barber grid above — otherwise this section just sits
+    // blank (no empty-state text, since that's reserved for the
+    // genuinely-empty case) until the request resolves.
+    if (empty) empty.hidden = true;
+    list.innerHTML = Array.from({ length: 2 }).map(() => `
+        <div class="booking-history-item skeleton" aria-hidden="true">
+            <div class="booking-history-main booking-history-skel-lines">
+                <span class="booking-skel-line booking-skel-line--wide booking-skeleton-shimmer"></span>
+                <span class="booking-skel-line booking-skel-line--medium booking-skeleton-shimmer"></span>
+            </div>
+        </div>
+    `).join('');
+
     const today = localDateStr(new Date());
 
     const { data, error } = await supabaseClient
@@ -1345,8 +1380,6 @@ async function cancelBooking(id, btn) {
 // ============================================================
 
 async function loadBarbersForBooking() {
-    console.log('🔄 Loading barbers for booking...');
-    
     try {
         const { data, error } = await supabaseClient
             .from('barbers')
@@ -1355,16 +1388,15 @@ async function loadBarbersForBooking() {
             .order('name');
 
         if (error) {
-            console.error('❌ Error loading barbers:', error);
-            return [];
+            console.error('Error loading barbers:', error);
+            return { data: [], failed: true };
         }
 
-        console.log('✅ Loaded barbers for booking:', data.length);
-        return data || [];
-        
+        return { data: data || [], failed: false };
+
     } catch (error) {
-        console.error('❌ Error:', error);
-        return [];
+        console.error(error);
+        return { data: [], failed: true };
     }
 }
 
@@ -1376,7 +1408,19 @@ async function renderBarberCardsDynamic() {
     const grid = document.getElementById('bookingBarberGrid');
     if (!grid) return;
 
-    const barbers = await loadBarbersForBooking();
+    // Show a shimmer placeholder immediately (matching the "Random"
+    // card's proportions) instead of leaving the grid blank while the
+    // fetch is in flight — the same problem the product grid and
+    // account page solve with a shimmer skeleton.
+    grid.innerHTML = Array.from({ length: 4 }).map(() => `
+        <div class="booking-barber-card skeleton" aria-hidden="true">
+            <span class="booking-barber-photo-skel booking-skeleton-shimmer"></span>
+            <span class="booking-skel-line booking-skeleton-shimmer"></span>
+            <span class="booking-skel-line booking-skel-line--short booking-skeleton-shimmer"></span>
+        </div>
+    `).join('');
+
+    const { data: barbers, failed } = await loadBarbersForBooking();
 
     // Build the grid HTML
     let html = `
@@ -1387,6 +1431,15 @@ async function renderBarberCardsDynamic() {
             <span class="booking-barber-role">We'll pick for you</span>
         </button>
     `;
+
+    if (failed) {
+        html += `
+            <p class="booking-service-empty">
+                Couldn't load the barber list — "Random" still works, or
+                <button type="button" class="booking-inline-retry" id="bookingBarberRetry">try again</button>.
+            </p>
+        `;
+    }
 
     // Add barbers from database
     barbers.forEach(barber => {
@@ -1406,6 +1459,9 @@ async function renderBarberCardsDynamic() {
     });
 
     grid.innerHTML = html;
+
+    const retryBtn = document.getElementById('bookingBarberRetry');
+    if (retryBtn) retryBtn.addEventListener('click', renderBarberCardsDynamic);
 
     // Re-attach event listeners
     grid.querySelectorAll('.booking-barber-card').forEach(card => {
