@@ -1525,6 +1525,10 @@
 
     .booking-summary {
         position: fixed;
+        top: auto; /* clears the desktop sticky rule's top:100px — without this,
+                      having both top and bottom set on a fixed box with no
+                      explicit height stretches it to fill the space between
+                      them, pinning it under the header instead of the bottom */
         left: 0;
         right: 0;
         bottom: calc(58px + env(safe-area-inset-bottom, 0));
@@ -1532,8 +1536,31 @@
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
         padding: 14px 18px 14px;
-        max-height: 76vh;
+        /* Capped much lower than the previous 76vh: at full viewport
+           height, 76vh (~700px on a typical phone) was tall enough to
+           bury the hero and the first couple of step cards entirely
+           when expanded — the summary looked like it had replaced the
+           whole page. This keeps it to at most ~45% of the screen, or
+           380px on taller devices, so there's always a visible, usable
+           strip of the actual form above it. */
+        max-height: min(45vh, 380px);
         overflow-y: auto;
+    }
+
+    /* Dimmed backdrop, shown only while the breakdown is expanded —
+       makes it read as a deliberate "reviewing your order" overlay
+       (same idea as the account sheet's backdrop) rather than content
+       that's just... covered. Tapping it collapses back to the compact
+       bar so the step form underneath is reachable again immediately. */
+    .booking-summary-backdrop[hidden] {
+        display: none;
+    }
+
+    .booking-summary-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1390;
+        background: rgba(0, 0, 0, 0.5);
     }
 
     /* This page already has its own primary CTA (Confirm Booking, right
@@ -1558,7 +1585,11 @@
     }
 
     .booking-summary-details.is-expanded {
-        max-height: 320px;
+        /* Sized to what 5–6 short rows actually need, not the old
+           320px — that alone was inflating the sheet's total height
+           well past what a "collapsed peek, tap to see more" bar
+           should ever take up. */
+        max-height: 200px;
         overflow-y: auto;
     }
 

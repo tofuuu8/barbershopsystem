@@ -413,14 +413,29 @@ function renderServiceCard() {
 function initMobileSummarySheet() {
     const toggle = document.getElementById('bookingSummaryToggle');
     const details = document.getElementById('bookingSummaryDetails');
+    const backdrop = document.getElementById('bookingSummaryBackdrop');
     if (!toggle || !details) return;
 
+    function setExpanded(expanded) {
+        toggle.setAttribute('aria-expanded', String(expanded));
+        details.classList.toggle('is-expanded', expanded);
+        toggle.querySelector('span').textContent = expanded ? 'Hide breakdown' : 'View full breakdown';
+        // The backdrop is what turns this into an obvious "reviewing
+        // your order" overlay instead of the breakdown just silently
+        // covering the step form behind it — and gives a large, easy
+        // tap target to back out of it again.
+        if (backdrop) backdrop.hidden = !expanded;
+    }
+
     toggle.addEventListener('click', function () {
-        const expanded = toggle.getAttribute('aria-expanded') === 'true';
-        toggle.setAttribute('aria-expanded', String(!expanded));
-        details.classList.toggle('is-expanded', !expanded);
-        toggle.querySelector('span').textContent = expanded ? 'View full breakdown' : 'Hide breakdown';
+        setExpanded(toggle.getAttribute('aria-expanded') !== 'true');
     });
+
+    if (backdrop) {
+        backdrop.addEventListener('click', function () {
+            setExpanded(false);
+        });
+    }
 }
 
 // ============================================
