@@ -296,6 +296,19 @@
     color: var(--black);
 }
 
+.checkout-fulfillment-btn:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+.checkout-fulfillment-btn:focus-visible,
+.checkout-confirm-btn:focus-visible,
+.checkout-input:focus-visible,
+.checkout-textarea:focus-visible {
+    outline: 2px solid var(--steel, #d8d2c4);
+    outline-offset: 2px;
+}
+
 /* --------------------------------------------
    Pickup info panel
    -------------------------------------------- */
@@ -389,7 +402,40 @@
 
 .checkout-input:focus,
 .checkout-textarea:focus {
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: var(--steel, #d8d2c4);
+    box-shadow: 0 0 0 3px rgba(216, 210, 196, 0.14);
+}
+
+/* --------------------------------------------
+   Field validation — clay for errors, olive for a confirmed field.
+   Kept out-of-family alert colors out; these read as Toughcuts, not
+   a generic form library. Never color alone: every state pairs with
+   an icon + one-line fix in .checkout-field-note.
+   -------------------------------------------- */
+.checkout-field.is-error .checkout-input,
+.checkout-field.is-error .checkout-textarea {
+    border-color: var(--rust, #c5574c);
+}
+.checkout-field.is-error .checkout-input:focus,
+.checkout-field.is-error .checkout-textarea:focus {
+    box-shadow: 0 0 0 3px var(--rust-bg, rgba(197, 87, 76, 0.14));
+}
+.checkout-field.is-error .checkout-field-note {
+    color: var(--rust, #c5574c);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.checkout-field.is-success .checkout-input,
+.checkout-field.is-success .checkout-textarea {
+    border-color: var(--olive, #87a06b);
+}
+.checkout-field.is-success .checkout-field-note {
+    color: var(--olive, #87a06b);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .checkout-textarea {
@@ -549,6 +595,20 @@
     transform: none !important;
 }
 
+.checkout-confirm-btn:not(:disabled):active {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
+}
+
+/* Button keeps its footprint while the spinner replaces the label,
+   so confirming an order never shifts the layout beneath the tap. */
+.checkout-confirm-btn .checkout-confirm-text {
+    transition: opacity 0.15s ease;
+}
+.checkout-confirm-btn[aria-busy="true"] .checkout-confirm-text {
+    opacity: 0;
+}
+
 .checkout-summary-back {
     display: flex;
     align-items: center;
@@ -597,6 +657,47 @@
     justify-content: center;
     font-size: 1.6rem;
     color: #4caf7d;
+    animation: checkoutSuccessPop 0.4s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+@keyframes checkoutSuccessPop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.checkout-success-panel {
+    animation: checkoutPanelIn 0.3s cubic-bezier(.16,1,.3,1) both;
+}
+
+@keyframes checkoutPanelIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .checkout-success-icon,
+    .checkout-success-panel { animation: none; }
+}
+
+.checkout-success-row--order {
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.checkout-success-row--order:hover,
+.checkout-success-row--order:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    outline: none;
+}
+
+.checkout-success-row--order:focus-visible {
+    outline: 2px solid var(--steel, #d8d2c4);
+    outline-offset: 2px;
+}
+
+.checkout-success-row--order.is-copied span:last-child {
+    color: var(--olive, #87a06b);
 }
 
 .checkout-success-title {
@@ -689,4 +790,91 @@
     .checkout-fulfillment-toggle { flex-direction: column; }
     .checkout-gate-panel,
     .checkout-success-panel { padding: 36px 24px 30px; }
+}
+
+/* ============================================
+   MOBILE STICKY ORDER BAR
+   Phones have no persistent sidebar, and burying the total and
+   "Place Order" action at the bottom of a long scroll is exactly
+   the kind of dead scroll a thumb shouldn't have to make. This bar
+   mirrors the summary total once the real summary card scrolls out
+   of view, and its button proxies a real click to the existing
+   #checkoutConfirmBtn — no checkout logic is duplicated.
+   Populated and toggled by checkout-enhance.js; markup is injected
+   at runtime so this file has no effect without it.
+   ============================================ */
+.checkout-sticky-bar {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .checkout-sticky-bar.is-visible {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 500;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+        background: var(--near-black, #0c0c0c);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.35);
+        animation: checkoutBarIn 0.2s ease-out both;
+    }
+}
+
+@keyframes checkoutBarIn {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+.checkout-sticky-bar-total {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.checkout-sticky-bar-total span:first-child {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.checkout-sticky-bar-total span:last-child {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    color: var(--white);
+}
+
+.checkout-sticky-bar-btn {
+    flex-shrink: 0;
+    min-height: 48px;
+    padding: 0 28px;
+    border: none;
+    border-radius: var(--radius, 10px);
+    background: var(--white);
+    color: var(--black);
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: var(--transition);
+}
+
+.checkout-sticky-bar-btn:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+.checkout-sticky-bar-btn:disabled {
+    opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .checkout-sticky-bar.is-visible { animation: none; }
 }

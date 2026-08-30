@@ -56,6 +56,15 @@
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
+/* The cart's login-required gate is the one "highlight tile" on this
+   page, so it's where the site's .cut-corner signature (style.css)
+   shows up — deliberately not on every card, matching how sparingly
+   .product-card uses the same trick. Radius is dropped since the clip
+   already cuts the corner; the two would otherwise fight each other. */
+.cart-gate-panel.cut-corner {
+    border-radius: 0;
+}
+
 .cart-gate-icon {
     width: 64px;
     height: 64px;
@@ -269,6 +278,23 @@
     color: var(--white);
 }
 
+.cart-item-qty button:disabled,
+.cart-item-remove:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: var(--line);
+    color: var(--faint);
+}
+
+/* Brief "registered the click" flash while a quantity/remove request is
+   in flight — mirrors the design system's active/pressed rule: settle
+   instantly, communicate before the async response lands. */
+.cart-item.is-updating {
+    opacity: .6;
+    pointer-events: none;
+    transition: opacity .15s var(--ease);
+}
+
 .cart-item-qty span {
     font-family: var(--font-display);
     font-size: 0.85rem;
@@ -304,7 +330,7 @@
 }
 
 .cart-item-remove:hover {
-    color: #e05a5a;
+    color: var(--rust);
 }
 
 .cart-summary {

@@ -39,19 +39,19 @@
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    background: rgba(76, 175, 125, 0.1);
-    border: 1px solid rgba(76, 175, 125, 0.35);
+    background: var(--olive-bg);
+    border: 1px solid rgba(135, 160, 107, 0.35);
     border-radius: var(--radius);
     padding: 14px 16px;
     margin-bottom: 22px;
     font-family: var(--font-body);
     font-size: 0.85rem;
-    color: #8fd6b3;
+    color: var(--olive);
     line-height: 1.5;
 }
 
 .recovery-resent-note i {
-    color: #4caf7d;
+    color: var(--olive);
     margin-top: 2px;
 }
 

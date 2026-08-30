@@ -52,6 +52,31 @@ async function getCart() {
     }));
 }
 
+// Deletes every cart_items row for the signed-in visitor in one request —
+// used by checkout.js after an order is successfully placed. There's no
+// "overwrite the whole cart" operation against Supabase the way
+// localStorage's saveCart([]) used to provide (only per-item
+// add/update/delete), but a full clear is the one bulk operation
+// checkout actually needs, so this replaces that old call directly.
+async function clearCart() {
+    if (typeof supabaseClient === 'undefined' || typeof isLoggedIn !== 'function' || !isLoggedIn()) return;
+
+    const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+    if (!user) return;
+
+    // RLS already scopes deletes to the caller's own rows on its own;
+    // the explicit .eq is kept too since PostgREST rejects a delete with
+    // no filter at all, as a guard against accidental full-table wipes.
+    const { error } = await supabaseClient.from('cart_items').delete().eq('user_id', user.id);
+
+    if (error) {
+        console.warn('Could not clear cart:', error.message);
+        return;
+    }
+
+    if (typeof initCartCounter === 'function') initCartCounter();
+}
+
 async function renderCartPage() {
     const gate = document.getElementById('cartGate');
     const content = document.getElementById('cartContent');
@@ -141,6 +166,15 @@ async function updateItemQuantity(id, delta) {
 
     const newQuantity = item.quantity + delta;
 
+    // Instant feedback the click registered, before the request resolves
+    // (design system's "active/pressed" rule) — the row dims and its
+    // qty/remove buttons disable so a second click can't race the first.
+    const row = document.querySelector(`.cart-item[data-id="${cssEscape(id)}"]`);
+    if (row) {
+        row.classList.add('is-updating');
+        row.querySelectorAll('button').forEach(btn => btn.disabled = true);
+    }
+
     const { error } = newQuantity <= 0
         ? await supabaseClient.from('cart_items').delete().eq('product_id', id)
         : await supabaseClient.from('cart_items').update({ quantity: newQuantity }).eq('product_id', id);
@@ -148,6 +182,10 @@ async function updateItemQuantity(id, delta) {
     if (error) {
         console.warn('Could not update cart item:', error.message);
         alert("Couldn't update that item — please try again.");
+        if (row) {
+            row.classList.remove('is-updating');
+            row.querySelectorAll('button').forEach(btn => btn.disabled = false);
+        }
         return;
     }
 
@@ -158,16 +196,33 @@ async function updateItemQuantity(id, delta) {
 async function removeItem(id) {
     if (typeof supabaseClient === 'undefined' || !isLoggedIn()) return;
 
+    const row = document.querySelector(`.cart-item[data-id="${cssEscape(id)}"]`);
+    if (row) {
+        row.classList.add('is-updating');
+        row.querySelectorAll('button').forEach(btn => btn.disabled = true);
+    }
+
     const { error } = await supabaseClient.from('cart_items').delete().eq('product_id', id);
 
     if (error) {
         console.warn('Could not remove cart item:', error.message);
         alert("Couldn't remove that item — please try again.");
+        if (row) {
+            row.classList.remove('is-updating');
+            row.querySelectorAll('button').forEach(btn => btn.disabled = false);
+        }
         return;
     }
 
     if (typeof initCartCounter === 'function') initCartCounter();
     renderCartPage();
+}
+
+// Minimal CSS.escape fallback for the data-id attribute selector above —
+// product ids in this catalog are plain slugs, but this keeps the
+// selector safe if that ever changes.
+function cssEscape(value) {
+    return (window.CSS && CSS.escape) ? CSS.escape(value) : String(value).replace(/["\\\]]/g, '\\$&');
 }
 
 function initCartItemActions() {

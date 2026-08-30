@@ -130,92 +130,11 @@
                 <button class="category-tab" data-category="sprays">HAIR SPRAYS</button>
             </div>
 
+            <!-- Populated by loadCatalogAndStock() in products.js, straight
+                 from the same public.products table the admin panel
+                 manages — no product data is hardcoded here anymore. -->
             <div class="products-grid products-grid--shop" id="productsGrid">
-
-                <div class="product-card product-card--shop" data-category="wax">
-                    <div class="product-brand">FOX</div>
-                    <div class="product-image">
-                        <img src="../images/products/matte-wax.jpg" alt="Matte Molding Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
-                    </div>
-                    <h3>Matte Molding Wax</h3>
-                    <p class="product-price">PHP 250</p>
-                    <div class="product-card-actions">
-                        <button class="product-btn" data-id="wax-fox-matte" data-name="Matte Molding Wax" data-price="250">Add to Cart</button>
-                        <button class="product-buy-btn" data-id="wax-fox-matte" data-name="Matte Molding Wax" data-price="250">Buy Now</button>
-                        <button class="product-view-more" type="button" data-product-id="wax-fox-matte">View More Details</button>
-                    </div>
-                </div>
-
-                <div class="product-card product-card--shop" data-category="wax">
-                    <div class="product-brand">ATLAS</div>
-                    <div class="product-image">
-                        <img src="../images/products/natural-wax.jpg" alt="Natural Styling Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
-                    </div>
-                    <h3>Natural Styling Wax</h3>
-                    <p class="product-price">PHP 350</p>
-                    <div class="product-card-actions">
-                        <button class="product-btn" data-id="wax-atlas-natural" data-name="Natural Styling Wax" data-price="350">Add to Cart</button>
-                        <button class="product-buy-btn" data-id="wax-atlas-natural" data-name="Natural Styling Wax" data-price="350">Buy Now</button>
-                        <button class="product-view-more" type="button" data-product-id="wax-atlas-natural">View More Details</button>
-                    </div>
-                </div>
-
-                <div class="product-card product-card--shop" data-category="wax">
-                    <div class="product-brand">✦</div>
-                    <div class="product-image">
-                        <img src="../images/products/premium-wax.jpg" alt="Premium Styling Wax" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=WAX'" />
-                    </div>
-                    <h3>Premium Styling Wax</h3>
-                    <p class="product-price">PHP 450</p>
-                    <div class="product-card-actions">
-                        <button class="product-btn" data-id="wax-premium" data-name="Premium Styling Wax" data-price="450">Add to Cart</button>
-                        <button class="product-buy-btn" data-id="wax-premium" data-name="Premium Styling Wax" data-price="450">Buy Now</button>
-                        <button class="product-view-more" type="button" data-product-id="wax-premium">View More Details</button>
-                    </div>
-                </div>
-
-                <div class="product-card product-card--shop" data-category="sprays">
-                    <div class="product-brand">FOX</div>
-                    <div class="product-image">
-                        <img src="../images/products/matte-spray.jpg" alt="Solid Matte Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
-                    </div>
-                    <h3>Solid Matte Spray</h3>
-                    <p class="product-price">PHP 400</p>
-                    <div class="product-card-actions">
-                        <button class="product-btn" data-id="spray-fox-matte" data-name="Solid Matte Spray" data-price="400">Add to Cart</button>
-                        <button class="product-buy-btn" data-id="spray-fox-matte" data-name="Solid Matte Spray" data-price="400">Buy Now</button>
-                        <button class="product-view-more" type="button" data-product-id="spray-fox-matte">View More Details</button>
-                    </div>
-                </div>
-
-                <div class="product-card product-card--shop" data-category="sprays">
-                    <div class="product-brand">ATLAS</div>
-                    <div class="product-image">
-                        <img src="../images/products/volume-spray.jpg" alt="Volume Boost Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
-                    </div>
-                    <h3>Volume Boost Spray</h3>
-                    <p class="product-price">PHP 380</p>
-                    <div class="product-card-actions">
-                        <button class="product-btn" data-id="spray-atlas-volume" data-name="Volume Boost Spray" data-price="380">Add to Cart</button>
-                        <button class="product-buy-btn" data-id="spray-atlas-volume" data-name="Volume Boost Spray" data-price="380">Buy Now</button>
-                        <button class="product-view-more" type="button" data-product-id="spray-atlas-volume">View More Details</button>
-                    </div>
-                </div>
-
-                <div class="product-card product-card--shop" data-category="sprays">
-                    <div class="product-brand">✦</div>
-                    <div class="product-image">
-                        <img src="../images/products/premium-hold-spray.jpg" alt="Premium Hold Spray" loading="lazy" onerror="this.src='https://placehold.co/120x120/232323/666?text=SPRAY'" />
-                    </div>
-                    <h3>Premium Hold Spray</h3>
-                    <p class="product-price">PHP 420</p>
-                    <div class="product-card-actions">
-                        <button class="product-btn" data-id="spray-premium-hold" data-name="Premium Hold Spray" data-price="420">Add to Cart</button>
-                        <button class="product-buy-btn" data-id="spray-premium-hold" data-name="Premium Hold Spray" data-price="420">Buy Now</button>
-                        <button class="product-view-more" type="button" data-product-id="spray-premium-hold">View More Details</button>
-                    </div>
-                </div>
-
+                <p class="products-catalog-status">Loading products…</p>
             </div>
         </div>
     </section>
@@ -241,6 +160,7 @@
                 <span class="product-modal-brand" id="productModalBrand"></span>
                 <h3 id="productModalName"></h3>
                 <p class="product-modal-price" id="productModalPrice"></p>
+                <p class="product-stock product-stock--modal" id="productModalStock"></p>
             </div>
 
             <p id="productModalDescription" class="product-modal-description"></p>
@@ -382,6 +302,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
     <script src="../js/supabase.js"></script>
     <script src="../js/main.js"></script>
+    <script src="../js/bottom-nav.js"></script>
     <script src="products.js"></script>
     <script src="../js/order-notifications.js"></script>
 </body>

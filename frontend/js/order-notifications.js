@@ -11,6 +11,18 @@ const CUSTOMER_NOTIFICATION_LABELS = {
     booking_updated: 'Appointment updated'
 };
 
+// olive = confirmed/positive, amber = pending/needs a look, rust = cancelled/failed.
+// Anything not listed here falls back to amber ("something changed, go check").
+const CUSTOMER_NOTIFICATION_STATUS = {
+    order_created: 'amber',
+    order_status_changed: 'amber',
+    payment_paid: 'olive',
+    booking_created: 'amber',
+    booking_updated: 'amber',
+    order_cancelled: 'rust',
+    booking_cancelled: 'rust'
+};
+
 document.addEventListener('DOMContentLoaded', async function () {
     if (typeof authReadyPromise === 'undefined' || typeof supabaseClient === 'undefined') return;
     await authReadyPromise;
@@ -102,7 +114,6 @@ function setCustomerNotificationBadge(count, increment) {
             dot = document.createElement('span');
             dot.className = 'order-notif-dot';
             dot.setAttribute('aria-label', 'Unread notifications');
-            dot.style.cssText = 'position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:#e05a5a;border:2px solid var(--black,#0f0f0f);';
             icon.style.position = icon.style.position || 'relative';
             icon.appendChild(dot);
         }
@@ -129,27 +140,35 @@ function showCustomerNotificationToast(notification) {
     if (!toast) {
         toast = document.createElement('div');
         toast.id = 'customerNotificationToast';
-        toast.style.cssText = 'position:fixed;right:24px;max-width:340px;padding:14px 18px;border-radius:12px;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);color:#fff;font-family:system-ui,sans-serif;font-size:.85rem;line-height:1.5;z-index:9999;box-shadow:0 12px 30px rgba(0,0,0,.4);cursor:pointer;transition:opacity .3s ease,transform .3s ease;opacity:0;transform:translateY(-12px);';
+        toast.className = 'customer-toast';
         toast.addEventListener('click', function () {
             window.location.href = window.location.pathname.includes('/myorders/') ? 'myorders.html' : '../myorders/myorders.html';
         });
         document.body.appendChild(toast);
     }
     toast.replaceChildren();
+
+    const status = CUSTOMER_NOTIFICATION_STATUS[notification.event_type] || 'amber';
+    const dot = document.createElement('span');
+    dot.className = `toast-dot${status === 'olive' ? '' : ' status-' + status}`;
+    dot.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('div');
     const title = document.createElement('strong');
     title.textContent = CUSTOMER_NOTIFICATION_LABELS[notification.event_type] || notification.title || 'Toughcuts update';
-    const body = document.createTextNode(` — ${notification.body || 'Open your account to view the latest update.'}`);
-    toast.append(title, body);
+    const body = document.createElement('span');
+    body.textContent = notification.body || 'Open your account to view the latest update.';
+    text.append(title, body);
+
+    toast.append(dot, text);
 
     // Recomputed every show (not just once) since the header's height can
     // change between page loads, and on resize while it's still visible.
     toast.style.top = `${getHeaderBottomOffset()}px`;
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateY(0)';
+    toast.classList.add('is-visible');
 
     clearTimeout(toast._hideTimeout);
     toast._hideTimeout = setTimeout(function () {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-12px)';
+        toast.classList.remove('is-visible');
     }, 6000);
 }

@@ -3,37 +3,295 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Terms of Service - Toughcuts</title>
+    <title>Terms of Service - Toughcuts Barbershop &amp; Grooming Studio</title>
+    <meta name="description" content="The terms that apply when you book an appointment, place an order, or create an account with Toughcuts." />
+
     <link rel="icon" type="image/png" href="images/toughcutslogo.png" />
+    <link rel="apple-touch-icon" href="images/toughcutslogo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Permanent+Marker&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
-    <style>
-        .legal-page { padding: 7rem 1.25rem 5rem; }
-        .legal-panel { max-width: 860px; margin: 0 auto; padding: 2.5rem; background: #181818; border: 1px solid #303030; border-radius: 1rem; }
-        .legal-panel h1, .legal-panel h2 { color: #f4c430; }
-        .legal-panel p, .legal-panel li { color: #d2d2d2; line-height: 1.75; }
-        .legal-panel li { margin: .5rem 0; }
-        .legal-back { display: inline-block; margin-top: 1.5rem; color: #f4c430; }
-    </style>
+    <link rel="stylesheet" href="legal.css" />
 </head>
 <body>
-    <main class="legal-page">
-        <article class="legal-panel">
+
+    <!-- ==========================================
+    ANNOUNCEMENT BAR + HEADER
+    ========================================== -->
+    <div class="site-header-group">
+
+        <div class="announce-bar" id="announceBar">
+            <div class="container announce-bar-inner">
+                <p class="announce-bar-text">
+                    <i class="fas fa-scissors" aria-hidden="true"></i>
+                    New client special — 20% off your first cut. <a href="booking/booking.html">Book now →</a>
+                </p>
+            </div>
+        </div>
+
+        <header class="header">
+            <div class="container">
+                <nav class="navbar">
+                    <div class="logo">
+                        <a href="index.html">
+                            <img src="images/toughcutslogo.png" alt="Toughcuts Logo" />
+                        </a>
+                    </div>
+
+                    <ul class="nav-menu" id="navMenu">
+                        <li><a href="index.html">HOME</a></li>
+                        <li><a href="studio/studio.html">STUDIO</a></li>
+                        <li><a href="products/products.html">PRODUCTS</a></li>
+                        <li><a href="services/services.html">SERVICES</a></li>
+                        <li><a href="aboutus/about.html">ABOUT US</a></li>
+
+                        <li class="nav-menu-divider" aria-hidden="true"></li>
+                        <li class="nav-menu-search">
+                            <form class="mobile-search-form" role="search" onsubmit="return false;">
+                                <i class="fas fa-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search styles, products..." aria-label="Search" />
+                            </form>
+                        </li>
+                        <li class="nav-menu-auth">
+                            <a href="login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="login/signup.html" class="nav-auth-btn">Sign Up</a>
+                        </li>
+                        <li>
+                            <a href="booking/booking.html" class="btn-book nav-menu-book">Book Appointment</a>
+                        </li>
+                    </ul>
+
+                    <div class="nav-actions">
+                        <button class="icon-btn" id="searchToggle" aria-label="Search" aria-expanded="false">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+
+                        <a href="cart/cart.html" class="cart-icon" id="cartIcon" aria-label="View cart, 0 items">
+                            <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                            <span class="cart-count">0</span>
+                        </a>
+
+                        <a href="account/account.html" class="account-icon" id="accountIcon" aria-label="View account" hidden>
+                            <span class="account-icon-avatar" id="accountIconAvatar" aria-hidden="true">A</span>
+                        </a>
+
+                        <div class="nav-auth">
+                            <a href="login/login.html" class="nav-auth-link">Log In</a>
+                            <a href="login/signup.html" class="nav-auth-btn">Sign Up</a>
+                        </div>
+
+                        <a href="booking/booking.html" class="btn-book">Book Appointment</a>
+
+                        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-expanded="false">
+                            <i class="fas fa-bars" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
+
+                <div class="header-search-panel" id="headerSearchPanel">
+                    <form class="header-search-form" role="search" onsubmit="return false;">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="search" id="headerSearchInput" placeholder="Search styles, products, services..." aria-label="Search" />
+                        <button type="button" class="header-search-close" id="headerSearchClose" aria-label="Close search">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </header>
+
+    </div>
+
+    <!-- ==========================================
+    HERO
+    ========================================== -->
+    <section class="legal-hero">
+        <div class="container">
             <span class="section-badge">TOUGHCUTS</span>
-            <h1>Terms of Service</h1>
-            <p><strong>Last updated: August 23, 2026</strong></p>
-            <p>By using this website, you agree to use it lawfully and to provide accurate information when creating an account, booking an appointment, or placing an order. This general notice should be reviewed and customized by the business before launch.</p>
-            <h2>Appointments</h2>
-            <p>Appointment availability is shown for planning purposes. A booking is subject to confirmation by Toughcuts. Please provide accurate contact details and cancel or reschedule as early as possible if your plans change.</p>
-            <h2>Products and orders</h2>
-            <p>Product availability and prices are checked when an order is placed. An order may be declined or adjusted if an item becomes unavailable, a price is incorrect, or the information provided is incomplete. Delivery fees and supported areas are shown at checkout.</p>
-            <h2>Payments</h2>
-            <p>Online payments are processed by the payment provider shown during checkout. Toughcuts does not receive or store your full card details. Cash orders are payable at pickup or delivery as displayed at checkout.</p>
-            <h2>Acceptable use</h2>
-            <p>You must not misuse the site, attempt unauthorized access, interfere with other customers’ accounts, or submit content intended to harm the service.</p>
-            <h2>Contact</h2>
-            <p>For questions about an appointment, order, or these terms, contact Toughcuts through the contact details published on the website.</p>
-            <a class="legal-back" href="index.html">← Back to Toughcuts</a>
-        </article>
-    </main>
+            <h1 class="legal-title">Terms of Service</h1>
+            <span class="legal-updated"><i class="fas fa-clock" aria-hidden="true"></i> Last updated: August 23, 2026</span>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    CONTENT
+    ========================================== -->
+    <section class="legal-page">
+        <div class="container">
+            <div class="legal-layout">
+
+                <!-- Desktop sticky nav -->
+                <nav class="legal-toc" aria-label="Sections in this policy">
+                    <span class="legal-toc-label">On this page</span>
+                    <ol>
+                        <li><a href="#appointments">Appointments</a></li>
+                        <li><a href="#orders">Products and orders</a></li>
+                        <li><a href="#payments">Payments</a></li>
+                        <li><a href="#use">Acceptable use</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ol>
+                </nav>
+
+                <div class="legal-content">
+
+                    <!-- Mobile-only collapsible nav -->
+                    <details class="legal-toc-mobile">
+                        <summary>On this page <i class="fas fa-chevron-down" aria-hidden="true"></i></summary>
+                        <ol>
+                            <li><a href="#appointments">Appointments</a></li>
+                            <li><a href="#orders">Products and orders</a></li>
+                            <li><a href="#payments">Payments</a></li>
+                            <li><a href="#use">Acceptable use</a></li>
+                            <li><a href="#contact">Contact</a></li>
+                        </ol>
+                    </details>
+
+                    <div class="legal-note">
+                        <i class="fas fa-circle-info" aria-hidden="true"></i>
+                        <p>By using this website, you agree to use it lawfully and to provide accurate information when creating an account, booking an appointment, or placing an order. This is a general notice and should be reviewed and customized by the business before launch.</p>
+                    </div>
+
+                    <section id="appointments">
+                        <h2><span class="legal-num">01</span> Appointments</h2>
+                        <p>Appointment availability is shown for planning purposes. A booking is subject to confirmation by Toughcuts. Please provide accurate contact details and cancel or reschedule as early as possible if your plans change.</p>
+                    </section>
+
+                    <section id="orders">
+                        <h2><span class="legal-num">02</span> Products and orders</h2>
+                        <p>Product availability and prices are checked when an order is placed. An order may be declined or adjusted if an item becomes unavailable, a price is incorrect, or the information provided is incomplete. Delivery fees and supported areas are shown at checkout.</p>
+                    </section>
+
+                    <section id="payments">
+                        <h2><span class="legal-num">03</span> Payments</h2>
+                        <p>Online payments are processed by the payment provider shown during checkout. Toughcuts does not receive or store your full card details. Cash orders are payable at pickup or delivery as displayed at checkout.</p>
+                    </section>
+
+                    <section id="use">
+                        <h2><span class="legal-num">04</span> Acceptable use</h2>
+                        <p>You must not misuse the site, attempt unauthorized access, interfere with other customers' accounts, or submit content intended to harm the service.</p>
+                    </section>
+
+                    <section id="contact">
+                        <h2><span class="legal-num">05</span> Contact</h2>
+                        <p>For questions about an appointment, order, or these terms, contact Toughcuts through the contact details published on the website.</p>
+                    </section>
+
+                    <div class="legal-back-row">
+                        <a class="legal-back" href="index.html"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Toughcuts</a>
+                        <button class="legal-print-btn" type="button" onclick="window.print()">
+                            <i class="fas fa-print" aria-hidden="true"></i> Print this page
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==========================================
+    FOOTER
+    ========================================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+
+                <div class="footer-brand">
+                    <img class="footer-logo" src="images/toughcutslogo.png" alt="Toughcuts Logo" loading="lazy" />
+                    <p>Precision cuts, premium style, pure confidence. Modern craftsmanship in a classic atmosphere.</p>
+                    <div class="footer-social">
+                        <a href="https://www.instagram.com/_toughcuts/" class="footer-social-link" aria-label="Toughcuts on Instagram">
+                            <i class="fab fa-instagram" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on Facebook">
+                            <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                        </a>
+                        <a href="#" class="footer-social-link" aria-label="Toughcuts on TikTok">
+                            <i class="fab fa-tiktok" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="footer-links">
+                    <h4>QUICK LINKS</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="studio/studio.html">Studio</a></li>
+                        <li><a href="products/products.html">Products</a></li>
+                        <li><a href="services/services.html">Services</a></li>
+                        <li><a href="aboutus/about.html">About Us</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-hours">
+                    <h4>BUSINESS HOURS</h4>
+                    <div class="footer-hours-row">
+                        <span>Mon — Fri</span>
+                        <span>9:00 AM – 8:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Saturday</span>
+                        <span>9:00 AM – 6:00 PM</span>
+                    </div>
+                    <div class="footer-hours-row">
+                        <span>Sunday</span>
+                        <span>Closed</span>
+                    </div>
+                </div>
+
+                <div class="footer-contact">
+                    <h4>TALK TO US</h4>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> 04 398 3985 2092</p>
+                    <p><i class="fas fa-phone" aria-hidden="true"></i> +76 209 1092 4095</p>
+                    <p class="footer-email"><i class="fas fa-envelope" aria-hidden="true"></i> info@toughcuts.com</p>
+                </div>
+
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 <strong>Toughcuts</strong>. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="privacy.html">Privacy Policy</a>
+                    <span aria-hidden="true">·</span>
+                    <a href="terms.html">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==========================================
+    AI CHAT WIDGET
+    ========================================== -->
+    <div class="chat-widget" id="chatWidget">
+        <button class="chat-toggle" id="chatToggle" aria-label="Open chat">
+            <i class="fas fa-comment-dots" aria-hidden="true"></i>
+        </button>
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <i class="fas fa-robot" aria-hidden="true"></i>
+                <span>Toughcuts AI</span>
+                <button class="chat-close" id="chatClose" aria-label="Close chat">&times;</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <p>Hi there! Welcome to Toughcuts. How can I help you today?</p>
+                    <small>Ask about services, booking, or products</small>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message..." aria-label="Type your message" />
+                <button id="chatSend" aria-label="Send message"><i class="fas fa-paper-plane" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/order-notifications.js"></script>
 </body>
 </html>

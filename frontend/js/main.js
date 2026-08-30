@@ -1635,34 +1635,35 @@ document.addEventListener('keydown', function (e) {
 // Products page can register this optional getter after the shared script
 // loads. Other pages do not have to load the catalog module, so the guard
 // remains permissive there and the server must still enforce stock at checkout.
+// Returns { ok, message }. Kept as a message instead of alert()ing directly
+// so the calling button can show the reason inline rather than blocking
+// the page with a dialog.
 async function canAddStockAwareCartItem(productId, quantity) {
-    if (!Number.isFinite(quantity) || quantity <= 0) return false;
-    if (typeof window.getCustomerProductStock !== 'function') return true;
+    if (!Number.isFinite(quantity) || quantity <= 0) return { ok: false, message: "Couldn't add" };
+    if (typeof window.getCustomerProductStock !== 'function') return { ok: true };
 
     const stock = window.getCustomerProductStock(productId);
-    if (!stock) return true;
+    if (!stock) return { ok: true };
 
     if (!stock.ready) {
-        alert(stock.error
-            ? 'Stock availability is temporarily unavailable. Please refresh and try again.'
-            : 'Stock availability is still loading. Please try again in a moment.');
-        return false;
+        return {
+            ok: false,
+            message: stock.error ? 'Try refreshing' : 'Still loading'
+        };
     }
 
     if (!stock.isActive || stock.stock <= 0) {
-        alert('This product is currently out of stock.');
-        return false;
+        return { ok: false, message: 'Out of stock' };
     }
 
     const cart = await fetchCartRows();
     const existing = cart.find(item => item.id === productId);
     const requestedTotal = (existing ? existing.quantity : 0) + quantity;
     if (requestedTotal > stock.stock) {
-        alert(`Only ${stock.stock} ${stock.stock === 1 ? 'unit is' : 'units are'} currently available.`);
-        return false;
+        return { ok: false, message: `Only ${stock.stock} left` };
     }
 
-    return true;
+    return { ok: true };
 }
 
 // Adds (or increments) a line item via the add_to_cart RPC — a single
@@ -1670,8 +1671,15 @@ async function canAddStockAwareCartItem(productId, quantity) {
 // tabs can't race each other the way a client-side read-modify-write
 // could. See cart_items_migration.sql for the function definition.
 async function addToCart(productId, name, price, quantity = 1, opts = {}) {
+    addToCart.lastError = null;
+
     if (!isLoggedIn() || typeof supabaseClient === 'undefined') return false;
-    if (!(await canAddStockAwareCartItem(productId, quantity))) return false;
+
+    const stockCheck = await canAddStockAwareCartItem(productId, quantity);
+    if (!stockCheck.ok) {
+        addToCart.lastError = stockCheck.message || "Couldn't add";
+        return false;
+    }
 
     const { error } = await supabaseClient.rpc('add_to_cart', {
         p_product_id: productId,
@@ -1682,15 +1690,11 @@ async function addToCart(productId, name, price, quantity = 1, opts = {}) {
 
     if (error) {
         console.warn('Could not add to cart:', error.message);
-        alert("Couldn't add that to your cart — please try again.");
+        addToCart.lastError = "Couldn't add";
         return false;
     }
 
     initCartCounter();
-
-    if (!opts.silent) {
-        alert(`${name} added to cart!`);
-    }
     return true;
 }
 
@@ -1698,6 +1702,8 @@ async function addToCart(productId, name, price, quantity = 1, opts = {}) {
 // Signed-out visitors get the login/signup gate instead of an immediate add.
 function initAddToCart() {
     document.querySelectorAll('.product-btn').forEach(btn => {
+        const originalLabel = btn.textContent;
+
         btn.addEventListener('click', async function(e) {
             e.preventDefault();
             const { id, name, price } = this.dataset;
@@ -1708,9 +1714,45 @@ function initAddToCart() {
                 return;
             }
 
-            await addToCart(id, name, parseFloat(price));
+            if (this.classList.contains('is-loading')) return; // ignore double-clicks mid-request
+
+            this.classList.remove('is-added', 'has-error');
+            this.classList.add('is-loading');
+
+            const added = await addToCart(id, name, parseFloat(price));
+
+            this.classList.remove('is-loading');
+
+            if (added) {
+                this.classList.add('is-added');
+                this.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Added';
+                bumpCartCount();
+                setTimeout(() => {
+                    this.classList.remove('is-added');
+                    this.textContent = originalLabel;
+                }, 1600);
+            } else {
+                this.classList.add('has-error');
+                this.textContent = addToCart.lastError || "Couldn't add";
+                setTimeout(() => {
+                    this.classList.remove('has-error');
+                    this.textContent = originalLabel;
+                }, 2200);
+            }
         });
     });
+}
+
+// Brief scale-up on the header cart badge so a successful add is felt,
+// not just implied by a number changing quietly in the corner.
+function bumpCartCount() {
+    const count = document.querySelector('.cart-count');
+    if (!count) return;
+    count.classList.remove('bump');
+    // Force reflow so the animation can restart if it's already bumping
+    // (e.g. two quick adds in a row).
+    void count.offsetWidth;
+    count.classList.add('bump');
 }
 
 // Wires every .product-buy-btn in the DOM — same login gate as Add to Cart,
@@ -1720,6 +1762,8 @@ function initAddToCart() {
 // the current page sits in the folder structure (root vs. products/, etc).
 function initBuyNow() {
     document.querySelectorAll('.product-buy-btn').forEach(btn => {
+        const originalLabel = btn.textContent;
+
         btn.addEventListener('click', async function(e) {
             e.preventDefault();
             const { id, name, price } = this.dataset;
@@ -1730,8 +1774,21 @@ function initBuyNow() {
                 return;
             }
 
+            if (this.classList.contains('is-loading')) return;
+            this.classList.add('is-loading');
+
             const added = await addToCart(id, name, parseFloat(price), 1, { silent: true });
-            if (!added) return;
+
+            if (!added) {
+                this.classList.remove('is-loading');
+                this.classList.add('has-error');
+                this.textContent = addToCart.lastError || "Couldn't add";
+                setTimeout(() => {
+                    this.classList.remove('has-error');
+                    this.textContent = originalLabel;
+                }, 2200);
+                return;
+            }
 
             const cartLink = document.getElementById('cartIcon');
             if (cartLink) {
@@ -1789,34 +1846,50 @@ function initAuthGate() {
 // ============================================
 // PRODUCT CATEGORY TABS
 // ============================================
+// Filters by re-querying `.product-card` each time rather than caching a
+// NodeList at setup, because the products page grid is now rendered
+// dynamically by products.js (from Supabase) after this runs — a cached
+// list taken here would just be empty. applyCategoryFilter() is exported
+// so products.js can re-apply the current tab's filter once its grid
+// render finishes.
+function applyCategoryFilter() {
+    const activeTab = document.querySelector('.category-tab.active')
+        || document.querySelector('.category-tab[data-category="all"]');
+    if (!activeTab) return;
+
+    const category = activeTab.dataset.category;
+    document.querySelectorAll('.product-card').forEach(product => {
+        const show = category === 'all' || product.dataset.category === category;
+        product.style.display = show ? 'flex' : 'none';
+    });
+}
+
 function initCategoryTabs() {
     const tabs = document.querySelectorAll('.category-tab');
-    const products = document.querySelectorAll('.product-card');
-
-    if (!tabs.length || !products.length) return;
+    if (!tabs.length) return;
 
     tabs.forEach(tab => {
         tab.addEventListener('click', function() {
             tabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-
-            const category = this.dataset.category;
-
-            products.forEach(product => {
-                const show = category === 'all' || product.dataset.category === category;
-                product.style.display = show ? 'flex' : 'none';
-            });
+            applyCategoryFilter();
         });
     });
 
-    // Deep-link support: ?category=wax preselects that tab on load.
-    // Used by site search results (see initSiteSearch) so a product hit
-    // lands on the right filtered view instead of just the top of the page.
+    // Deep-link support: ?category=wax preselects that tab on load (used
+    // by site search — see initSiteSearch). Only the active-tab class is
+    // set here; the actual filtering is applied by applyCategoryFilter(),
+    // called again once product cards actually exist in the DOM.
     const requestedCategory = new URLSearchParams(window.location.search).get('category');
     if (requestedCategory) {
         const match = Array.from(tabs).find(t => t.dataset.category === requestedCategory);
-        if (match) match.click();
+        if (match) {
+            tabs.forEach(t => t.classList.remove('active'));
+            match.classList.add('active');
+        }
     }
+
+    applyCategoryFilter();
 }
 
 // ============================================

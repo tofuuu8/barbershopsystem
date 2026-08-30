@@ -1,0 +1,379 @@
+/* ============================================
+   LEGAL PAGES — Privacy Policy & Terms of Service
+   Replaces the old one-off inline <style> block (which used an
+   out-of-family yellow, #f4c430, and skipped the site's real header/
+   footer). Built on the same tokens as every other page: --steel for
+   accent, --card/--line for surfaces, --off/--dim for body text.
+   ============================================ */
+
+.legal-hero {
+    padding: 64px 0 40px;
+    background: var(--black);
+    text-align: center;
+}
+
+.legal-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 3rem;
+    line-height: 1.05;
+    letter-spacing: -0.5px;
+    color: var(--white);
+    margin: 6px 0 14px;
+}
+
+.legal-updated {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--dim);
+}
+
+.legal-updated i {
+    color: var(--steel);
+    font-size: 0.8rem;
+}
+
+/* ============================================
+   LAYOUT — sticky "on this page" nav + reading column
+   ============================================ */
+.legal-page {
+    padding: 12px 0 100px;
+    background: var(--black);
+}
+
+.legal-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 56px;
+    align-items: start;
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+/* --------------------------------------------
+   Desktop TOC — plain text links, not pill buttons; a legal document
+   is reference material, not a set of choices, so the nav should
+   read as quiet signage, not another set of CTAs.
+   -------------------------------------------- */
+.legal-toc {
+    position: sticky;
+    top: 110px;
+}
+
+.legal-toc-label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--faint, rgba(255,255,255,.28));
+    margin-bottom: 14px;
+}
+
+.legal-toc ol {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 1px solid var(--line);
+}
+
+.legal-toc a {
+    display: block;
+    padding: 8px 0 8px 16px;
+    margin-left: -1px;
+    border-left: 1px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    color: var(--dim);
+    transition: var(--transition);
+}
+
+.legal-toc a:hover {
+    color: var(--white);
+    border-left-color: var(--steel-dim);
+}
+
+.legal-toc a:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Mobile-only "On this page" dropdown — a <details> element, so it
+   works with zero JS and gets a native disclosure affordance people
+   already know from their OS. */
+.legal-toc-mobile {
+    display: none;
+}
+
+/* --------------------------------------------
+   Reading column
+   -------------------------------------------- */
+.legal-content {
+    max-width: 640px;
+}
+
+.legal-content section {
+    padding-bottom: 40px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: 100px;
+}
+
+.legal-content section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.legal-content h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.4rem;
+    letter-spacing: 0.3px;
+    color: var(--white);
+    margin-bottom: 16px;
+}
+
+.legal-content h2 .legal-num {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--faint, rgba(255,255,255,.28));
+    letter-spacing: 0.5px;
+}
+
+.legal-content p {
+    font-family: var(--font-body);
+    font-size: 0.98rem;
+    color: var(--off);
+    line-height: 1.85;
+    margin-bottom: 14px;
+}
+
+.legal-content p:last-child {
+    margin-bottom: 0;
+}
+
+.legal-content ul {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 4px 0 4px 4px;
+}
+
+.legal-content li {
+    position: relative;
+    padding-left: 22px;
+    font-family: var(--font-body);
+    font-size: 0.96rem;
+    color: var(--off);
+    line-height: 1.75;
+}
+
+.legal-content li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--steel);
+}
+
+.legal-content strong {
+    color: var(--white);
+    font-weight: 600;
+}
+
+.legal-content a:not(.legal-back) {
+    color: var(--steel);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--steel-dim);
+    transition: var(--transition);
+}
+
+.legal-content a:not(.legal-back):hover {
+    text-decoration-color: var(--steel);
+}
+
+/* A quiet callout for the one honest disclosure this template needs:
+   it's a starting point, not finished legal copy. Distinct from the
+   error/success tokens on purpose — this isn't a form state. */
+.legal-note {
+    display: flex;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 36px;
+}
+
+.legal-note i {
+    color: var(--steel);
+    font-size: 0.95rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.legal-note p {
+    font-size: 0.86rem;
+    color: var(--dim);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.legal-back-row {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.legal-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--off);
+    transition: var(--transition);
+}
+
+.legal-back:hover {
+    color: var(--white);
+}
+
+.legal-back:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+.legal-print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 50px;
+    padding: 10px 20px;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--dim);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.legal-print-btn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--white);
+}
+
+.legal-print-btn:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+.legal-print-btn:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 860px) {
+    .legal-layout {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .legal-toc { display: none; }
+
+    .legal-toc-mobile {
+        display: block;
+        margin-bottom: 32px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+    .legal-toc-mobile summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--white);
+        cursor: pointer;
+        list-style: none;
+    }
+    .legal-toc-mobile summary::-webkit-details-marker { display: none; }
+    .legal-toc-mobile summary i { color: var(--dim); transition: transform 0.2s ease; }
+    .legal-toc-mobile[open] summary i { transform: rotate(180deg); }
+    .legal-toc-mobile summary:focus-visible {
+        outline: 2px solid var(--steel);
+        outline-offset: -2px;
+    }
+    .legal-toc-mobile ol {
+        list-style: none;
+        border-top: 1px solid var(--line);
+        padding: 6px 18px 14px;
+    }
+    .legal-toc-mobile a {
+        display: block;
+        padding: 9px 0;
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        color: var(--off);
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .legal-hero { padding: 44px 0 28px; }
+    .legal-title { font-size: 2.1rem; }
+    .legal-content section { padding-bottom: 30px; margin-bottom: 30px; }
+    .legal-back-row { flex-direction: column-reverse; align-items: stretch; }
+    .legal-print-btn { justify-content: center; }
+}
+
+/* ============================================
+   PRINT — a legal page is one of the few things people actually print
+   ============================================ */
+@media print {
+    .site-header-group,
+    .footer,
+    .chat-widget,
+    .legal-toc,
+    .legal-toc-mobile,
+    .legal-back-row {
+        display: none !important;
+    }
+    body, .legal-page { background: #fff !important; }
+    .legal-title, .legal-content h2, .legal-content strong { color: #000 !important; }
+    .legal-content p, .legal-content li, .legal-updated { color: #222 !important; }
+    .legal-content section { border-color: #ccc !important; }
+}

@@ -22,6 +22,32 @@
     font-family: var(--font-body);
 }
 
+/* --------------------------------------------
+   Inline form feedback — the shared .login-error /
+   .recovery-resent-note components already carry their base look;
+   this just gives them a deliberate entrance instead of popping in,
+   and a shared height rule to prevent a layout jump on the form
+   above/below it as it appears and disappears.
+   -------------------------------------------- */
+#accountProfileError:not([hidden]),
+#accountPasswordError:not([hidden]),
+#accountProfileSuccess:not([hidden]),
+#accountPasswordSuccess:not([hidden]) {
+    animation: accountFeedbackIn 0.24s cubic-bezier(.16,1,.3,1) both;
+}
+
+@keyframes accountFeedbackIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #accountProfileError:not([hidden]),
+    #accountPasswordError:not([hidden]),
+    #accountProfileSuccess:not([hidden]),
+    #accountPasswordSuccess:not([hidden]) { animation: none; }
+}
+
 .account-field-optional {
     text-transform: none;
     letter-spacing: normal;
@@ -450,5 +476,30 @@
 }
 
 .account-checkbox-label input { accent-color: var(--steel, #d8d2c4); }
+
+.account-checkbox-label input { width: 17px; height: 17px; }
+
+.account-checkbox-label input:focus-visible {
+    outline: 2px solid var(--steel, #d8d2c4);
+    outline-offset: 3px;
+}
+
+/* Larger hit area on touch without changing the visual checkbox size */
+@media (max-width: 640px) {
+    .account-checkbox-label {
+        padding: 6px 0;
+        min-height: 44px;
+    }
+}
+
+.account-logout-btn:focus-visible {
+    outline: 2px solid #f2a6a1;
+    outline-offset: 3px;
+}
+
+.account-logout-btn:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
 #accountPreferredBarberInput,
 #accountFulfillmentInput { appearance: auto; }

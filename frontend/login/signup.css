@@ -55,7 +55,7 @@
 }
 
 .password-checklist li.met i {
-    color: #4caf7d;
+    color: var(--olive);
 }
 
 .signup-terms {

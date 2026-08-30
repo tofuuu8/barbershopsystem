@@ -3,11 +3,15 @@
 // ============================================
 // Login-gated the same way cart.html is. isLoggedIn() / getCurrentUser() /
 // authReadyPromise / getRedirectParam() come from js/main.js. getCart() /
-// saveCart() / formatPHP() / cartProductImages come from cart.js, loaded
+// clearCart() / formatPHP() / cartProductImages come from cart.js, loaded
 // right before this file (see checkout.html) purely for those helpers —
 // cart.js's own DOMContentLoaded handler no-ops harmlessly here since
 // none of #cartGate/#cartContent/#cartItems/#cartCheckoutBtn exist on
 // this page.
+//
+// getCart() now reads from Supabase (async) rather than localStorage, so
+// this page fetches it once at load into `checkoutCart` and reads that
+// local copy everywhere else — see the STATE section below.
 //
 // Two payment methods now: Cash on Pickup/Delivery (unchanged — writes
 // directly to `orders`/`order_items` client-side) and Pay Online via
@@ -49,6 +53,13 @@
 // --------------------------------------------
 let currentFulfillment = 'pickup'; // 'pickup' | 'delivery'
 let currentPaymentMethod = 'cod'; // 'cod' | 'online'
+
+// cart.js's getCart() now reads from Supabase (async), rather than the
+// old synchronous localStorage read — fetched once here at page load
+// and cached, since nothing on this page lets a visitor edit cart
+// contents/quantities directly (that only happens on cart.html). Every
+// place that used to call getCart() synchronously reads this instead.
+let checkoutCart = [];
 
 // Address needs to be more than just "not blank" — matches booking.js's
 // MIN_ADDRESS_LENGTH for the same reason (a couple of characters isn't
@@ -113,7 +124,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         cancellationSucceeded = await cancelReturnedPaymentOrder(returningOrderId);
     }
 
-    if (!getCart().length) {
+    checkoutCart = await getCart();
+    if (!checkoutCart.length) {
         showEmptyCart();
         if (paymentResult === 'cancelled') showCancelledEmptyNote(cancellationSucceeded);
         return;
@@ -350,7 +362,7 @@ function renderSummaryItems() {
     const wrap = document.getElementById('checkoutSummaryItems');
     if (!wrap) return;
 
-    const cart = getCart();
+    const cart = checkoutCart;
     wrap.innerHTML = cart.map(function (item) {
         const image = (typeof cartProductImages !== 'undefined' && cartProductImages[item.id]) || '';
         const safeName = escapeHtml(item.name);
@@ -372,7 +384,7 @@ function renderSummaryItems() {
 }
 
 function cartSubtotal() {
-    return getCart().reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return checkoutCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
 
 function currentSelection() {
@@ -530,7 +542,7 @@ function initCheckoutForm() {
         hideCheckoutError();
 
         const sel = currentSelection();
-        const cart = getCart();
+        const cart = checkoutCart;
 
         if (!cart.length) {
             showCheckoutError('Your cart is empty — nothing to check out.');
@@ -610,7 +622,7 @@ function initCheckoutForm() {
         // The server transaction has already recalculated totals, inserted
         // line items, and reserved stock. Only clear the local shopping list
         // after that authoritative operation succeeds.
-        saveCart([]);
+        await clearCart();
         showCheckoutSuccess(order, sel);
     });
 }
@@ -664,7 +676,7 @@ async function submitOnlinePayment(sel, cart, confirmBtn, btnText, spinner) {
     // spoken for either way now — clear it before leaving for PayMongo
     // rather than after, so a customer who comes straight back can't
     // accidentally create a second reservation for the same items.
-    saveCart([]);
+    await clearCart();
     window.location.href = data.checkoutUrl;
 }
 
@@ -698,7 +710,7 @@ async function handlePaymentSuccessReturn(orderId) {
 
         if (!error && order) {
             if (order.payment_status === 'paid') {
-                saveCart([]); // belt-and-suspenders — already cleared before the PayMongo redirect
+                await clearCart(); // belt-and-suspenders — already cleared before the PayMongo redirect
                 if (pending) pending.hidden = true;
                 showCheckoutSuccess(order, { phone: order.contact_phone || '', name: order.customer_name || '' });
                 return;

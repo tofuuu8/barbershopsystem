@@ -10,7 +10,8 @@ let barbers = [];
 // ============================================
 async function loadBarbers() {
     console.log('🔄 Loading barbers from Supabase...');
-    
+    showBarberSkeleton();
+
     try {
         const { data, error } = await supabaseClient
             .from('barbers')
@@ -36,6 +37,24 @@ async function loadBarbers() {
         console.error('❌ Error:', error);
         showBarberError('Something went wrong. Please try again.');
     }
+}
+
+// ============================================
+// LOADING SKELETON
+// Shown immediately on page load so the grid never sits blank
+// while waiting on the Supabase response.
+// ============================================
+function showBarberSkeleton(count = 4) {
+    const grid = document.getElementById('barberGrid');
+    if (!grid) return;
+    grid.innerHTML = Array.from({ length: count }).map(() => `
+        <div class="barber-card-skel" aria-hidden="true">
+            <div class="skel-photo"></div>
+            <div class="skel-line" style="width:60%;height:16px;"></div>
+            <div class="skel-line" style="width:40%;"></div>
+            <div class="skel-line" style="width:80%;"></div>
+        </div>
+    `).join('');
 }
 
 function showBarberError(message) {
