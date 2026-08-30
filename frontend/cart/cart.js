@@ -1,8 +1,11 @@
 // ============================================
 // CART PAGE
 // ============================================
-// isLoggedIn() / addToCart() / initCartCounter() come from main.js,
-// which is loaded on this page before cart.js.
+// isLoggedIn() / initCartCounter() / migrateLocalCartToSupabase() come
+// from main.js, which is loaded on this page before cart.js. Cart data
+// itself lives in the Supabase `cart_items` table (see
+// cart_items_migration.sql) — RLS scopes every row to auth.uid(), so
+// this file only ever sees the signed-in visitor's own items.
 
 // Root-relative photo lookup for the sample catalog so cart rows show a
 // real thumbnail instead of a bare placeholder. Anything not listed here
@@ -20,44 +23,36 @@ const cartProductImages = {
     'latest-matte-spray': '../images/products/matte-spray.jpg'
 };
 
-function normalizeCart(items) {
-    if (!Array.isArray(items)) return [];
-
-    const byId = new Map();
-    items.forEach(function (item) {
-        const id = String(item && item.id || '').trim();
-        const name = String(item && item.name || '').trim();
-        const price = Number(item && item.price);
-        const quantity = item && item.quantity;
-        if (!id || !name || !Number.isFinite(price) || price < 0 || typeof quantity !== 'number'
-            || !Number.isInteger(quantity) || quantity <= 0) return;
-
-        const existing = byId.get(id);
-        if (existing) existing.quantity += quantity;
-        else byId.set(id, { id, name, price, quantity });
-    });
-    return [...byId.values()];
-}
-
-function getCart() {
-    try {
-        return normalizeCart(JSON.parse(localStorage.getItem('toughcuts_cart') || '[]'));
-    } catch (e) {
-        return [];
-    }
-}
-
-function saveCart(cart) {
-    localStorage.setItem('toughcuts_cart', JSON.stringify(normalizeCart(cart)));
-    if (typeof initCartCounter === 'function') initCartCounter();
-}
-
 function formatPHP(amount) {
     const value = Number(amount);
     return 'PHP ' + (Number.isFinite(value) ? value : 0).toLocaleString('en-PH');
 }
 
-function renderCartPage() {
+// Reads the signed-in visitor's cart straight from Supabase. RLS already
+// restricts this to their own rows, so there's no user filter to add
+// client-side.
+async function getCart() {
+    if (typeof supabaseClient === 'undefined' || !isLoggedIn()) return [];
+
+    const { data, error } = await supabaseClient
+        .from('cart_items')
+        .select('product_id, name, price, quantity')
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.warn('Could not load cart:', error.message);
+        return [];
+    }
+
+    return (data || []).map(row => ({
+        id: row.product_id,
+        name: row.name,
+        price: Number(row.price),
+        quantity: row.quantity
+    }));
+}
+
+async function renderCartPage() {
     const gate = document.getElementById('cartGate');
     const content = document.getElementById('cartContent');
     if (!gate || !content) return;
@@ -72,7 +67,7 @@ function renderCartPage() {
     gate.hidden = true;
     content.hidden = false;
 
-    const cart = getCart();
+    const cart = await getCart();
     const empty = document.getElementById('cartEmpty');
     const layout = document.getElementById('cartLayout');
     const itemsWrap = document.getElementById('cartItems');
@@ -127,23 +122,51 @@ function renderCartPage() {
     subtotalEl.textContent = formatPHP(subtotal);
 }
 
-function updateItemQuantity(id, delta) {
-    let cart = getCart();
+// Updates one line item's quantity by `delta` (+1/-1), deleting the row
+// once quantity reaches zero rather than storing a zero-quantity row —
+// that keeps cart_items a true "what's actually in the cart" table.
+//
+// This does a read-then-write (fetch the current quantity, then set the
+// new one), which is fine for a single visitor clicking their own +/-
+// buttons in one tab, but — unlike addToCart()'s add_to_cart RPC — it
+// isn't race-proof against two simultaneous writers (e.g. the same
+// account open in two tabs at once). Worth moving to a similar RPC if
+// that scenario turns out to matter in practice.
+async function updateItemQuantity(id, delta) {
+    if (typeof supabaseClient === 'undefined' || !isLoggedIn()) return;
+
+    const cart = await getCart();
     const item = cart.find(i => i.id === id);
     if (!item) return;
 
-    item.quantity += delta;
-    if (item.quantity <= 0) {
-        cart = cart.filter(i => i.id !== id);
+    const newQuantity = item.quantity + delta;
+
+    const { error } = newQuantity <= 0
+        ? await supabaseClient.from('cart_items').delete().eq('product_id', id)
+        : await supabaseClient.from('cart_items').update({ quantity: newQuantity }).eq('product_id', id);
+
+    if (error) {
+        console.warn('Could not update cart item:', error.message);
+        alert("Couldn't update that item — please try again.");
+        return;
     }
 
-    saveCart(cart);
+    if (typeof initCartCounter === 'function') initCartCounter();
     renderCartPage();
 }
 
-function removeItem(id) {
-    const cart = getCart().filter(i => i.id !== id);
-    saveCart(cart);
+async function removeItem(id) {
+    if (typeof supabaseClient === 'undefined' || !isLoggedIn()) return;
+
+    const { error } = await supabaseClient.from('cart_items').delete().eq('product_id', id);
+
+    if (error) {
+        console.warn('Could not remove cart item:', error.message);
+        alert("Couldn't remove that item — please try again.");
+        return;
+    }
+
+    if (typeof initCartCounter === 'function') initCartCounter();
     renderCartPage();
 }
 
@@ -186,7 +209,15 @@ function initCheckoutButton() {
 // authReadyPromise in main.js for the full explanation.
 document.addEventListener('DOMContentLoaded', async function () {
     await authReadyPromise;
-    renderCartPage();
+
+    // Sweep any leftover localStorage cart (from before the Supabase
+    // migration) in before the first render, so someone who added items
+    // under the old system sees them here instead of an empty cart.
+    if (typeof migrateLocalCartToSupabase === 'function') {
+        await migrateLocalCartToSupabase();
+    }
+
+    await renderCartPage();
     initCartItemActions();
     initCheckoutButton();
 

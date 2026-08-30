@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initPreserveRedirectLinks();
     initPasswordToggles();
     updateAuthUI();
+    migrateLocalCartToSupabase();
     setupVideoToggle('styleVideo', 'videoPlayBtn', '.video-container');
     setupVideoToggle('teamVideo', 'teamVideoBtn', '.area-video');
     initScrollAutoplay(['styleVideo', 'teamVideo']);
@@ -1317,30 +1318,45 @@ function initChatWidget() {
 // ============================================
 // CART COUNTER
 // ============================================
-function readSafeCart() {
-    try {
-        const raw = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
-        if (!Array.isArray(raw)) return [];
-        return raw
-            .map(item => ({
-                id: String(item && item.id || '').trim(),
-                name: String(item && item.name || '').trim(),
-                price: Number(item && item.price),
-                quantity: item && item.quantity
-            }))
-            .filter(item => item.id && item.name && Number.isFinite(item.price) && item.price >= 0
-                && typeof item.quantity === 'number' && Number.isInteger(item.quantity) && item.quantity > 0);
-    } catch (e) {
+// Cart data lives in the Supabase `cart_items` table — one row per
+// (user, product), scoped by RLS to auth.uid() = user_id. This replaces
+// an earlier localStorage-only cart, which was keyed to the browser
+// rather than the account: on a shared computer, one signed-in visitor
+// could see the previous visitor's cart. Since every add-to-cart/buy-now
+// action already requires being logged in (see openAuthGate below),
+// there's no signed-out cart to keep supporting.
+//
+// See cart_items_migration.sql for the table/RLS/function definitions,
+// and migrateLocalCartToSupabase() further down for the one-time sweep
+// of anyone's pre-existing localStorage cart into this table.
+async function fetchCartRows() {
+    if (typeof supabaseClient === 'undefined' || !isLoggedIn()) return [];
+
+    const { data, error } = await supabaseClient
+        .from('cart_items')
+        .select('product_id, name, price, quantity')
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.warn('Could not load cart from Supabase:', error.message);
         return [];
     }
+
+    return (data || []).map(row => ({
+        id: row.product_id,
+        name: row.name,
+        price: Number(row.price),
+        quantity: row.quantity
+    }));
 }
 
-function initCartCounter() {
+async function initCartCounter() {
     const count = document.querySelector('.cart-count');
     const cartIcon = document.getElementById('cartIcon');
     if (!count) return;
 
-    const total = readSafeCart().reduce((sum, item) => sum + item.quantity, 0);
+    const items = await fetchCartRows();
+    const total = items.reduce((sum, item) => sum + item.quantity, 0);
     count.textContent = total;
     if (cartIcon) {
         cartIcon.setAttribute('aria-label', `View cart, ${total} item${total === 1 ? '' : 's'}`);
@@ -1381,6 +1397,7 @@ if (typeof supabaseClient !== 'undefined') {
             // bits of UI that depend on auth state.
             if (typeof updateAuthUI === 'function') updateAuthUI();
             if (typeof initCartCounter === 'function') initCartCounter();
+            if (session && typeof migrateLocalCartToSupabase === 'function') migrateLocalCartToSupabase();
         }
     });
 } else {
@@ -1397,6 +1414,60 @@ function isLoggedIn() {
 
 function getCurrentUser() {
     return currentSupabaseUser;
+}
+
+// ============================================
+// LOCAL CART MIGRATION (one-time)
+// ============================================
+// Carts used to live only in localStorage under 'toughcuts_cart'. Anyone
+// who added items before this migration shipped would otherwise lose
+// them the moment they load a page post-upgrade — so on the first
+// login-ready page load (and again on every later sign-in), sweep any
+// leftover local cart into Supabase via the same add_to_cart RPC
+// addToCart() uses, then clear it. Once localStorage is empty this is a
+// cheap no-op on every subsequent call.
+let cartMigrationInFlight = null;
+
+function migrateLocalCartToSupabase() {
+    if (!isLoggedIn() || typeof supabaseClient === 'undefined') return Promise.resolve();
+    if (cartMigrationInFlight) return cartMigrationInFlight;
+
+    cartMigrationInFlight = (async function () {
+        let localItems = [];
+        try {
+            const raw = JSON.parse(localStorage.getItem('toughcuts_cart') || '[]');
+            if (Array.isArray(raw)) {
+                localItems = raw
+                    .map(item => ({
+                        id: String(item && item.id || '').trim(),
+                        name: String(item && item.name || '').trim(),
+                        price: Number(item && item.price),
+                        quantity: item && item.quantity
+                    }))
+                    .filter(item => item.id && item.name && Number.isFinite(item.price) && item.price >= 0
+                        && typeof item.quantity === 'number' && Number.isInteger(item.quantity) && item.quantity > 0);
+            }
+        } catch (e) {
+            localItems = [];
+        }
+
+        if (!localItems.length) return;
+
+        for (const item of localItems) {
+            const { error } = await supabaseClient.rpc('add_to_cart', {
+                p_product_id: item.id,
+                p_name: item.name,
+                p_price: item.price,
+                p_quantity: item.quantity
+            });
+            if (error) console.warn('Could not migrate cart item:', item.id, error.message);
+        }
+
+        localStorage.removeItem('toughcuts_cart');
+        initCartCounter();
+    })();
+
+    return cartMigrationInFlight.finally(() => { cartMigrationInFlight = null; });
 }
 
 async function logOut() {
@@ -1564,7 +1635,7 @@ document.addEventListener('keydown', function (e) {
 // Products page can register this optional getter after the shared script
 // loads. Other pages do not have to load the catalog module, so the guard
 // remains permissive there and the server must still enforce stock at checkout.
-function canAddStockAwareCartItem(productId, quantity) {
+async function canAddStockAwareCartItem(productId, quantity) {
     if (!Number.isFinite(quantity) || quantity <= 0) return false;
     if (typeof window.getCustomerProductStock !== 'function') return true;
 
@@ -1583,7 +1654,7 @@ function canAddStockAwareCartItem(productId, quantity) {
         return false;
     }
 
-    const cart = readSafeCart();
+    const cart = await fetchCartRows();
     const existing = cart.find(item => item.id === productId);
     const requestedTotal = (existing ? existing.quantity : 0) + quantity;
     if (requestedTotal > stock.stock) {
@@ -1594,18 +1665,27 @@ function canAddStockAwareCartItem(productId, quantity) {
     return true;
 }
 
-function addToCart(productId, name, price, quantity = 1, opts = {}) {
-    if (!canAddStockAwareCartItem(productId, quantity)) return false;
+// Adds (or increments) a line item via the add_to_cart RPC — a single
+// upsert-with-increment on the server, so two rapid clicks or two open
+// tabs can't race each other the way a client-side read-modify-write
+// could. See cart_items_migration.sql for the function definition.
+async function addToCart(productId, name, price, quantity = 1, opts = {}) {
+    if (!isLoggedIn() || typeof supabaseClient === 'undefined') return false;
+    if (!(await canAddStockAwareCartItem(productId, quantity))) return false;
 
-    const cart = readSafeCart();
-    const existing = cart.find(item => item.id === productId);
-    if (existing) {
-        existing.quantity += quantity;
-    } else {
-        cart.push({ id: productId, name, price, quantity });
+    const { error } = await supabaseClient.rpc('add_to_cart', {
+        p_product_id: productId,
+        p_name: name,
+        p_price: price,
+        p_quantity: quantity
+    });
+
+    if (error) {
+        console.warn('Could not add to cart:', error.message);
+        alert("Couldn't add that to your cart — please try again.");
+        return false;
     }
 
-    localStorage.setItem('toughcuts_cart', JSON.stringify(cart));
     initCartCounter();
 
     if (!opts.silent) {
@@ -1618,7 +1698,7 @@ function addToCart(productId, name, price, quantity = 1, opts = {}) {
 // Signed-out visitors get the login/signup gate instead of an immediate add.
 function initAddToCart() {
     document.querySelectorAll('.product-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        btn.addEventListener('click', async function(e) {
             e.preventDefault();
             const { id, name, price } = this.dataset;
             if (!id || !name || !price) return;
@@ -1628,7 +1708,7 @@ function initAddToCart() {
                 return;
             }
 
-            addToCart(id, name, parseFloat(price));
+            await addToCart(id, name, parseFloat(price));
         });
     });
 }
@@ -1640,7 +1720,7 @@ function initAddToCart() {
 // the current page sits in the folder structure (root vs. products/, etc).
 function initBuyNow() {
     document.querySelectorAll('.product-buy-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        btn.addEventListener('click', async function(e) {
             e.preventDefault();
             const { id, name, price } = this.dataset;
             if (!id || !name || !price) return;
@@ -1650,7 +1730,7 @@ function initBuyNow() {
                 return;
             }
 
-            const added = addToCart(id, name, parseFloat(price), 1, { silent: true });
+            const added = await addToCart(id, name, parseFloat(price), 1, { silent: true });
             if (!added) return;
 
             const cartLink = document.getElementById('cartIcon');

@@ -409,26 +409,40 @@ function initProductModal() {
 
     // The modal's own Add to Cart / Buy Now reuse the same login-gated
     // cart logic (isLoggedIn / openAuthGate / addToCart) defined in
-    // main.js, which is loaded on this page before products.js.
+    // main.js, which is loaded on this page before products.js. Both
+    // handlers await addToCart() now that it talks to Supabase instead
+    // of localStorage — Buy Now in particular depends on the resolved
+    // true/false to decide whether it's safe to redirect.
     if (addToCartBtn) {
-        addToCartBtn.addEventListener('click', function () {
-            if (!activeProduct) return;
+        addToCartBtn.addEventListener('click', async function () {
+            if (!activeProduct || addToCartBtn.disabled) return;
             if (typeof isLoggedIn === 'function' && !isLoggedIn()) {
                 openAuthGate({ id: activeProduct.id, name: activeProduct.name, price: activeProduct.price });
                 return;
             }
-            addToCart(activeProduct.id, activeProduct.name, activeProduct.price);
+            addToCartBtn.disabled = true;
+            try {
+                await addToCart(activeProduct.id, activeProduct.name, activeProduct.price);
+            } finally {
+                updateProductModalStock();
+            }
         });
     }
 
     if (buyNowBtn) {
-        buyNowBtn.addEventListener('click', function () {
-            if (!activeProduct) return;
+        buyNowBtn.addEventListener('click', async function () {
+            if (!activeProduct || buyNowBtn.disabled) return;
             if (typeof isLoggedIn === 'function' && !isLoggedIn()) {
                 openAuthGate({ id: activeProduct.id, name: activeProduct.name, price: activeProduct.price });
                 return;
             }
-            const added = addToCart(activeProduct.id, activeProduct.name, activeProduct.price, 1, { silent: true });
+            buyNowBtn.disabled = true;
+            let added = false;
+            try {
+                added = await addToCart(activeProduct.id, activeProduct.name, activeProduct.price, 1, { silent: true });
+            } finally {
+                updateProductModalStock();
+            }
             if (!added) return;
             const cartLink = document.getElementById('cartIcon');
             if (cartLink) window.location.href = cartLink.getAttribute('href');
