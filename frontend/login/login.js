@@ -136,6 +136,9 @@ function friendlyAuthError(error) {
     if (/email not confirmed/i.test(msg)) {
         return 'Please confirm your email address before logging in — check your inbox for the confirmation code.';
     }
+    if (/banned|user is banned/i.test(msg)) {
+        return 'This account has been blocked. Please contact us if you think this is a mistake.';
+    }
     return msg;
 }
 

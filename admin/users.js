@@ -290,30 +290,36 @@ async function saveEditedUser() {
 // --------------------------------------------
 // Block / Unblock (prevents the user from logging in)
 // --------------------------------------------
+// Calls the `set-user-blocked` Edge Function rather than writing
+// profiles.status directly — that column alone had no effect on the
+// customer site (nothing there ever checked it), so a "blocked"
+// customer could keep logging in and using the site normally. The
+// Edge Function bans/unbans the account at the Supabase Auth level via
+// the Admin API (requires the service_role key, so it can't run in
+// browser JS) and keeps profiles.status in sync for this badge.
 async function handleToggleBlock(userId) {
     const user = allUsers.find(u => u.id === userId);
     if (!user) return;
 
     const willBlock = user.status !== 'blocked';
-    const newStatus = willBlock ? 'blocked' : 'active';
 
     if (!confirm(willBlock ? 'Block this user? They won\u2019t be able to log in.' : 'Unblock this user?')) return;
 
     try {
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update({ status: newStatus })
-            .eq('id', userId);
+        const { data, error } = await supabaseClient.functions.invoke('set-user-blocked', {
+            body: { userId, blocked: willBlock }
+        });
 
         if (error) throw error;
+        if (data && data.error) throw new Error(data.error);
 
-        user.status = newStatus;
+        user.status = willBlock ? 'blocked' : 'active';
         renderStats();
         renderTable(allUsers);
         showToast(willBlock ? 'User blocked.' : 'User unblocked.');
     } catch (error) {
         console.error('Error toggling user status:', error);
-        showToast('Error updating user status', 'error');
+        showToast(error.message || 'Error updating user status', 'error');
     }
 }
 
