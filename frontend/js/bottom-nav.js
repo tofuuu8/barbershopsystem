@@ -12,7 +12,10 @@
 // order-notifications.js), so it can reuse SITE_BASE, isLoggedIn(),
 // getCurrentUser(), getAvatarInitial(), logOut() and authReadyPromise
 // exactly the way main.js's own header logic already does — nothing
-// here hardcodes a page depth or duplicates auth state.
+// here hardcodes a page depth or duplicates auth state. Also reads
+// getUnreadNotificationCount() from order-notifications.js (loaded right
+// after this file — see the <script> order in index.html) to fill in the
+// Notifications row's badge each time the sheet opens.
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof SITE_BASE === 'undefined') return; // main.js didn't load on this page — bail safely
 
@@ -83,7 +86,7 @@ function initBottomNavActiveState() {
     if (/\/index\.html$/.test(path) || /\/$/.test(path)) current = 'home';
     else if (/\/services\.html$/.test(path)) current = 'services';
     else if (/\/products\.html$/.test(path)) current = 'shop';
-    else if (/\/(myorders|myappointments|account)\.html$/.test(path)) current = 'account';
+    else if (/\/(myorders|myappointments|account|notifications)\.html$/.test(path)) current = 'account';
 
     if (!current) return;
     const item = document.querySelector('.bottom-nav-item[data-nav="' + current + '"]');
@@ -202,6 +205,15 @@ function renderAccountSheetContent(content) {
         const initial = typeof getAvatarInitial === 'function' ? getAvatarInitial(user) : '?';
         const name = (user.user_metadata && user.user_metadata.name) || user.email || 'Your account';
 
+        // Computed inline (rather than left for order-notifications.js's
+        // shared renderNotificationBadges() to fill in later) because this
+        // whole panel is rebuilt from scratch every time the sheet opens —
+        // there's no persistent badge element for that function to find
+        // and update in between opens.
+        const unreadCount = typeof getUnreadNotificationCount === 'function' ? getUnreadNotificationCount() : 0;
+        const badgeHidden = unreadCount > 0 ? '' : 'hidden';
+        const badgeText = unreadCount > 99 ? '99+' : String(unreadCount);
+
         content.innerHTML = `
             <div class="account-sheet-user">
                 <span class="account-sheet-avatar" aria-hidden="true">${initial}</span>
@@ -215,6 +227,10 @@ function renderAccountSheetContent(content) {
             </a>
             <a class="account-sheet-link" href="${SITE_BASE}myappointments/myappointments.html">
                 <i class="fas fa-calendar-check" aria-hidden="true"></i> My Appointments
+            </a>
+            <a class="account-sheet-link" href="${SITE_BASE}notifications/notifications.html">
+                <i class="fas fa-bell" aria-hidden="true"></i> Notifications
+                <span class="notif-bell-badge" ${badgeHidden}>${badgeText}</span>
             </a>
             <div class="account-sheet-title">Explore</div>
             <a class="account-sheet-link" href="${SITE_BASE}studio/studio.html">

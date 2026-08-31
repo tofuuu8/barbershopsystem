@@ -1578,17 +1578,29 @@ function updateAuthUI() {
         }
     });
 
+    // Header notification bell — same signed-in-only visibility as the
+    // account avatar right next to it. Its badge count is owned by
+    // order-notifications.js (renderNotificationBadges()), not here.
+    document.querySelectorAll('.notif-bell-icon').forEach(function (link) {
+        link.hidden = !user;
+    });
+
     initAccountMenus();
 }
 
 // --------------------------------------------
 // Account dropdown — turns the header avatar into a small menu (My
-// Account / My Orders / My Appointments / Log Out) instead of a direct
-// link, so those pages are reachable from every page without editing
-// each page's header markup individually. Built once per .account-icon (there's
-// exactly one per page) the first time updateAuthUI() runs; later
-// updateAuthUI() calls just show/hide the trigger and refresh the
-// avatar initial as before — the menu itself doesn't need rebuilding.
+// Account / My Orders / My Appointments / Notifications / Log Out)
+// instead of a direct link, so those pages are reachable from every page
+// without editing each page's header markup individually. Built once per
+// .account-icon (there's exactly one per page) the first time
+// updateAuthUI() runs; later updateAuthUI() calls just show/hide the
+// trigger and refresh the avatar initial as before — the menu itself
+// doesn't need rebuilding. The Notifications item's badge is filled in
+// (and kept live) by order-notifications.js's renderNotificationBadges(),
+// same as the header bell — it's built once here as an empty, hidden
+// span since it's a persistent DOM element, unlike the account sheet's
+// equivalent which gets rebuilt from scratch on every open.
 // --------------------------------------------
 function initAccountMenus() {
     document.querySelectorAll('.account-icon').forEach(function (trigger) {
@@ -1617,6 +1629,10 @@ function initAccountMenus() {
             </a>
             <a href="${SITE_BASE}myappointments/myappointments.html" class="account-menu-item">
                 <i class="fas fa-calendar-check" aria-hidden="true"></i> My Appointments
+            </a>
+            <a href="${SITE_BASE}notifications/notifications.html" class="account-menu-item">
+                <i class="fas fa-bell" aria-hidden="true"></i> Notifications
+                <span class="notif-bell-badge" hidden></span>
             </a>
             <button type="button" class="account-menu-item account-menu-logout">
                 <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Log Out

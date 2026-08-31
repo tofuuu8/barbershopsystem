@@ -23,6 +23,17 @@ const CUSTOMER_NOTIFICATION_STATUS = {
     booking_cancelled: 'rust'
 };
 
+// In-memory unread count — the single source of truth for every badge on
+// the page (header bell, desktop account-menu item, mobile account-sheet
+// link) and for the notifications page's own header, via
+// getUnreadNotificationCount() below. Kept as a real number rather than a
+// boolean so a bell badge can show "3" instead of just a dot.
+let unreadNotificationCount = 0;
+
+function getUnreadNotificationCount() {
+    return unreadNotificationCount;
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
     if (typeof authReadyPromise === 'undefined' || typeof supabaseClient === 'undefined') return;
     await authReadyPromise;
@@ -32,6 +43,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (!user) return;
     await loadCustomerNotifications(user.id);
     subscribeToCustomerNotifications(user.id);
+
+    if (isOnNotificationsListPage()) {
+        // The notifications page itself renders and marks-as-read on its
+        // own terms (individual/mark-all actions) — see notifications.js.
+        return;
+    }
 
     if (window.location.pathname.includes('myorders.html') || window.location.pathname.includes('myappointments.html')) {
         await markCustomerNotificationsRead(user.id);
@@ -44,6 +61,10 @@ window.addEventListener('pagehide', function () {
         customerNotificationChannel = null;
     }
 });
+
+function isOnNotificationsListPage() {
+    return window.location.pathname.includes('notifications.html');
+}
 
 async function loadCustomerNotifications(userId) {
     const { data, error } = await supabaseClient
@@ -63,7 +84,7 @@ async function loadCustomerNotifications(userId) {
     }
 
     setCustomerNotificationBadge((data || []).length);
-    if (data && data[0] && !window.location.pathname.includes('myorders.html') && !window.location.pathname.includes('myappointments.html')) {
+    if (data && data[0] && !window.location.pathname.includes('myorders.html') && !window.location.pathname.includes('myappointments.html') && !isOnNotificationsListPage()) {
         showCustomerNotificationToast(data[0]);
     }
 }
@@ -86,7 +107,13 @@ function subscribeToCustomerNotifications(userId) {
             const notification = payload.new;
             if (notification && notification.audience === 'customer') {
                 setCustomerNotificationBadge(1, true);
-                showCustomerNotificationToast(notification);
+                if (isOnNotificationsListPage() && typeof window.onCustomerNotificationInserted === 'function') {
+                    // Lets notifications.js prepend the new row live instead of
+                    // the visitor only finding out on their next reload.
+                    window.onCustomerNotificationInserted(notification);
+                } else {
+                    showCustomerNotificationToast(notification);
+                }
             }
         })
         .subscribe();
@@ -107,22 +134,46 @@ function getSeenOrderStatuses() {
     try { return JSON.parse(localStorage.getItem('toughcuts_seen_order_statuses') || '{}'); } catch (_) { return {}; }
 }
 
+// `count` is either the new absolute total (setCustomerNotificationBadge(3))
+// or, when `increment` is true, a delta to add to the running total
+// (setCustomerNotificationBadge(1, true) on a new realtime insert,
+// setCustomerNotificationBadge(-1, true) after reading a single
+// notification on the notifications page). Never lets the total go
+// negative, since a stale/duplicate decrement shouldn't show "-1".
 function setCustomerNotificationBadge(count, increment) {
-    document.querySelectorAll('.account-icon').forEach(function (icon) {
-        let dot = icon.querySelector('.order-notif-dot');
-        if (!dot) {
-            dot = document.createElement('span');
-            dot.className = 'order-notif-dot';
-            dot.setAttribute('aria-label', 'Unread notifications');
-            icon.style.position = icon.style.position || 'relative';
-            icon.appendChild(dot);
-        }
-    });
-    if (!count && !increment) hideCustomerNotificationBadge();
+    unreadNotificationCount = increment ? unreadNotificationCount + count : count;
+    if (unreadNotificationCount < 0) unreadNotificationCount = 0;
+    renderNotificationBadges();
 }
 
-function hideCustomerNotificationBadge() {
-    document.querySelectorAll('.account-icon .order-notif-dot').forEach(dot => dot.remove());
+// Updates every place an unread count can appear on the current page:
+// the small dot on the header avatar (kept for the bottom nav's Account
+// tab, which mirrors this dot — see bottom-nav.js), and the numeric
+// ".notif-bell-badge" badge, which shows up in up to three places at
+// once (header bell, desktop account-menu item, mobile account-sheet
+// link) depending on the page and viewport.
+function renderNotificationBadges() {
+    const hasUnread = unreadNotificationCount > 0;
+
+    document.querySelectorAll('.account-icon').forEach(function (icon) {
+        let dot = icon.querySelector('.order-notif-dot');
+        if (hasUnread) {
+            if (!dot) {
+                dot = document.createElement('span');
+                dot.className = 'order-notif-dot';
+                dot.setAttribute('aria-label', 'Unread notifications');
+                icon.style.position = icon.style.position || 'relative';
+                icon.appendChild(dot);
+            }
+        } else if (dot) {
+            dot.remove();
+        }
+    });
+
+    document.querySelectorAll('.notif-bell-badge').forEach(function (badge) {
+        badge.textContent = unreadNotificationCount > 99 ? '99+' : String(unreadNotificationCount);
+        badge.hidden = !hasUnread;
+    });
 }
 
 // Anchors the toast just under the sticky site header (announce bar +
@@ -142,7 +193,9 @@ function showCustomerNotificationToast(notification) {
         toast.id = 'customerNotificationToast';
         toast.className = 'customer-toast';
         toast.addEventListener('click', function () {
-            window.location.href = window.location.pathname.includes('/myorders/') ? 'myorders.html' : '../myorders/myorders.html';
+            window.location.href = window.location.pathname.includes('/notifications/')
+                ? 'notifications.html'
+                : (typeof SITE_BASE !== 'undefined' ? SITE_BASE : '') + 'notifications/notifications.html';
         });
         document.body.appendChild(toast);
     }

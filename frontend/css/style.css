@@ -302,6 +302,76 @@ input:focus-visible {
     color: var(--off);
 }
 
+/* --------------------------------------------
+   Header notification bell — same footprint/behavior as .cart-icon,
+   sitting between it and .account-icon. Hidden while signed out, same
+   as .account-icon (see main.js's updateAuthUI()).
+   -------------------------------------------- */
+.notif-bell-icon[hidden] {
+    display: none;
+}
+
+.notif-bell-icon {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--card-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: var(--off);
+    transition: var(--transition);
+}
+
+.notif-bell-icon:hover {
+    background: var(--white);
+    color: var(--black);
+    transform: translateY(-2px);
+}
+
+.notif-bell-icon:active {
+    transform: translateY(0) scale(0.94);
+}
+
+/* Shared unread-count badge — reused as-is in three places: floating on
+   the header bell above, appended at the end of the "Notifications" row
+   in the desktop account-menu dropdown, and the same row in the mobile
+   account-sheet. order-notifications.js's renderNotificationBadges()
+   updates every ".notif-bell-badge" on the page at once, so all three
+   (whichever happen to be in the DOM at the time) stay in sync. */
+.notif-bell-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--rust);
+    color: var(--white);
+    font-size: 0.62rem;
+    font-weight: 700;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 50px;
+    line-height: 1;
+}
+
+.notif-bell-badge[hidden] {
+    display: none;
+}
+
+.notif-bell-icon .notif-bell-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    border: 2px solid var(--black);
+}
+
+.account-menu-item .notif-bell-badge,
+.account-sheet-link .notif-bell-badge {
+    margin-left: auto;
+}
+
 /* ============================================
    ANNOUNCEMENT BAR + HEADER GROUP
    Both sit inside one sticky wrapper so the header always sticks
@@ -3502,6 +3572,13 @@ input:focus-visible {
         display: none;
     }
 
+    /* Same reasoning as .account-icon above — Notifications is reachable
+       from the account sheet's own row at this width, so the header
+       doesn't need a second bell crowding it next to the cart icon. */
+    .nav-actions .notif-bell-icon {
+        display: none;
+    }
+
     body {
         /* keep page content clear of the fixed bar + FAB */
         padding-bottom: 78px;
@@ -3726,5 +3803,180 @@ input:focus-visible {
 @media (min-width: 901px) {
     .account-sheet {
         display: none !important;
+    }
+}
+
+/* ============================================
+   NOTIFICATIONS PAGE (notifications/notifications.html)
+   ============================================ */
+.notif-page {
+    padding: 64px 0 100px;
+    min-height: 50vh;
+}
+
+.notif-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+}
+
+.notif-page-header .section-title {
+    font-size: 2.4rem;
+    margin-bottom: 6px;
+}
+
+.notif-mark-all {
+    padding: 10px 22px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 720px;
+}
+
+.notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    padding: 18px 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: inherit;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.notif-item:hover {
+    background: var(--card-light);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.notif-item:active {
+    transform: scale(0.99);
+}
+
+/* Unread rows get a steel left edge and a slightly brighter card —
+   enough to scan the list for what's new without a wall of bold text. */
+.notif-item.is-unread {
+    border-left: 3px solid var(--steel);
+    padding-left: 18px;
+    background: var(--card-light);
+}
+
+.notif-item-dot {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-top: 7px;
+    background: var(--olive);
+    box-shadow: 0 0 0 3px var(--olive-bg);
+}
+
+.notif-item-dot.status-amber { background: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
+.notif-item-dot.status-rust  { background: var(--rust);  box-shadow: 0 0 0 3px var(--rust-bg); }
+
+.notif-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-item-body strong {
+    color: var(--white);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.notif-item-text {
+    color: var(--off);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.notif-item-time {
+    color: var(--dim);
+    font-size: 0.72rem;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+}
+
+.notif-item-unread-mark {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--steel);
+    margin-top: 8px;
+}
+
+.notif-empty,
+.notif-signed-out {
+    text-align: center;
+    max-width: 360px;
+    margin: 40px auto 0;
+    color: var(--off);
+}
+
+.notif-empty i,
+.notif-signed-out i {
+    font-size: 2.2rem;
+    color: var(--faint);
+    margin-bottom: 16px;
+    display: block;
+}
+
+.notif-empty p,
+.notif-signed-out p {
+    color: var(--white);
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 1.15rem;
+    margin-bottom: 6px;
+}
+
+.notif-empty span {
+    font-size: 0.85rem;
+    color: var(--dim);
+}
+
+.notif-signed-out-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.notif-load-more {
+    display: block;
+    margin: 24px auto 0;
+    padding: 12px 30px;
+    font-size: 0.7rem;
+}
+
+@media (max-width: 560px) {
+    .notif-page {
+        padding: 40px 0 80px;
+    }
+    .notif-page-header .section-title {
+        font-size: 1.9rem;
+    }
+    .notif-mark-all {
+        width: 100%;
+        text-align: center;
     }
 }
