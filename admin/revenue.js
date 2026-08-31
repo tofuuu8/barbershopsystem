@@ -26,13 +26,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 // ============================================================
 
 function initRevenueFilters() {
-    // Set default date range (last 30 days)
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30);
-
-    document.getElementById('revenueStartDate').value = startDate.toISOString().split('T')[0];
-    document.getElementById('revenueEndDate').value = endDate.toISOString().split('T')[0];
+    // Set default date range (last 30 days) — anchored to the Manila
+    // calendar date (see manilaDateStr() below), not UTC. Business runs
+    // on UTC+8, so using toISOString() here would show yesterday's date
+    // for the first 8 hours of every Manila day.
+    document.getElementById('revenueStartDate').value = manilaDateStr(-30);
+    document.getElementById('revenueEndDate').value = manilaDateStr(0);
 
     // ============================================
     // HELPER: Update active state ng buttons
@@ -67,7 +66,7 @@ function initRevenueFilters() {
     // ============================================
     document.getElementById('revenueTodayBtn').addEventListener('click', function() {
         console.log('📅 Today button clicked');
-        const today = new Date().toISOString().split('T')[0];
+        const today = manilaDateStr(0);
         document.getElementById('revenueStartDate').value = today;
         document.getElementById('revenueEndDate').value = today;
         setActiveButton('revenueTodayBtn');
@@ -79,11 +78,8 @@ function initRevenueFilters() {
     // ============================================
     document.getElementById('revenueWeekBtn').addEventListener('click', function() {
         console.log('📅 This Week button clicked');
-        const end = new Date();
-        const start = new Date();
-        start.setDate(start.getDate() - 7);
-        document.getElementById('revenueStartDate').value = start.toISOString().split('T')[0];
-        document.getElementById('revenueEndDate').value = end.toISOString().split('T')[0];
+        document.getElementById('revenueStartDate').value = manilaDateStr(-7);
+        document.getElementById('revenueEndDate').value = manilaDateStr(0);
         setActiveButton('revenueWeekBtn');
         loadRevenueData();
     });
@@ -93,17 +89,15 @@ function initRevenueFilters() {
     // ============================================
     document.getElementById('revenueMonthBtn').addEventListener('click', function() {
         console.log('📅 This Month button clicked');
-        const end = new Date();
-        const start = new Date();
-        start.setDate(start.getDate() - 30);
-        document.getElementById('revenueStartDate').value = start.toISOString().split('T')[0];
-        document.getElementById('revenueEndDate').value = end.toISOString().split('T')[0];
+        document.getElementById('revenueStartDate').value = manilaMonthStartStr();
+        document.getElementById('revenueEndDate').value = manilaDateStr(0);
         setActiveButton('revenueMonthBtn');
         loadRevenueData();
     });
 
-    // Load data on page load
-    loadRevenueData();
+    // Load data on page load happens once, from the DOMContentLoaded
+    // handler below — not here, to avoid firing loadRevenueData() twice
+    // on every page load.
 }
 
 // ============================================================
@@ -140,13 +134,29 @@ async function loadRevenueData() {
     console.log('📊 Completed bookings found:', bookings?.length || 0);
 
     // ============================================
+    // LOOK UP BOOKING CUSTOMER NAMES
+    // ============================================
+    // bookings only stores user_id — resolve to a display name the same
+    // way dashboard.js's loadBookingStats() does, so the table shows
+    // actual customer names instead of raw UUIDs.
+    const bookingUserIds = (bookings || []).map(b => b.user_id).filter(Boolean);
+    let profilesById = {};
+    if (bookingUserIds.length) {
+        const { data: profiles } = await supabaseClient
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', bookingUserIds);
+        if (profiles) profilesById = Object.fromEntries(profiles.map(p => [p.id, p]));
+    }
+
+    // ============================================
     // LOAD COMPLETED ORDERS ONLY
     // ============================================
     const { data: orders, error: ordersError } = await supabaseClient
         .from('orders')
         .select('id, customer_name, total_price, status, created_at')
-        .gte('created_at', startDate + 'T00:00:00')
-        .lte('created_at', endDate + 'T23:59:59')
+        .gte('created_at', startDate + 'T00:00:00+08:00')
+        .lte('created_at', endDate + 'T23:59:59+08:00')
         .eq('status', 'completed');  // ← COMPLETED LANG!
 
     if (ordersError) {
@@ -161,14 +171,14 @@ async function loadRevenueData() {
     const bookingTransactions = (bookings || []).map(b => ({
         date: b.booking_date,
         type: 'Booking',
-        customer: b.user_id || 'Guest',
+        customer: (profilesById[b.user_id] && profilesById[b.user_id].full_name) || 'Guest',
         item: b.service_name || 'Service',
         amount: b.total_price || 0,
         status: b.status
     }));
 
     const orderTransactions = (orders || []).map(o => ({
-        date: o.created_at.split('T')[0],
+        date: toManilaDateStr(o.created_at),
         type: 'Order',
         customer: o.customer_name || 'Guest',
         item: 'Product Order',
@@ -316,6 +326,45 @@ function renderTable() {
 // HELPERS
 // ============================================================
 
+// ============================================================
+// HELPERS: Manila-timezone-aware dates
+// ============================================================
+// Same fix as dashboard.js — the business runs on Philippine time
+// (UTC+8), but new Date().toISOString() always gives the UTC calendar
+// date. For the first ~8 hours of every Manila day that's still the
+// previous UTC date, which used to make "Today"/default ranges land on
+// the wrong day and mis-bucket order transactions by a day. These
+// helpers anchor everything to the Manila calendar date instead.
+
+function manilaDateStr(offsetDays) {
+    offsetDays = offsetDays || 0;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const map = {};
+    parts.forEach(function (p) { map[p.type] = p.value; });
+    const base = new Date(Date.UTC(Number(map.year), Number(map.month) - 1, Number(map.day)));
+    base.setUTCDate(base.getUTCDate() + offsetDays);
+    return base.toISOString().slice(0, 10);
+}
+
+// 'YYYY-MM-01' for the 1st of the current Manila calendar month.
+function manilaMonthStartStr() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit'
+    }).formatToParts(new Date());
+    const map = {};
+    parts.forEach(function (p) { map[p.type] = p.value; });
+    return `${map.year}-${map.month}-01`;
+}
+
+// Converts a timestamptz string (an order's created_at, stored in UTC)
+// into the 'YYYY-MM-DD' it falls on in Manila time.
+function toManilaDateStr(isoTimestamp) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date(isoTimestamp));
+}
+
 function getStatusBadge(status) {
     const colors = {
         'confirmed': 'admin-status-confirmed',
@@ -373,4 +422,3 @@ function showToast(message, type = 'success') {
         toast.style.opacity = '0';
     }, 3000);
 }
-

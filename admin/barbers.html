@@ -109,6 +109,13 @@
             <input type="text" id="barberNameInput" class="admin-input" placeholder="e.g. Barber Klark" />
         </div>
         <div class="admin-drawer-field">
+            <label for="barberIdInput">Barber ID (optional)</label>
+            <input type="text" id="barberIdInput" class="admin-input" placeholder="e.g. barber-barko" />
+            <p style="font-size:0.7rem; color:var(--dim); margin-top:4px;">
+                Leave blank to auto-generate. Use lowercase letters, numbers, and hyphens only.
+            </p>
+        </div>
+        <div class="admin-drawer-field">
             <label for="barberTitleInput">Title / Position</label>
             <input type="text" id="barberTitleInput" class="admin-input" placeholder="e.g. Owner and Master Barber" />
         </div>
@@ -172,14 +179,6 @@
     <p class="admin-drawer-save-status" id="barberSaveStatus"></p>
 </div>
 
-<!-- ID Field (optional, auto-generated kung walang laman) -->
-<div class="admin-drawer-field">
-    <label for="barberIdInput">Barber ID (optional)</label>
-    <input type="text" id="barberIdInput" class="admin-input" placeholder="e.g. barber-barko" />
-    <p style="font-size:0.7rem; color:var(--dim); margin-top:4px;">
-        Leave blank to auto-generate. Use lowercase letters, numbers, and hyphens only.
-    </p>
-</div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
     <script src="supabase.js"></script>

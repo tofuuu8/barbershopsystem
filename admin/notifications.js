@@ -66,24 +66,6 @@ async function loadAdminNotifications() {
     renderAdminNotifications();
 }
 
-document.addEventListener('DOMContentLoaded', async function () {
-    currentAdmin = await requireAdminOrRedirect();
-    if (!currentAdmin) return;
-
-    const emailEl = document.getElementById('adminSidebarEmail');
-    if (emailEl) emailEl.textContent = currentAdmin.email;
-
-    initLogout();
-    await loadDashboard();
-    
-    // ============================================
-    // Load notifications after dashboard
-    // ============================================
-    if (typeof loadAdminNotifications === 'function') {
-        await loadAdminNotifications();
-    }
-});
-
 function renderAdminNotifications() {
     const grouped = { notifAccounts: [], notifBookings: [], notifProducts: [], notifOrders: [] };
     adminNotifications.forEach(function (notification) {

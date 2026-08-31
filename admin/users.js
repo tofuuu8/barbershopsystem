@@ -63,7 +63,7 @@ async function loadUsers() {
 
     allUsers = (data || []).map(u => ({
         ...u,
-        status: u.status || 'offline'
+        status: u.status || 'active'
     }));
 
     renderStats();
@@ -88,13 +88,17 @@ function renderStats() {
 // --------------------------------------------
 // Status badge
 // --------------------------------------------
+// profiles.status only ever holds 'active' (the column default) or
+// 'blocked' (set by the Block action below) — there's no session or
+// presence tracking anywhere in this app (last_login is never written
+// to), so an 'online'/'offline' distinction had no real data behind
+// it. Every genuinely active user was silently falling through to a
+// hardcoded "Offline" badge. This reflects the actual states instead.
 function getStatusBadge(status) {
     if (status === 'blocked') {
         return `<span class="admin-status-badge admin-status-blocked">⚫ Blocked</span>`;
-    } else if (status === 'online') {
-        return `<span class="admin-status-badge admin-status-online">🟢 Online</span>`;
     }
-    return `<span class="admin-status-badge admin-status-offline">🔴 Offline</span>`;
+    return `<span class="admin-status-badge admin-status-online">🟢 Active</span>`;
 }
 
 // --------------------------------------------
@@ -291,7 +295,7 @@ async function handleToggleBlock(userId) {
     if (!user) return;
 
     const willBlock = user.status !== 'blocked';
-    const newStatus = willBlock ? 'blocked' : 'offline';
+    const newStatus = willBlock ? 'blocked' : 'active';
 
     if (!confirm(willBlock ? 'Block this user? They won\u2019t be able to log in.' : 'Unblock this user?')) return;
 

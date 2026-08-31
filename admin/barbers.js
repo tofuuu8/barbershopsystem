@@ -226,6 +226,7 @@ function openEditBarberModal(id) {
 
     activeBarberId = id;
     document.getElementById('barberIdInput').value = barber.id || '';
+    document.getElementById('barberIdInput').disabled = true;
     document.getElementById('barberModalTitle').textContent = 'Edit Barber';
     document.getElementById('barberNameInput').value = barber.name || '';
     document.getElementById('barberEmailInput').value = barber.email || '';
@@ -313,6 +314,7 @@ function showToast(message, type = 'success') {
 function openAddBarberModal() {
     activeBarberId = null;
     document.getElementById('barberIdInput').value = '';
+    document.getElementById('barberIdInput').disabled = false;
     document.getElementById('barberModalTitle').textContent = 'Add Barber';
     document.getElementById('barberNameInput').value = '';
     document.getElementById('barberEmailInput').value = '';
