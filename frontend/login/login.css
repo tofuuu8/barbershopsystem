@@ -102,6 +102,19 @@
     margin-top: 2px;
 }
 
+/* Used by reset.js's "no recovery session" state — an inline link inside
+   the error banner (e.g. "...expired. Start over") that should read as
+   part of the error message, not a generic blue link. */
+.login-error-link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.login-error-link:hover {
+    color: var(--white);
+}
+
 /* --------------------------------------------
    Form fields
    -------------------------------------------- */

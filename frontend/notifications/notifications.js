@@ -163,6 +163,19 @@ async function handleNotificationClick(row, item) {
         item.classList.remove('is-unread');
         if (typeof setCustomerNotificationBadge === 'function') setCustomerNotificationBadge(-1, true);
 
+        // Keep "Mark all as read" and the subtitle count in sync — without
+        // this they went stale after reading the last unread notification
+        // one at a time, still showing "N unread" until a full reload.
+        const unreadCount = typeof getUnreadNotificationCount === 'function' ? getUnreadNotificationCount() : 0;
+        const markAllBtn = document.getElementById('notifMarkAllBtn');
+        const subtitleEl = document.getElementById('notifSubtitle');
+        if (markAllBtn) markAllBtn.hidden = unreadCount <= 0;
+        if (subtitleEl) {
+            subtitleEl.textContent = unreadCount > 0
+                ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
+                : "You're all caught up.";
+        }
+
         supabaseClient
             .from('notifications')
             .update({ read_at: row.read_at })

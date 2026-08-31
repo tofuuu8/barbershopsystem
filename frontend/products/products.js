@@ -38,6 +38,14 @@ window.getCustomerProductStock = function (productId) {
     };
 };
 
+// Single source of truth for "can this product be purchased right now" —
+// previously re-derived independently in three places (applyStockState,
+// renderCustomerStockStates, updateProductModalStock), which meant any
+// future change to availability rules had to be kept in sync by hand.
+function isStockAvailable(record) {
+    return customerStockState.ready && !!record && record.isActive && record.stock > 0;
+}
+
 function stockMessage(record, ready, error) {
     if (!ready) return error ? 'Availability unavailable' : 'Checking availability…';
     if (!record || !record.isActive || record.stock <= 0) return 'Out of stock';
@@ -51,7 +59,7 @@ function applyStockState(element, productId, record) {
     if (!element) return;
 
     const message = stockMessage(record, customerStockState.ready, customerStockState.error);
-    const available = customerStockState.ready && record && record.isActive && record.stock > 0;
+    const available = isStockAvailable(record);
     const statusClass = !customerStockState.ready
         ? 'is-checking'
         : available
@@ -93,7 +101,7 @@ function renderCustomerStockStates() {
 
         const record = customerStockState.byId.get(productId);
         applyStockState(status, productId, record);
-        card.classList.toggle('is-out-of-stock', customerStockState.ready && (!record || !record.isActive || record.stock <= 0));
+        card.classList.toggle('is-out-of-stock', customerStockState.ready && !isStockAvailable(record));
 
         card.querySelectorAll('.product-btn, .product-buy-btn').forEach(button => {
             applyStockState(button, productId, record);
@@ -157,7 +165,7 @@ function renderProductCard(product) {
                      onerror="this.remove()" />` : ''}
             </div>
             <h3>${safeName}</h3>
-            <p class="product-price">PHP ${price}</p>
+            <p class="product-price">PHP ${price.toLocaleString('en-PH')}</p>
             <div class="product-card-actions">
                 <button class="product-btn" data-id="${safeId}" data-name="${safeName}" data-price="${price}">Add to Cart</button>
                 <button class="product-buy-btn" data-id="${safeId}" data-name="${safeName}" data-price="${price}">Buy Now</button>
@@ -270,7 +278,7 @@ function updateProductModalStock() {
 
     [addButton, buyButton].forEach(button => {
         if (!button) return;
-        const available = customerStockState.ready && record && record.isActive && record.stock > 0;
+        const available = isStockAvailable(record);
         button.disabled = !available;
         button.setAttribute('aria-disabled', String(!available));
     });
@@ -308,7 +316,18 @@ function initProductModal() {
         const thumbsWrap = document.getElementById('productModalThumbs');
         const images = product.gallery && product.gallery.length ? product.gallery : [];
 
-        setMainPhoto(images[0], product.name, product.brand);
+        if (images.length) {
+            setMainPhoto(images[0], product.name, product.brand);
+        } else {
+            // No gallery photos at all — go straight to the placeholder
+            // instead of setting src="undefined" (which fires a real,
+            // guaranteed-to-fail network request before onerror catches it).
+            setMainPhoto(
+                'https://placehold.co/500x375/232323/666?text=' + encodeURIComponent(product.brand || 'PRODUCT'),
+                product.name,
+                product.brand
+            );
+        }
 
         thumbsWrap.innerHTML = '';
         images.forEach(function (src, index) {
@@ -344,14 +363,14 @@ function initProductModal() {
 
         document.getElementById('productModalBrand').textContent = product.brand;
         document.getElementById('productModalName').textContent = product.name;
-        document.getElementById('productModalPrice').textContent = 'PHP ' + product.price;
+        document.getElementById('productModalPrice').textContent = 'PHP ' + Number(product.price || 0).toLocaleString('en-PH');
         document.getElementById('productModalDescription').textContent = product.description;
 
         document.getElementById('productModalFeatures').innerHTML =
-            product.features.map(f => `<li>${f}</li>`).join('');
+            product.features.map(f => `<li>${escapeHtml(f)}</li>`).join('');
 
         document.getElementById('productModalSteps').innerHTML =
-            product.howToUse.map(s => `<li>${s}</li>`).join('');
+            product.howToUse.map(s => `<li>${escapeHtml(s)}</li>`).join('');
 
         if (addToCartBtn) {
             addToCartBtn.dataset.id = product.id;

@@ -38,9 +38,14 @@ function showNoSessionState() {
     const form = document.getElementById('resetForm');
     if (form) form.hidden = true;
     showResetError('This reset link has expired or was already used. Please request a new code.');
+
     const errorEl = document.getElementById('resetError');
     if (errorEl) {
-        errorEl.innerHTML += ' <a href="forgot.html" style="color:inherit;text-decoration:underline;">Start over</a>';
+        const link = document.createElement('a');
+        link.href = 'forgot.html';
+        link.className = 'login-error-link';
+        link.textContent = 'Start over';
+        errorEl.append(' ', link);
     }
 }
 

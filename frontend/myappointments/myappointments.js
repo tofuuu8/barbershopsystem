@@ -268,6 +268,7 @@ function renderApptCard(b) {
     const canCancel = APPT_CANCELLABLE_STATUSES.includes(status);
     const canDelete = status === 'cancelled';
 
+    const refId = String(b.id || '').slice(0, 8).toUpperCase();
     const receiptBtn = `<button type="button" class="myappt-receipt-btn" data-id="${b.id}">
                <i class="fas fa-qrcode" aria-hidden="true"></i> View Receipt
            </button>`;
@@ -302,7 +303,7 @@ function renderApptCard(b) {
         <div class="myappt-card" data-id="${b.id}">
             <div class="myappt-card-header">
                 <div>
-                    <span class="myappt-card-id">Appointment #${b.id.slice(0, 8).toUpperCase()}</span>
+                    <span class="myappt-card-id">Appointment #${refId || '\u2014'}</span>
                     <span class="myappt-card-date">Booked ${formatCreatedAtAppt(b.created_at)}</span>
                 </div>
                 <span class="myappt-status myappt-status-${status}">${APPT_STATUS_LABELS[status] || status}</span>
