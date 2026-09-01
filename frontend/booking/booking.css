@@ -476,6 +476,110 @@
 }
 
 /* --------------------------------------------
+   Desktop step tracker — hidden entirely below 1025px (see the
+   HTML comment above the markup for why). A plain flex row with a
+   hairline connector behind the dots; the thin fill bar above still
+   carries the exact percentage, so this only needs to communicate
+   three states per step: upcoming, current, done.
+   -------------------------------------------- */
+.booking-step-tracker {
+    display: none;
+}
+
+@media (min-width: 1025px) {
+    .booking-step-tracker {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .booking-step-tracker::before {
+        content: '';
+        position: absolute;
+        top: 17px;
+        left: 34px;
+        right: 34px;
+        height: 1px;
+        background: var(--line);
+    }
+
+    .booking-step-tracker-item {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        background: none;
+        border: none;
+        padding: 2px 4px;
+        cursor: pointer;
+    }
+
+    .booking-step-tracker-dot {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--black);
+        border: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        color: var(--dim);
+        transition: var(--transition);
+    }
+
+    .booking-step-tracker-dot i {
+        display: none;
+        font-size: 0.72rem;
+    }
+
+    .booking-step-tracker-label {
+        font-family: var(--font-ui);
+        font-weight: 600;
+        font-size: 0.64rem;
+        letter-spacing: 1.1px;
+        text-transform: uppercase;
+        color: var(--dim);
+        white-space: nowrap;
+        transition: color 0.2s ease;
+    }
+
+    .booking-step-tracker-item:hover .booking-step-tracker-dot {
+        border-color: rgba(255, 255, 255, 0.4);
+        color: var(--white);
+    }
+
+    .booking-step-tracker-item.is-current .booking-step-tracker-dot {
+        background: var(--steel);
+        border-color: var(--steel);
+        color: var(--black);
+        box-shadow: 0 0 0 4px rgba(216, 210, 196, 0.14);
+    }
+
+    .booking-step-tracker-item.is-current .booking-step-tracker-label {
+        color: var(--white);
+    }
+
+    .booking-step-tracker-item.is-done .booking-step-tracker-dot {
+        background: var(--olive);
+        border-color: var(--olive);
+        color: var(--black);
+    }
+
+    .booking-step-tracker-item.is-done .booking-step-tracker-dot .booking-step-tracker-num {
+        display: none;
+    }
+
+    .booking-step-tracker-item.is-done .booking-step-tracker-dot i {
+        display: block;
+    }
+}
+
+/* --------------------------------------------
    Location toggle
    -------------------------------------------- */
 .booking-location-toggle {
@@ -652,6 +756,69 @@
 }
 
 /* --------------------------------------------
+   Field-level validation. Previously an invalid phone/email/area/
+   address only surfaced through the single banner at the top of the
+   whole 6-step form — on a long page that tells you SOMETHING is
+   wrong but not which of the twelve visible inputs it is. Each
+   field now gets its own clay border + inline fix, matching the
+   error/success tokens already established for the rest of the
+   site; the top banner is reserved for things no single field can
+   show (an expired session, a slot someone else just took).
+   -------------------------------------------- */
+.booking-field.has-error .booking-input,
+.booking-field.has-error .booking-select,
+.booking-field.has-error .booking-textarea {
+    border-color: var(--rust);
+}
+
+.booking-field.has-error .booking-input:focus-visible,
+.booking-field.has-error .booking-select:focus-visible,
+.booking-field.has-error .booking-textarea:focus-visible {
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px var(--rust-bg);
+}
+
+.booking-field.has-success .booking-input,
+.booking-field.has-success .booking-select,
+.booking-field.has-success .booking-textarea {
+    border-color: var(--olive);
+}
+
+.booking-field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--rust);
+    line-height: 1.4;
+}
+
+.booking-field-error i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* A field that just got fixed settles instead of popping away —
+   the same "confirmed" feel as the rest of the form's state
+   changes (card checkmarks, added-to-cart), never an abrupt cut. */
+@keyframes bookingFieldErrorIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.booking-field-error {
+    animation: bookingFieldErrorIn 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .booking-field-error {
+        animation: none;
+    }
+}
+
+/* --------------------------------------------
    Gender tabs
    -------------------------------------------- */
 .booking-gender-tabs {
@@ -721,6 +888,52 @@
 .booking-service-card.selected {
     border-color: var(--steel);
     background: rgba(216, 210, 196, 0.08);
+}
+
+/* --------------------------------------------
+   Selection confirmation. Choosing a service or barber previously
+   changed the border/background instantly with nothing that reads
+   as "registered" the way the buttons' active-state or the step
+   checkmarks do elsewhere on this page — this closes that gap with
+   the same badge-and-settle motion, not a new pattern.
+   -------------------------------------------- */
+.booking-service-card,
+.booking-barber-card {
+    position: relative;
+}
+
+.booking-service-card.selected::after,
+.booking-barber-card.selected::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--steel);
+    color: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    animation: bookingCheckPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bookingCheckPop {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .booking-service-card.selected::after,
+    .booking-barber-card.selected::after {
+        animation: none;
+    }
 }
 
 .booking-service-card--fixed {
@@ -1027,12 +1240,203 @@
 .booking-skel-line--medium { width: 65%; }
 
 /* --------------------------------------------
-   Date & time
+   Date & time — a real calendar + slot grid replaces the native
+   <input type="date"> + <select>. Those two controls are kept in
+   the DOM (visually hidden, see .booking-datetime-data below) as the
+   actual data model: every existing availability/hold/summary
+   function still reads and writes dateInput.value/timeSelect.value
+   exactly as before, so this is a new face on the same logic, not a
+   new data path.
    -------------------------------------------- */
-.booking-datetime-row {
+.booking-datetime-data {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.booking-datetime-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: minmax(0, 320px) 1fr;
+    gap: 28px;
+    align-items: start;
+}
+
+.booking-calendar {
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+}
+
+.booking-calendar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.booking-calendar-month {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 0.98rem;
+    letter-spacing: 0.4px;
+    color: var(--white);
+}
+
+.booking-calendar-nav {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--off);
+    font-size: 0.78rem;
+    transition: var(--transition);
+}
+
+.booking-calendar-nav:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.35);
+    color: var(--white);
+}
+
+.booking-calendar-nav:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.booking-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 6px;
+}
+
+.booking-calendar-weekdays span {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.booking-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.booking-calendar-day {
+    aspect-ratio: 1;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--off);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.booking-calendar-day.is-empty {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.booking-calendar-day:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.booking-calendar-day.is-today {
+    border-color: var(--steel-dim);
+    color: var(--white);
+    font-weight: 600;
+}
+
+.booking-calendar-day.is-selected {
+    background: var(--steel);
+    border-color: var(--steel);
+    color: var(--black);
+    font-weight: 700;
+}
+
+.booking-calendar-day:disabled {
+    color: var(--faint);
+    cursor: not-allowed;
+}
+
+.booking-calendar-day.is-closed:disabled {
+    text-decoration: line-through;
+    text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+
+.booking-time-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.booking-time-panel-label[hidden] {
+    display: none;
+}
+
+.booking-time-panel-label {
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 14px;
+}
+
+.booking-time-grid[hidden] {
+    display: none;
+}
+
+.booking-time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    align-content: start;
+}
+
+.booking-time-slot {
+    min-height: 44px;
+    padding: 12px 8px;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--off);
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-weight: 500;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.booking-time-slot:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    color: var(--white);
+}
+
+.booking-time-slot.is-selected {
+    background: var(--steel);
+    border-color: var(--steel);
+    color: var(--black);
+    font-weight: 700;
 }
 
 .booking-closed-note[hidden] {
@@ -1040,12 +1444,24 @@
 }
 
 .booking-closed-note {
-    grid-column: 1 / -1;
-    margin-top: -4px;
+    margin-top: 4px;
     font-family: var(--font-body);
     font-size: 0.8rem;
     font-style: italic;
     color: var(--rust);
+}
+
+@media (max-width: 768px) {
+    .booking-datetime-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 640px) {
+    .booking-time-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 /* --------------------------------------------
@@ -1494,7 +1910,6 @@
     .booking-hero { padding: 48px 0 36px; }
     .booking-title { font-size: 2.4rem; }
     .booking-service-grid { grid-template-columns: repeat(2, 1fr); }
-    .booking-datetime-row { grid-template-columns: 1fr; }
     .booking-contact-method { grid-template-columns: 1fr; }
 
     /* ----------------------------------------
@@ -1510,17 +1925,17 @@
 
        This breakpoint overlaps the global mobile bottom-nav's own
        range (≤900px, style.css), which is ALSO fixed to bottom:0 —
-       at z-index:1500, well above this bar's z-index:60. Left alone,
-       the tab bar paints directly over the lower part of this sheet,
-       including the Confirm Booking button. The fix: lift this sheet
-       to sit on TOP of the tab bar instead of underneath it, using
-       the exact same tab-bar-height offset style.css already uses for
-       the chat widget at this breakpoint, so the two stay stacked
-       instead of overlapping.
+       at z-index:1500. Rather than floating this sheet above the tab
+       bar with a gap (the old approach), it's now pushed flush to the
+       very bottom of the screen — bottom:0 — and raised above the tab
+       bar's z-index so it sits on top of it instead. Only this sheet
+       moves; the chat widget's own position/z-index (style.css) is
+       untouched, so it stays exactly where it was.
        ---------------------------------------- */
     .booking-layout {
-        /* old summary height (~168px) + the tab bar it now sits above */
-        padding-bottom: calc(168px + 58px + env(safe-area-inset-bottom, 0));
+        /* just the sheet's own height now — nothing floats above it,
+           so no separate tab-bar allowance is needed underneath */
+        padding-bottom: calc(168px + env(safe-area-inset-bottom, 0));
     }
 
     .booking-summary {
@@ -1531,11 +1946,12 @@
                       them, pinning it under the header instead of the bottom */
         left: 0;
         right: 0;
-        bottom: calc(58px + env(safe-area-inset-bottom, 0));
-        z-index: 1400; /* stays just under the tab bar's 1500, never under it */
+        bottom: 0; /* flush to the very bottom of the screen */
+        z-index: 1600; /* above the tab bar's 1500, so this sheet sits on
+                           top of it instead of floating above it */
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
-        padding: 14px 18px 14px;
+        padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0));
         /* Capped much lower than the previous 76vh: at full viewport
            height, 76vh (~700px on a typical phone) was tall enough to
            bury the hero and the first couple of step cards entirely
@@ -1559,7 +1975,7 @@
     .booking-summary-backdrop {
         position: fixed;
         inset: 0;
-        z-index: 1390;
+        z-index: 1590; /* stays just under the summary sheet's 1600 */
         background: rgba(0, 0, 0, 0.5);
     }
 

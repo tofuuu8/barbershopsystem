@@ -190,6 +190,49 @@
             <div class="booking-form-wrap" id="bookingFormWrap">
                 <div class="booking-error" id="bookingError" role="alert" hidden></div>
 
+                <!-- Desktop-only step tracker. The 6 form cards are always
+                     visible in one scroll (see .booking-steps) rather than
+                     paged one-at-a-time, which is the right call on a wide
+                     screen with room to see the whole flow — but it leaves
+                     nothing telling a wide-screen visitor which of the six
+                     they're actually on right now, or an instant way to jump
+                     back to one already answered. This nav is that anchor:
+                     it mirrors each card's own done/checked state (kept in
+                     sync from updateStepProgress() in booking.js) and adds
+                     a "you are here" marker the thin fill bar alone can't
+                     show. Hidden below 1025px on purpose — a phone's single-
+                     column, thumb-scroll model has no spare width for six
+                     labels, and the fixed bottom summary sheet already gives
+                     mobile visitors their own always-visible sense of
+                     progress (the itemized total), so the slim fill bar
+                     underneath stays the only progress cue there. -->
+                <nav class="booking-step-tracker" id="bookingStepTracker" aria-label="Booking steps">
+                    <button type="button" class="booking-step-tracker-item" data-goto-step="1">
+                        <span class="booking-step-tracker-dot"><span class="booking-step-tracker-num">1</span><i class="fas fa-check" aria-hidden="true"></i></span>
+                        <span class="booking-step-tracker-label">Location</span>
+                    </button>
+                    <button type="button" class="booking-step-tracker-item" data-goto-step="2">
+                        <span class="booking-step-tracker-dot"><span class="booking-step-tracker-num">2</span><i class="fas fa-check" aria-hidden="true"></i></span>
+                        <span class="booking-step-tracker-label">Service</span>
+                    </button>
+                    <button type="button" class="booking-step-tracker-item" data-goto-step="3">
+                        <span class="booking-step-tracker-dot"><span class="booking-step-tracker-num">3</span><i class="fas fa-check" aria-hidden="true"></i></span>
+                        <span class="booking-step-tracker-label">Barber</span>
+                    </button>
+                    <button type="button" class="booking-step-tracker-item" data-goto-step="4">
+                        <span class="booking-step-tracker-dot"><span class="booking-step-tracker-num">4</span><i class="fas fa-check" aria-hidden="true"></i></span>
+                        <span class="booking-step-tracker-label">Date &amp; Time</span>
+                    </button>
+                    <button type="button" class="booking-step-tracker-item" data-goto-step="5">
+                        <span class="booking-step-tracker-dot"><span class="booking-step-tracker-num">5</span><i class="fas fa-check" aria-hidden="true"></i></span>
+                        <span class="booking-step-tracker-label">Contact</span>
+                    </button>
+                    <button type="button" class="booking-step-tracker-item" data-goto-step="6">
+                        <span class="booking-step-tracker-dot"><span class="booking-step-tracker-num">6</span><i class="fas fa-check" aria-hidden="true"></i></span>
+                        <span class="booking-step-tracker-label">Notes</span>
+                    </button>
+                </nav>
+
                 <div class="booking-progress" role="progressbar" aria-label="Booking form progress" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" id="bookingProgress">
                     <div class="booking-progress-fill" id="bookingProgressFill"></div>
                 </div>
@@ -275,19 +318,33 @@
                             <div class="booking-card" data-step="4">
                                 <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">4</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Pick a Date &amp; Time</h2>
 
-                                <div class="booking-datetime-row">
-                                    <div class="booking-field">
-                                        <label for="bookingDateInput">Date</label>
-                                        <input type="date" id="bookingDateInput" class="booking-input" />
+                                <div class="booking-datetime-grid">
+                                    <div class="booking-calendar" id="bookingCalendar">
+                                        <div class="booking-calendar-head">
+                                            <button type="button" class="booking-calendar-nav" id="bookingCalPrev" aria-label="Previous month"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                                            <span class="booking-calendar-month" id="bookingCalMonthLabel"></span>
+                                            <button type="button" class="booking-calendar-nav" id="bookingCalNext" aria-label="Next month"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                                        </div>
+                                        <div class="booking-calendar-weekdays" aria-hidden="true">
+                                            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                        </div>
+                                        <div class="booking-calendar-days" id="bookingCalDays"></div>
                                     </div>
-                                    <div class="booking-field">
-                                        <label for="bookingTimeSelect">Time</label>
-                                        <select id="bookingTimeSelect" class="booking-select" disabled>
-                                            <option value="">Select a time</option>
-                                        </select>
+
+                                    <div class="booking-time-panel">
+                                        <span class="booking-time-panel-label" id="bookingTimeLabel">Pick a date to see available times</span>
+                                        <div class="booking-time-grid" id="bookingTimeGrid" hidden></div>
+                                        <p class="booking-closed-note" id="bookingClosedNote" hidden></p>
                                     </div>
-                                    <p class="booking-closed-note" id="bookingClosedNote" hidden>We're closed Sundays — please pick another day.</p>
                                 </div>
+
+                                <!-- Data model only — kept in sync with the calendar/time-grid
+                                     above; every existing availability/hold/summary function
+                                     still reads and writes these two controls unchanged. -->
+                                <input type="date" id="bookingDateInput" class="booking-datetime-data" tabindex="-1" aria-hidden="true" />
+                                <select id="bookingTimeSelect" class="booking-datetime-data" tabindex="-1" aria-hidden="true" disabled>
+                                    <option value="">Select a time</option>
+                                </select>
                             </div>
 
                             <!-- STEP 5 — CONTACT METHOD -->

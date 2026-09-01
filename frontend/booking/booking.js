@@ -172,6 +172,13 @@ let currentTravelFee = 0;
 // since that isn't tied to one barber's calendar.
 let barberBookedRanges = [];
 
+// First-of-month currently shown in the custom calendar widget —
+// independent of the selected date, since browsing to a future month
+// to look around shouldn't itself change what's booked.
+let calendarViewDate = new Date();
+calendarViewDate.setDate(1);
+calendarViewDate.setHours(0, 0, 0, 0);
+
 // --------------------------------------------
 // SLOT HOLD STATE
 // --------------------------------------------
@@ -221,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     initContactMethodToggle();
     initNotesCounter();
     initBookingForm();
+    initStepTracker();
     initResetButton();
     initReceiptDownloadButton();
     initMobileSummarySheet();
@@ -578,7 +586,192 @@ async function initDateTimeInputs() {
     document.getElementById('bookingTimeSelect') &&
         document.getElementById('bookingTimeSelect').addEventListener('change', updateSummary);
 
+    initCalendarUI();
+    initTimeGridUI();
+
     await refreshTimeSlots();
+}
+
+// --------------------------------------------
+// Custom calendar — a purpose-built month grid instead of the native
+// date picker (inconsistent across browsers/OSes and gives no sense
+// of "what's actually available" at a glance). It only ever writes
+// to the hidden #bookingDateInput and dispatches a real 'change'
+// event on it, so refreshTimeSlots() and everything downstream of it
+// keeps working exactly as before — this is a new face, not a new
+// data path.
+// --------------------------------------------
+function daysInMonth(year, month) {
+    return new Date(year, month + 1, 0).getDate();
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('bookingCalDays');
+    const monthLabel = document.getElementById('bookingCalMonthLabel');
+    const dateInput = document.getElementById('bookingDateInput');
+    if (!grid || !dateInput) return;
+
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const totalDays = daysInMonth(year, month);
+
+    const todayStr = localDateStr(new Date());
+    const minStr = dateInput.min || todayStr;
+    const maxStr = dateInput.max;
+    const selectedStr = dateInput.value;
+
+    if (monthLabel) {
+        monthLabel.textContent = calendarViewDate.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+    }
+
+    grid.replaceChildren();
+
+    for (let i = 0; i < firstWeekday; i++) {
+        const pad = document.createElement('span');
+        pad.className = 'booking-calendar-day is-empty';
+        pad.setAttribute('aria-hidden', 'true');
+        grid.appendChild(pad);
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+        const dateObj = new Date(year, month, day);
+        const dStr = localDateStr(dateObj);
+        const closed = !hoursForDate(dStr);
+        const outOfRange = dStr < minStr || (maxStr && dStr > maxStr);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'booking-calendar-day';
+        btn.textContent = String(day);
+        btn.dataset.date = dStr;
+
+        if (closed || outOfRange) btn.disabled = true;
+        if (closed && !outOfRange) btn.classList.add('is-closed');
+        if (dStr === todayStr) btn.classList.add('is-today');
+        if (dStr === selectedStr) {
+            btn.classList.add('is-selected');
+            btn.setAttribute('aria-current', 'date');
+        }
+
+        const spokenDate = dateObj.toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' });
+        btn.setAttribute('aria-label', closed ? `${spokenDate}, closed` : spokenDate);
+
+        grid.appendChild(btn);
+    }
+
+    const prevBtn = document.getElementById('bookingCalPrev');
+    const nextBtn = document.getElementById('bookingCalNext');
+    const viewMonthStart = new Date(year, month, 1);
+
+    const todayMonthStart = new Date();
+    todayMonthStart.setDate(1);
+    todayMonthStart.setHours(0, 0, 0, 0);
+    if (prevBtn) prevBtn.disabled = viewMonthStart <= todayMonthStart;
+
+    if (nextBtn) {
+        if (maxStr) {
+            const maxDateObj = new Date(maxStr + 'T00:00:00');
+            const maxMonthStart = new Date(maxDateObj.getFullYear(), maxDateObj.getMonth(), 1);
+            nextBtn.disabled = viewMonthStart >= maxMonthStart;
+        } else {
+            nextBtn.disabled = false;
+        }
+    }
+}
+
+function initCalendarUI() {
+    const grid = document.getElementById('bookingCalDays');
+    const dateInput = document.getElementById('bookingDateInput');
+    const prevBtn = document.getElementById('bookingCalPrev');
+    const nextBtn = document.getElementById('bookingCalNext');
+    if (!grid || !dateInput) return;
+
+    grid.addEventListener('click', function (e) {
+        const btn = e.target.closest('.booking-calendar-day');
+        if (!btn || btn.disabled || !btn.dataset.date) return;
+        dateInput.value = btn.dataset.date;
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+        renderCalendar();
+    });
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+            calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
+            renderCalendar();
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+            calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
+
+    renderCalendar();
+}
+
+// --------------------------------------------
+// Custom time slot grid — a visual layer over the hidden
+// #bookingTimeSelect. refreshTimeSlots() (unchanged, called from many
+// places already) still owns availability: it rebuilds that select's
+// <option> list exactly as before. A MutationObserver on that list is
+// the single hook that keeps this grid in sync, so every existing
+// call site benefits automatically without being touched.
+// --------------------------------------------
+function renderTimeGrid() {
+    const select = document.getElementById('bookingTimeSelect');
+    const grid = document.getElementById('bookingTimeGrid');
+    const label = document.getElementById('bookingTimeLabel');
+    const dateInput = document.getElementById('bookingDateInput');
+    if (!select || !grid) return;
+
+    const options = Array.from(select.options).filter(o => o.value);
+
+    grid.replaceChildren();
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'booking-time-slot';
+        btn.textContent = opt.textContent;
+        btn.dataset.value = opt.value;
+        if (opt.value === select.value) btn.classList.add('is-selected');
+        grid.appendChild(btn);
+    });
+
+    grid.hidden = options.length === 0;
+
+    const hasDate = !!(dateInput && dateInput.value);
+    if (label) {
+        if (!hasDate) {
+            label.textContent = 'Pick a date to see available times';
+            label.hidden = false;
+        } else if (options.length === 0) {
+            // The closed-note element right below already explains why
+            // (Sunday, or nothing left today) — no need to say it twice.
+            label.hidden = true;
+        } else {
+            label.textContent = `Available times — ${formatDateLabel(dateInput.value)}`;
+            label.hidden = false;
+        }
+    }
+}
+
+function initTimeGridUI() {
+    const select = document.getElementById('bookingTimeSelect');
+    const grid = document.getElementById('bookingTimeGrid');
+    if (!select || !grid) return;
+
+    grid.addEventListener('click', function (e) {
+        const btn = e.target.closest('.booking-time-slot');
+        if (!btn) return;
+        select.value = btn.dataset.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        grid.querySelectorAll('.booking-time-slot').forEach(b => b.classList.toggle('is-selected', b === btn));
+    });
+
+    new MutationObserver(renderTimeGrid).observe(select, { childList: true });
+    renderTimeGrid();
 }
 
 async function refreshTimeSlots() {
@@ -739,6 +932,60 @@ function updateStepProgress(sel) {
     const totalSteps = Object.keys(stepDone).length;
     if (fill) fill.style.width = `${(doneCount / totalSteps) * 100}%`;
     if (bar) bar.setAttribute('aria-valuenow', String(doneCount));
+
+    syncStepTracker(stepDone, doneCount === totalSteps);
+}
+
+// --------------------------------------------
+// Desktop step tracker (see the HTML comment above its markup).
+// Reuses the exact stepDone/doneCount just computed above rather
+// than re-deriving state, so the tracker can never drift out of
+// sync with the cards' own checkmarks. "Current" is simply the
+// first step not yet answered — the same thing a person scanning
+// the page top-to-bottom would call "what's next" — falling
+// through to the optional Notes step once everything required is
+// done.
+// --------------------------------------------
+function syncStepTracker(stepDone, allRequiredDone) {
+    const tracker = document.getElementById('bookingStepTracker');
+    if (!tracker) return;
+
+    let current = null;
+    for (let step = 1; step <= 5; step++) {
+        if (!stepDone[step]) { current = step; break; }
+    }
+    if (current === null) current = 6;
+
+    tracker.querySelectorAll('.booking-step-tracker-item').forEach(item => {
+        const step = Number(item.dataset.gotoStep);
+        const done = step === 6 ? !!allRequiredDone : !!stepDone[step];
+        item.classList.toggle('is-done', done);
+        item.classList.toggle('is-current', step === current);
+        if (step === current) item.setAttribute('aria-current', 'step');
+        else item.removeAttribute('aria-current');
+    });
+}
+
+// Click-to-jump — scrolls the matching card into the middle of the
+// viewport and moves focus to its heading, so keyboard/screen-reader
+// users land somewhere meaningful rather than just at the top of a
+// long card.
+function initStepTracker() {
+    const tracker = document.getElementById('bookingStepTracker');
+    if (!tracker) return;
+
+    tracker.addEventListener('click', function (e) {
+        const btn = e.target.closest('.booking-step-tracker-item');
+        if (!btn) return;
+        const card = document.querySelector(`.booking-card[data-step="${btn.dataset.gotoStep}"]`);
+        if (!card) return;
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const heading = card.querySelector('.booking-card-title');
+        if (heading) {
+            heading.setAttribute('tabindex', '-1');
+            heading.focus({ preventScroll: true });
+        }
+    });
 }
 
 const MIN_ADDRESS_LENGTH = 10;
@@ -967,6 +1214,55 @@ function hideBookingError() {
     if (el) el.hidden = true;
 }
 
+// --------------------------------------------
+// Field-level validation. Marks a single input's own wrapper as
+// invalid, drops a clay-colored fix message right under it, and
+// scrolls/focuses that exact field — instead of the visitor having
+// to read a banner at the top of a six-step form and guess which of
+// the twelve fields it means. Self-clears on the field's next input,
+// so fixing the value removes the error immediately rather than
+// waiting for another submit attempt.
+// --------------------------------------------
+function setFieldError(input, message) {
+    if (!input) return;
+    const field = input.closest('.booking-field');
+    if (!field) return;
+
+    field.classList.add('has-error');
+    field.classList.remove('has-success');
+
+    let msg = field.querySelector('.booking-field-error');
+    if (!msg) {
+        msg = document.createElement('p');
+        msg.className = 'booking-field-error';
+        field.appendChild(msg);
+    }
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-circle-exclamation';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = message;
+    msg.replaceChildren(icon, text);
+
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => input.focus(), 280);
+
+    if (!input.dataset.hasErrorClearListener) {
+        input.dataset.hasErrorClearListener = 'true';
+        input.addEventListener('input', () => clearFieldError(input));
+        input.addEventListener('change', () => clearFieldError(input));
+    }
+}
+
+function clearFieldError(input) {
+    if (!input) return;
+    const field = input.closest('.booking-field');
+    if (!field) return;
+    field.classList.remove('has-error');
+    const msg = field.querySelector('.booking-field-error');
+    if (msg) msg.remove();
+}
+
 function initBookingForm() {
     const form = document.getElementById('bookingForm');
     if (!form) return;
@@ -981,19 +1277,19 @@ function initBookingForm() {
             return;
         }
         if (contactMethod === 'phone' && (!sel.phone || !isValidBookingPhone(sel.phone))) {
-            showBookingError('Please enter a valid contact number so your barber can reach you.');
+            setFieldError(document.getElementById('bookingPhoneInput'), 'Enter a valid contact number so your barber can reach you.');
             return;
         }
         if (contactMethod === 'email' && (!sel.email || !isValidBookingEmail(sel.email))) {
-            showBookingError('Please enter a valid email address so we can notify you.');
+            setFieldError(document.getElementById('bookingEmailInput'), 'Enter a valid email address so we can notify you.');
             return;
         }
         if (currentLocation === 'home' && !selectedAreaName) {
-            showBookingError('Please select your area for Home Service.');
+            setFieldError(document.getElementById('bookingAreaSelect'), 'Select your area for Home Service.');
             return;
         }
         if (currentLocation === 'home' && sel.address.length < MIN_ADDRESS_LENGTH) {
-            showBookingError('Please enter a complete street address so your barber can find you.');
+            setFieldError(document.getElementById('bookingAddressInput'), 'Enter a complete street address so your barber can find you.');
             return;
         }
 
@@ -1217,6 +1513,17 @@ function initResetButton() {
         if (feeNote) feeNote.hidden = true;
         const timeSelect = document.getElementById('bookingTimeSelect');
         if (timeSelect) { timeSelect.innerHTML = '<option value="">Select a time</option>'; timeSelect.disabled = true; }
+
+        // form.reset() above already cleared the hidden #bookingDateInput's
+        // value — this just brings the visual calendar/time-grid back in
+        // sync with that (jumping back to the current month) since a
+        // native reset doesn't fire the events our render functions
+        // listen for.
+        calendarViewDate = new Date();
+        calendarViewDate.setDate(1);
+        calendarViewDate.setHours(0, 0, 0, 0);
+        renderCalendar();
+        renderTimeGrid();
 
         applyLocationToUI();
         renderServiceCard();
