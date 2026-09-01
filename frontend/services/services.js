@@ -371,10 +371,16 @@ function renderHaircutGallery(gender) {
     if (!grid) return;
 
     const refs = HAIRCUT_REFERENCES[gender] || [];
+    // .is-loaded (added via onload, once the real photo finishes fetching)
+    // swaps the shimmer skeleton for the actual image — see .haircut-gallery-item
+    // in services.css. onerror still falls back to a placeholder AND marks the
+    // tile loaded, so a broken photo doesn't shimmer forever.
     grid.innerHTML = refs.map(ref => `
         <div class="haircut-gallery-item">
             <img src="${ref.img}" alt="${ref.label} haircut reference"
-                 loading="lazy" onerror="this.src='https://placehold.co/400x500/232323/666?text=Photo'" />
+                 loading="lazy"
+                 onload="this.closest('.haircut-gallery-item').classList.add('is-loaded')"
+                 onerror="this.onerror=null;this.src='https://placehold.co/400x500/232323/666?text=Photo';this.closest('.haircut-gallery-item').classList.add('is-loaded')" />
             <div class="haircut-gallery-overlay">
                 <span class="haircut-gallery-name">${ref.label}</span>
             </div>

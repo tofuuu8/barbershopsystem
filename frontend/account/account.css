@@ -6,7 +6,26 @@
    rest of the auth flow exactly. This file only adds what's unique to
    this page: the signed-out gate and the profile summary / settings
    layout.
+
+   v2 pass: tightened micro-interactions, explicit hover/active/focus/
+   loading/error states for every interactive element, and desktop vs.
+   mobile handled as separate interaction models rather than one
+   layout that just reflows. Functional colors (--rust/--olive/--amber)
+   fall back to in-family desaturated tones if not already defined
+   upstream, so this stays visually consistent even standalone.
    ============================================ */
+
+:root {
+    --acct-ease: cubic-bezier(.4, 0, .2, 1);
+    --acct-ease-out: cubic-bezier(.16, 1, .3, 1);
+    --acct-rust: var(--rust, #c5574c);
+    --acct-rust-bg: var(--rust-bg, rgba(197, 87, 76, .12));
+    --acct-olive: var(--olive, #87a06b);
+    --acct-olive-bg: var(--olive-bg, rgba(135, 160, 107, .12));
+    --acct-amber: var(--amber, #c9a24d);
+    --acct-radius: var(--radius, 10px);
+    --acct-radius-lg: var(--radius-lg, 16px);
+}
 
 /* --------------------------------------------
    Address field — reuses .login-input's pill styling (background,
@@ -15,7 +34,7 @@
    than one line.
    -------------------------------------------- */
 .account-address-input {
-    border-radius: var(--radius);
+    border-radius: var(--acct-radius);
     resize: vertical;
     min-height: 76px;
     line-height: 1.5;
@@ -23,17 +42,35 @@
 }
 
 /* --------------------------------------------
-   Inline form feedback — the shared .login-error /
-   .recovery-resent-note components already carry their base look;
-   this just gives them a deliberate entrance instead of popping in,
-   and a shared height rule to prevent a layout jump on the form
-   above/below it as it appears and disappears.
+   Inline form feedback — success/error banners get a deliberate
+   entrance and a shared reserved-height rule so the form above/below
+   never jumps as they appear. Success and error are visually distinct
+   beyond color (icon + weight), never color alone.
    -------------------------------------------- */
+#accountProfileError,
+#accountPasswordError,
+#accountProfileSuccess,
+#accountPasswordSuccess {
+    border-radius: var(--acct-radius);
+}
+
 #accountProfileError:not([hidden]),
 #accountPasswordError:not([hidden]),
 #accountProfileSuccess:not([hidden]),
 #accountPasswordSuccess:not([hidden]) {
-    animation: accountFeedbackIn 0.24s cubic-bezier(.16,1,.3,1) both;
+    animation: accountFeedbackIn 0.28s var(--acct-ease-out) both;
+}
+
+#accountProfileSuccess:not([hidden]),
+#accountPasswordSuccess:not([hidden]) {
+    border: 1px solid rgba(135, 160, 107, .35);
+    background: var(--acct-olive-bg);
+    color: var(--acct-olive);
+}
+
+#accountProfileSuccess:not([hidden]) i,
+#accountPasswordSuccess:not([hidden]) i {
+    color: var(--acct-olive);
 }
 
 @keyframes accountFeedbackIn {
@@ -59,13 +96,10 @@
 
 /* ============================================
    SIGNED-OUT GATE
-   Same recipe as cart.css's .cart-gate — a full-page centered card
-   instead of an overlay, since it's this page's only content for a
-   signed-out visitor.
+   Full-page centered card — this page's only content for a signed-out
+   visitor, so it gets real weight instead of reading like an error.
    ============================================ */
-.account-gate[hidden] {
-    display: none;
-}
+.account-gate[hidden] { display: none; }
 
 .account-gate {
     padding: 12px 0 110px;
@@ -77,10 +111,20 @@
     margin: 0 auto;
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
+    border-radius: var(--acct-radius-lg);
     padding: 48px 40px 40px;
     text-align: center;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    animation: accountGateIn 0.36s var(--acct-ease-out) both;
+}
+
+@keyframes accountGateIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .account-gate-panel { animation: none; }
 }
 
 .account-gate-icon {
@@ -128,6 +172,11 @@
     width: 100%;
     text-align: center;
     justify-content: center;
+    /* Mobile IA: this is the primary decision point on the page for a
+       signed-out visitor — 52px keeps both CTAs comfortably above the
+       44px touch minimum with room to spare, since there's nothing
+       else competing for the thumb here. */
+    min-height: 52px;
 }
 
 .account-gate-continue {
@@ -135,33 +184,39 @@
     align-items: center;
     gap: 8px;
     margin-top: 26px;
+    padding: 6px 4px;
     font-family: var(--font-display);
     font-size: 0.68rem;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--dim);
-    transition: var(--transition);
+    transition: color 0.2s var(--acct-ease), gap 0.2s var(--acct-ease-out);
 }
 
-.account-gate-continue:hover {
+@media (hover: hover) and (pointer: fine) {
+    .account-gate-continue:hover {
+        color: var(--white);
+        gap: 11px;
+    }
+}
+
+.account-gate-continue:focus-visible {
     color: var(--white);
+    outline: 2px solid var(--steel);
+    outline-offset: 4px;
+    border-radius: 4px;
 }
 
 /* ============================================
    SIGNED-IN CONTENT
    ============================================ */
-.account-page[hidden] {
-    display: none;
-}
+.account-page[hidden] { display: none; }
 
 .account-page {
     padding: 12px 0 110px;
     background: var(--black);
 }
 
-/* --------------------------------------------
-   Profile summary — avatar, name, email, member-since
-   -------------------------------------------- */
 /* --------------------------------------------
    Member card — styled like a laminated shop ID/membership card
    rather than a generic "avatar + name" profile block. The top edge
@@ -179,9 +234,10 @@
         radial-gradient(ellipse 140% 100% at 100% 0%, rgba(216, 210, 196, 0.06), transparent 60%),
         var(--card);
     border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
+    border-radius: var(--acct-radius-lg);
     padding: 30px 34px;
     overflow: hidden;
+    transition: border-color 0.25s var(--acct-ease);
 }
 
 .account-summary::before {
@@ -249,9 +305,8 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-family: var(--font-body);
-    font-size: 0.76rem;
-    font-style: italic;
+    font-family: var(--font-mono, var(--font-body));
+    font-size: 0.74rem;
     color: var(--dim);
     padding-top: 8px;
     border-top: 1px dashed var(--line);
@@ -265,12 +320,11 @@
 
 /* --------------------------------------------
    Settings cards — Edit Profile / Change Password / Sign Out.
-   Each form card reuses .login-card, but centered/full-width layout
-   doesn't apply here, so max-width and centering are overridden.
-   -------------------------------------------- */
-/* Two-column at desktop widths: profile on the left (taller form),
+   Two-column at desktop widths: profile on the left (taller form),
    password + sign-out stacked on the right — cuts the page's vertical
-   scroll roughly in half versus the old single stacked column. */
+   scroll roughly in half versus a single stacked column, and lets a
+   mouse user compare/act on both cards without a long scroll.
+   -------------------------------------------- */
 .account-settings-grid {
     max-width: 720px;
     margin: 0 auto;
@@ -284,6 +338,7 @@
     max-width: none;
     margin: 0;
     text-align: left;
+    transition: border-color 0.25s var(--acct-ease);
 }
 
 @media (min-width: 860px) {
@@ -319,13 +374,16 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--card-light);
+    background: var(--card-light, var(--card-raised, rgba(255, 255, 255, .04)));
     border: 1px solid var(--line);
     border-radius: 50px;
     padding: 13px 20px;
     color: var(--off);
     font-family: var(--font-body);
     font-size: 0.9rem;
+    /* Read-only, not disabled: it should look calm and settled, not
+       greyed-out-and-broken like a disabled input would. */
+    cursor: default;
 }
 
 .account-email-static i {
@@ -342,7 +400,42 @@
 }
 
 /* --------------------------------------------
-   Danger zone — sign out
+   Save buttons — the primary action in each card. The spinner icon
+   already lives in the markup (login-submit-spinner); this just makes
+   sure swapping label → spinner never changes the button's footprint,
+   so the layout doesn't jump the instant a save starts.
+   -------------------------------------------- */
+.account-settings-grid .login-submit {
+    position: relative;
+    min-width: 168px;
+    transition: transform 0.2s var(--acct-ease-out), box-shadow 0.2s var(--acct-ease), opacity 0.2s var(--acct-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-settings-grid .login-submit:not(:disabled):hover {
+        transform: translateY(-2px);
+    }
+}
+
+.account-settings-grid .login-submit:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    transition-duration: 0.08s;
+}
+
+.account-settings-grid .login-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.account-settings-grid .login-submit .login-submit-spinner {
+    margin-left: 8px;
+}
+
+/* --------------------------------------------
+   Danger zone — sign out. Kept visually quiet at rest (an outline, not
+   a filled red button) since it's a low-frequency, low-risk action on
+   this device only — reserving high-alarm styling for something that
+   actually deletes data would cry wolf here.
    -------------------------------------------- */
 .account-danger-card {
     display: flex;
@@ -365,6 +458,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-height: 44px;
     padding: 12px 26px;
     border: 1px solid rgba(224, 90, 90, 0.4);
     border-radius: 50px;
@@ -375,20 +469,52 @@
     letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: var(--transition);
+    transition: background 0.2s var(--acct-ease), border-color 0.2s var(--acct-ease), color 0.2s var(--acct-ease), transform 0.2s var(--acct-ease-out);
 }
 
-.account-logout-btn:hover {
-    background: rgba(224, 90, 90, 0.12);
-    border-color: #e05a5a;
-    color: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+    .account-logout-btn:hover {
+        background: rgba(224, 90, 90, 0.12);
+        border-color: #e05a5a;
+        color: #ffffff;
+    }
+}
+
+.account-logout-btn:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+.account-logout-btn:focus-visible {
+    outline: 2px solid #f2a6a1;
+    outline-offset: 3px;
+}
+
+.account-logout-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.account-logout-btn .fa-spin {
+    animation: accountSpin 0.7s linear infinite;
+}
+
+@keyframes accountSpin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .account-logout-btn .fa-spin { animation-duration: 1.4s; }
 }
 
 /* ============================================
    SKELETON / LOADING STATE
    Toggled by account.js (setAccountLoading()) while loadProfile()
    is in flight, so the summary card and settings forms show a
-   shimmer instead of blank/placeholder text for a beat.
+   shimmer instead of blank/placeholder text for a beat. Content
+   dimensions stay fixed throughout, so nothing reflows when the real
+   data lands.
    ============================================ */
 @keyframes accountShimmer {
     0% { background-position: -200px 0; }
@@ -426,8 +552,84 @@
     pointer-events: none;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .account-summary.is-loading .account-summary-name,
+    .account-summary.is-loading .account-summary-email,
+    .account-summary.is-loading .account-summary-meta,
+    .account-settings-grid.is-loading .login-input,
+    .account-settings-grid.is-loading .account-email-static,
+    .account-summary.is-loading .account-avatar-large {
+        animation: none;
+        background-image: none;
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+}
+
+/* ============================================
+   PREFERENCES (checkboxes / selects)
+   ============================================ */
+.account-preferences-fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.account-preferences-fieldset legend {
+    display: block;
+    font-family: var(--font-ui, var(--font-display));
+    font-size: .68rem;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--dim, rgba(255, 255, 255, .55));
+    margin-bottom: 10px;
+}
+
+.account-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--off, rgba(255, 255, 255, .68));
+    font-size: .86rem;
+    margin: 8px 0;
+    border-radius: 6px;
+    transition: color 0.15s var(--acct-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-checkbox-label:hover { color: var(--white); }
+}
+
+.account-checkbox-label input {
+    accent-color: var(--steel, #d8d2c4);
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+
+.account-checkbox-label input:focus-visible {
+    outline: 2px solid var(--steel, #d8d2c4);
+    outline-offset: 3px;
+}
+
+#accountPreferredBarberInput,
+#accountFulfillmentInput { appearance: auto; }
+
+/* Larger hit area on touch without changing the visual checkbox size —
+   the label (not just the 17px box) is the tap target. */
+@media (max-width: 640px) {
+    .account-checkbox-label {
+        padding: 6px 0;
+        min-height: 44px;
+    }
+}
+
 /* ============================================
    RESPONSIVE
+   Mobile gets its own pass rather than just a reflow: hover affordances
+   drop out (handled above via (hover: hover) guards so nothing gets
+   "stuck" after a tap), spacing tightens, and the member card and
+   danger-zone actions become single, full-width, thumb-reachable
+   targets.
    ============================================ */
 @media (max-width: 640px) {
     .account-gate-panel { padding: 36px 24px 30px; }
@@ -441,6 +643,7 @@
 
     .account-danger-card {
         flex-direction: column;
+        align-items: stretch;
         text-align: center;
     }
 
@@ -448,58 +651,8 @@
         width: 100%;
         justify-content: center;
     }
-}
 
-.account-preferences-fieldset {
-    border: 0;
-    padding: 0;
-    margin: 0;
-}
-
-.account-preferences-fieldset legend {
-    display: block;
-    font-family: var(--font-ui, sans-serif);
-    font-size: .68rem;
-    letter-spacing: 1.4px;
-    text-transform: uppercase;
-    color: var(--dim, rgba(255,255,255,.55));
-    margin-bottom: 10px;
-}
-
-.account-checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    color: var(--off, rgba(255,255,255,.68));
-    font-size: .86rem;
-    margin: 8px 0;
-}
-
-.account-checkbox-label input { accent-color: var(--steel, #d8d2c4); }
-
-.account-checkbox-label input { width: 17px; height: 17px; }
-
-.account-checkbox-label input:focus-visible {
-    outline: 2px solid var(--steel, #d8d2c4);
-    outline-offset: 3px;
-}
-
-/* Larger hit area on touch without changing the visual checkbox size */
-@media (max-width: 640px) {
-    .account-checkbox-label {
-        padding: 6px 0;
-        min-height: 44px;
+    .account-settings-grid .login-submit {
+        width: 100%;
     }
 }
-
-.account-logout-btn:focus-visible {
-    outline: 2px solid #f2a6a1;
-    outline-offset: 3px;
-}
-
-.account-logout-btn:active {
-    transform: scale(0.97);
-    transition-duration: 0.08s;
-}
-#accountPreferredBarberInput,
-#accountFulfillmentInput { appearance: auto; }
