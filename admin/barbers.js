@@ -68,7 +68,7 @@ function renderTable() {
         <tr>
             <td>
                 <div style="display:flex; align-items:center; gap:12px;">
-                    ${b.image_url ? `<img src="${escapeHtml(b.image_url)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />` : ''}
+                    ${b.image_url ? `<img src="${escapeHtml(b.image_url)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.onerror=null;this.src='https://placehold.co/40x40/232323/666?text=%20';console.warn('Barber image failed to load:', '${escapeHtml(b.image_url)}');" />` : ''}
                     <div>
                         <strong>${escapeHtml(b.name)}</strong>
                         <div class="admin-cell-sub">${escapeHtml(b.title || 'Barber')}</div>
@@ -432,11 +432,15 @@ async function saveBarber() {
                 return;
             }
 
-            // Get public URL
+            // Get public URL — cache-busted with a timestamp, since the
+            // storage path is the same every time for a given barber
+            // (barbers/<id>.<ext>, upserted). Without this, browsers keep
+            // serving the previously-cached image at that exact URL even
+            // though the file underneath just changed.
             const { data: urlData } = supabaseClient.storage
                 .from('barber-images')
                 .getPublicUrl(filePath);
-            imageUrl = urlData.publicUrl;
+            imageUrl = `${urlData.publicUrl}?v=${Date.now()}`;
         } catch (uploadError) {
             console.error('Upload error:', uploadError);
             btn.disabled = false;
