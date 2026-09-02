@@ -238,6 +238,39 @@
     </section>
 
     <!-- ==========================================
+    HAIRCUT GALLERY LIGHTBOX
+    Opens when a reference tile is clicked — walks through every
+    photo/clip of that style plus its name. Populated by services.js
+    (openLightbox / renderLightboxMedia).
+    ========================================== -->
+    <div class="gallery-lightbox" id="galleryLightbox" hidden role="dialog" aria-modal="true" aria-label="Haircut reference viewer">
+        <div class="gallery-lightbox-backdrop" id="lightboxBackdrop"></div>
+
+        <div class="gallery-lightbox-content">
+            <button type="button" class="gallery-lightbox-close" id="lightboxClose" aria-label="Close">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+
+            <button type="button" class="gallery-lightbox-nav gallery-lightbox-prev" id="lightboxPrev" aria-label="Previous photo" hidden>
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
+
+            <div class="gallery-lightbox-stage" id="lightboxStage">
+                <!-- populated by services.js: <img> or <video> -->
+            </div>
+
+            <button type="button" class="gallery-lightbox-nav gallery-lightbox-next" id="lightboxNext" aria-label="Next photo" hidden>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+
+            <div class="gallery-lightbox-footer">
+                <span class="gallery-lightbox-label" id="lightboxLabel"></span>
+                <span class="gallery-lightbox-counter" id="lightboxCounter" hidden></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
     BOOK APPOINTMENT CTA
     ========================================== -->
     <section class="services-book-cta">

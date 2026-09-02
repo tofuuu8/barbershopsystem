@@ -326,6 +326,9 @@ function openAddBarberModal() {
     document.getElementById('barberExperienceInput').value = '';     // NEW
     document.getElementById('barberRatingReviewsDisplay').textContent = '⭐ 0 · 0 reviews (none yet)';
     document.getElementById('barberImageInput').value = '';          // NEW
+    delete document.getElementById('barberImageInput').dataset.existingUrl;
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imagePreviewImg').src = '';
     document.getElementById('barberActiveInput').checked = true;
     document.getElementById('barberSaveStatus').textContent = '';
     document.getElementById('barberModalBackdrop').hidden = false;
@@ -392,7 +395,12 @@ async function saveBarber() {
         return;
     }
 
-    // Upload image if a file was selected
+    // Upload image if a file was selected. On failure, stop here and tell
+    // the admin plainly — previously a failed upload was papered over with
+    // a guessed `../images/<filename>` path (which almost never exists),
+    // the rest of the form still saved, and the toast said "Saved
+    // successfully!" — so the barber's photo silently never showed up
+    // anywhere, with nothing in the UI hinting at why.
     if (file) {
         const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
         if (!allowedTypes.has(file.type) || file.size > 2 * 1024 * 1024) {
@@ -416,18 +424,27 @@ async function saveBarber() {
 
             if (uploadError) {
                 console.error('Upload error:', uploadError);
-                // Fallback: use the file name as relative path
-                imageUrl = `../images/${fileName}`;
-            } else {
-                // Get public URL
-                const { data: urlData } = supabaseClient.storage
-                    .from('barber-images')
-                    .getPublicUrl(filePath);
-                imageUrl = urlData.publicUrl;
+                btn.disabled = false;
+                btn.textContent = 'Save Barber';
+                document.getElementById('barberSaveStatus').textContent =
+                    `Image upload failed: ${uploadError.message || 'please try again.'} The barber was not saved.`;
+                document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
+                return;
             }
+
+            // Get public URL
+            const { data: urlData } = supabaseClient.storage
+                .from('barber-images')
+                .getPublicUrl(filePath);
+            imageUrl = urlData.publicUrl;
         } catch (uploadError) {
             console.error('Upload error:', uploadError);
-            imageUrl = `../images/${file.name}`;
+            btn.disabled = false;
+            btn.textContent = 'Save Barber';
+            document.getElementById('barberSaveStatus').textContent =
+                'Image upload failed unexpectedly. The barber was not saved — please try again.';
+            document.getElementById('barberSaveStatus').style.color = 'var(--bad)';
+            return;
         }
     }
 

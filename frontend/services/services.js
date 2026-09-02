@@ -326,26 +326,116 @@ const services = [
 // In-studio Men's/Women's shows a simple photo-reference gallery instead of
 // the full per-service grid — just look, one general starting price, one
 // Book Now button. (Home service keeps the full detailed grid below.)
+//
+// Each entry is one haircut style. `media` is an array of one or more shots
+// of that SAME style — multiple angles/clips of one haircut become an
+// "album": the grid tile shows the first item (with a stack badge), and
+// clicking it opens the lightbox so people can flip through the rest plus
+// the style name. A single-item `media` array still opens the lightbox —
+// it's just a one-photo album.
+//
+// Each media item is either:
+//   { type: 'image', src: '...jpg' }
+//   { type: 'video', src: '...mp4', poster: '...jpg' }   // poster = still frame shown before/instead of playback
 const HAIRCUT_REFERENCES = {
     // Real photos, reused from the homepage hairstyle gallery (index.html).
-    // Path is relative to /services/services.html, so it climbs up to /images/.
+    // Paths are relative to /services/services.html, so they climb up to /images/ or /videos/.
     men: [
-        { label: 'Taper', img: '../images/tapercut.jpg' },
-        { label: 'Pompadour', img: '../images/pompadourcut.jpg' },
-        { label: 'Modern Mullet', img: '../images/modernmulletcut.jpg' },
-        { label: 'Fade', img: '../images/fadecut.jpg' },
-        { label: 'Crew Cut', img: '../images/crewcut.jpg' },
-        { label: 'Buzz Cut', img: '../images/buzzcut.jpg' }
+        // Client work — photos/clips from actual cuts. This is now the lead
+        // content in the gallery (the 6 generic stock/placeholder shots that
+        // used to open this list — Taper, Pompadour, Modern Mullet, Fade,
+        // Crew Cut, Buzz Cut — were removed), so the first tile below is
+        // treated as the gallery's featured item in services.css.
+        { label: 'High Taper', media: [
+            { type: 'image', src: '../images/gallery/men/high-taper.jpg' },
+            { type: 'image', src: '../images/gallery/men/high-taper-2.jpg' },
+            { type: 'video', src: '../videos/gallery/men/high-taper.mp4', poster: '../images/gallery/men/high-taper-vid.jpg' }
+        ] },
+        { label: 'Mid Fade Fringe', media: [
+            { type: 'image', src: '../images/gallery/men/mid-fade-fringe-kid-1.jpg' },
+            { type: 'image', src: '../images/gallery/men/mid-fade-fringe-kid-2.jpg' },
+            { type: 'image', src: '../images/gallery/men/mid-fade-fringe-kid-3.jpg' },
+            { type: 'image', src: '../images/gallery/men/mid-fade-fringe-kid-4.jpg' }
+        ] },
+        { label: 'Tough Mullet', media: [
+            { type: 'image', src: '../images/gallery/men/tough-mullet.jpg' },
+            { type: 'video', src: '../videos/gallery/men/tough-mullet.mp4', poster: '../images/gallery/men/tough-mullet-vid.jpg' }
+        ] },
+        { label: '16 Guard Low Taper', media: [
+            { type: 'video', src: '../videos/gallery/men/16-guard-low-taper.mp4', poster: '../images/gallery/men/16-guard-low-taper.jpg' }
+        ] },
+        { label: 'Burst Fade x Fringe', media: [
+            { type: 'video', src: '../videos/gallery/men/burst-fade-x-fringe.mp4', poster: '../images/gallery/men/burst-fade-x-fringe.jpg' }
+        ] },
+        { label: 'High Taper Buzz Cut', media: [
+            { type: 'video', src: '../videos/gallery/men/high-taper-buzz-cut.mp4', poster: '../images/gallery/men/high-taper-buzz-cut.jpg' }
+        ] },
+        { label: 'Mid Taper', media: [
+            { type: 'video', src: '../videos/gallery/men/mid-taper.mp4', poster: '../images/gallery/men/mid-taper.jpg' }
+        ] },
+        { label: 'Mid Taper Mullet', media: [
+            { type: 'video', src: '../videos/gallery/men/mid-taper-mullet.mp4', poster: '../images/gallery/men/mid-taper-mullet.jpg' }
+        ] },
+        { label: 'Mid Taper x Fringe', media: [
+            { type: 'video', src: '../videos/gallery/men/mid-taper-x-fringe.mp4', poster: '../images/gallery/men/mid-taper-x-fringe.jpg' }
+        ] },
+        { label: 'Short Mullet', media: [
+            { type: 'video', src: '../videos/gallery/men/short-mullet.mp4', poster: '../images/gallery/men/short-mullet.jpg' }
+        ] },
+        { label: 'Tough Taper', media: [
+            { type: 'video', src: '../videos/gallery/men/tough-taper.mp4', poster: '../images/gallery/men/tough-taper.jpg' }
+        ] },
+        { label: 'Two Block Mullet', media: [
+            { type: 'image', src: '../images/gallery/men/two-block-mullet.jpg' }
+        ] },
+        { label: 'Slick Back Mid Taper', media: [
+            { type: 'video', src: '../videos/gallery/men/slick-back-mid-taper.mp4', poster: '../images/gallery/men/slick-back-mid-taper.jpg' }
+        ] },
+        { label: 'Tough Burst Fade', media: [
+            { type: 'video', src: '../videos/gallery/men/tough-burst-fade.mp4', poster: '../images/gallery/men/tough-burst-fade.jpg' }
+        ] },
+        { label: 'Trim Cut', media: [
+            { type: 'video', src: '../videos/gallery/men/trim-cut.mp4', poster: '../images/gallery/men/trim-cut.jpg' }
+        ] },
+        { label: 'Warrior Cut', media: [
+            { type: 'video', src: '../videos/gallery/men/warrior-cut.mp4', poster: '../images/gallery/men/warrior-cut.jpg' }
+        ] },
+        { label: '10 Guard', media: [
+            { type: 'video', src: '../videos/gallery/men/10-guard.mp4', poster: '../images/gallery/men/10-guard.jpg' }
+        ] },
+        { label: 'Asian Mod Cut', media: [
+            { type: 'video', src: '../videos/gallery/men/asian-mod-cut.mp4', poster: '../images/gallery/men/asian-mod-cut.jpg' }
+        ] },
+        { label: 'Mid Taper Blowout', media: [
+            { type: 'video', src: '../videos/gallery/men/mid-taper-blowout.mp4', poster: '../images/gallery/men/mid-taper-blowout.jpg' }
+        ] },
+        { label: 'Mid Taper Undercut', media: [
+            { type: 'video', src: '../videos/gallery/men/mid-taper-undercut.mp4', poster: '../images/gallery/men/mid-taper-undercut.jpg' }
+        ] }
     ],
-    // No women's reference photos exist on the site yet — placeholders until
-    // real ones are available. Swap these `img` paths in when you have them.
+    // Real client work up front; the rest are still placehold.co placeholders
+    // until actual photos/clips of those specific styles come in — swap each
+    // `media` array in when you have one.
     women: [
-        { label: 'Long Layers', img: 'https://placehold.co/400x500/1a1a1a/999?text=Long+Layers' },
-        { label: 'Lob', img: 'https://placehold.co/400x500/1a1a1a/999?text=Lob' },
-        { label: 'Blunt Bob', img: 'https://placehold.co/400x500/1a1a1a/999?text=Blunt+Bob' },
-        { label: 'Curtain Bangs', img: 'https://placehold.co/400x500/1a1a1a/999?text=Curtain+Bangs' },
-        { label: 'Textured Pixie', img: 'https://placehold.co/400x500/1a1a1a/999?text=Textured+Pixie' },
-        { label: 'Beach Waves', img: 'https://placehold.co/400x500/1a1a1a/999?text=Beach+Waves' }
+        { label: 'Layered Haircut', media: [
+            { type: 'video', src: '../videos/gallery/women/layered-haircut.mp4', poster: '../images/gallery/women/layered-haircut.jpg' }
+        ] },
+        { label: 'Soft Layers', media: [
+            { type: 'video', src: '../videos/gallery/women/soft-layers.mp4', poster: '../images/gallery/women/soft-layers.jpg' }
+        ] },
+        { label: 'Front Layers', media: [
+            { type: 'video', src: '../videos/gallery/women/front-layers.mp4', poster: '../images/gallery/women/front-layers.jpg' }
+        ] },
+        { label: 'Layered Apple Cut', media: [
+            { type: 'video', src: '../videos/gallery/women/layered-apple-cut.mp4', poster: '../images/gallery/women/layered-apple-cut.jpg' }
+        ] },
+        { label: 'Short Layered Cut', media: [
+            { type: 'video', src: '../videos/gallery/women/short-layered-cut.mp4', poster: '../images/gallery/women/short-layered-cut.jpg' }
+        ] },
+        { label: 'Lob', media: [{ type: 'image', src: 'https://placehold.co/400x500/1a1a1a/999?text=Lob' }] },
+        { label: 'Blunt Bob', media: [{ type: 'image', src: 'https://placehold.co/400x500/1a1a1a/999?text=Blunt+Bob' }] },
+        { label: 'Curtain Bangs', media: [{ type: 'image', src: 'https://placehold.co/400x500/1a1a1a/999?text=Curtain+Bangs' }] },
+        { label: 'Textured Pixie', media: [{ type: 'image', src: 'https://placehold.co/400x500/1a1a1a/999?text=Textured+Pixie' }] }
     ]
 };
 
@@ -371,21 +461,46 @@ function renderHaircutGallery(gender) {
     if (!grid) return;
 
     const refs = HAIRCUT_REFERENCES[gender] || [];
-    // .is-loaded (added via onload, once the real photo finishes fetching)
+
+    // .is-loaded (added via onload, once the cover image finishes fetching)
     // swaps the shimmer skeleton for the actual image — see .haircut-gallery-item
     // in services.css. onerror still falls back to a placeholder AND marks the
     // tile loaded, so a broken photo doesn't shimmer forever.
-    grid.innerHTML = refs.map(ref => `
-        <div class="haircut-gallery-item">
-            <img src="${ref.img}" alt="${ref.label} haircut reference"
+    //
+    // Each tile is a real <button> (not a bare <div>) so it's keyboard-focusable
+    // and clicking/Entering it opens the lightbox — see openLightbox() below.
+    // The tile always shows a still image: for video entries that's the
+    // `poster` frame, with a play icon over it so it reads as playable. The
+    // actual <video> only renders inside the lightbox on demand — keeps the
+    // grid light instead of trying to autoplay a dozen clips at once.
+    grid.innerHTML = refs.map((ref, index) => {
+        const first = ref.media[0];
+        const cover = first.type === 'video' ? first.poster : first.src;
+        const isAlbum = ref.media.length > 1;
+        return `
+        <button type="button" class="haircut-gallery-item" data-ref-index="${index}" aria-label="View ${ref.label} haircut reference${isAlbum ? ' (' + ref.media.length + ' photos)' : ''}">
+            <img src="${cover}" alt="${ref.label} haircut reference"
                  loading="lazy"
                  onload="this.closest('.haircut-gallery-item').classList.add('is-loaded')"
                  onerror="this.onerror=null;this.src='https://placehold.co/400x500/232323/666?text=Photo';this.closest('.haircut-gallery-item').classList.add('is-loaded')" />
-            <div class="haircut-gallery-overlay">
+            ${first.type === 'video' ? `
+            <span class="haircut-gallery-play" aria-hidden="true"><i class="fas fa-play"></i></span>
+            ` : ''}
+            ${isAlbum ? `
+            <span class="haircut-gallery-count" aria-hidden="true"><i class="fas fa-clone"></i> ${ref.media.length}</span>
+            ` : ''}
+            <span class="haircut-gallery-overlay">
                 <span class="haircut-gallery-name">${ref.label}</span>
-            </div>
-        </div>
-    `).join('');
+            </span>
+        </button>
+    `;
+    }).join('');
+
+    grid.querySelectorAll('.haircut-gallery-item').forEach(item => {
+        item.addEventListener('click', function () {
+            openLightbox(gender, Number(this.dataset.refIndex));
+        });
+    });
 
     const basePrice = generalHaircutPrice(gender);
     const total = basePrice !== null
@@ -403,6 +518,119 @@ function renderHaircutGallery(gender) {
     if (bookBtn) {
         bookBtn.href = `../booking/booking.html?type=${currentType}&gender=${gender}`;
     }
+}
+
+// ============================================
+// HAIRCUT GALLERY LIGHTBOX
+// ============================================
+// Clicking a gallery tile opens this instead of just enlarging one photo —
+// it walks through every photo/clip of that same style (the "album") plus
+// the style name, so a haircut with multiple reference shots isn't limited
+// to whichever one happened to be the grid cover.
+let lightboxGender = null;
+let lightboxRefIndex = 0;
+let lightboxMediaIndex = 0;
+let lightboxTriggerEl = null; // element to return focus to on close
+
+function currentLightboxRef() {
+    const refs = HAIRCUT_REFERENCES[lightboxGender] || [];
+    return refs[lightboxRefIndex] || null;
+}
+
+function renderLightboxMedia() {
+    const stage = document.getElementById('lightboxStage');
+    const label = document.getElementById('lightboxLabel');
+    const counter = document.getElementById('lightboxCounter');
+    const prevBtn = document.getElementById('lightboxPrev');
+    const nextBtn = document.getElementById('lightboxNext');
+    if (!stage) return;
+
+    const ref = currentLightboxRef();
+    if (!ref) return;
+    const media = ref.media[lightboxMediaIndex];
+    if (!media) return;
+
+    // Any previously playing clip should stop the instant we navigate away from it.
+    const oldVideo = stage.querySelector('video');
+    if (oldVideo) oldVideo.pause();
+
+    stage.innerHTML = media.type === 'video'
+        ? `<video src="${media.src}" poster="${media.poster || ''}" controls autoplay playsinline></video>`
+        : `<img src="${media.src}" alt="${ref.label} haircut reference" />`;
+
+    if (label) label.textContent = ref.label;
+
+    const hasMultiple = ref.media.length > 1;
+    if (counter) {
+        counter.hidden = !hasMultiple;
+        counter.textContent = hasMultiple ? `${lightboxMediaIndex + 1} / ${ref.media.length}` : '';
+    }
+    if (prevBtn) prevBtn.hidden = !hasMultiple;
+    if (nextBtn) nextBtn.hidden = !hasMultiple;
+}
+
+function lightboxStep(delta) {
+    const ref = currentLightboxRef();
+    if (!ref) return;
+    const len = ref.media.length;
+    lightboxMediaIndex = (lightboxMediaIndex + delta + len) % len;
+    renderLightboxMedia();
+}
+
+function openLightbox(gender, refIndex) {
+    const modal = document.getElementById('galleryLightbox');
+    if (!modal) return;
+
+    lightboxGender = gender;
+    lightboxRefIndex = refIndex;
+    lightboxMediaIndex = 0;
+    lightboxTriggerEl = document.activeElement;
+
+    renderLightboxMedia();
+
+    modal.hidden = false;
+    document.body.classList.add('lightbox-open');
+
+    const closeBtn = document.getElementById('lightboxClose');
+    if (closeBtn) closeBtn.focus();
+}
+
+function closeLightbox() {
+    const modal = document.getElementById('galleryLightbox');
+    if (!modal || modal.hidden) return;
+
+    const video = modal.querySelector('video');
+    if (video) video.pause();
+
+    modal.hidden = true;
+    document.body.classList.remove('lightbox-open');
+
+    if (lightboxTriggerEl && typeof lightboxTriggerEl.focus === 'function') {
+        lightboxTriggerEl.focus();
+    }
+    lightboxTriggerEl = null;
+}
+
+function initLightbox() {
+    const modal = document.getElementById('galleryLightbox');
+    if (!modal) return;
+
+    const backdrop = document.getElementById('lightboxBackdrop');
+    const closeBtn = document.getElementById('lightboxClose');
+    const prevBtn = document.getElementById('lightboxPrev');
+    const nextBtn = document.getElementById('lightboxNext');
+
+    if (backdrop) backdrop.addEventListener('click', closeLightbox);
+    if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+    if (prevBtn) prevBtn.addEventListener('click', () => lightboxStep(-1));
+    if (nextBtn) nextBtn.addEventListener('click', () => lightboxStep(1));
+
+    document.addEventListener('keydown', function (e) {
+        if (modal.hidden) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') lightboxStep(-1);
+        if (e.key === 'ArrowRight') lightboxStep(1);
+    });
 }
 
 // ============================================
@@ -655,6 +883,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initServiceTypeToggle();
     initAvailabilityCheck();
     initGenderTabs();
+    initLightbox();
 
     // Reflect whatever state we ended up with (URL-provided or defaults) in the UI.
     applyTypeToUI(currentType);

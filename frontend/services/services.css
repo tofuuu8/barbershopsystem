@@ -1,12 +1,23 @@
 /* ============================================
    SERVICES PAGE
-   Enhancement pass: same structure/hooks the JS relies on,
-   rebuilt for clearer hierarchy, real component states
-   (default/hover/active/focus/loading/error/empty), and
-   desktop vs. touch interaction models handled separately.
-   Reuses the sitewide tokens (style.css) rather than
-   introducing new ones — --steel/--olive/--rust/--amber,
-   --radius, --cut/.cut-corner, --transition.
+   Design pass v2 — same HTML structure/IDs the JS relies on
+   (no markup or JS logic changes), rebuilt for:
+     - a tighter, more considered radius/shadow system instead
+       of full-pill controls and uniform rounded-card chrome
+     - a two-column availability panel on desktop that becomes
+       a horizontally-scrolling coverage rail on mobile — the
+       two platforms get genuinely different interaction models,
+       not one layout squeezed to fit both
+     - a bento-style reference gallery: the first (real
+       client-work) tile reads as the featured piece, everything
+       else is a calm uniform grid around it — collapses to a
+       plain uniform grid on phones, where an odd-shaped tile
+       just costs scroll space for no benefit
+     - real default/hover/active/focus/loading/error/empty states
+       on every interactive element, never color alone
+   Reuses the sitewide tokens (style.css) rather than inventing
+   new ones — --steel/--olive/--rust/--amber, --radius, --cut/
+   .cut-corner, --transition.
    ============================================ */
 
 /* ============================================
@@ -67,7 +78,7 @@
     padding: 5px;
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 50px;
+    border-radius: 12px;
     width: max-content;
 }
 
@@ -79,7 +90,7 @@
     padding: 12px 28px;
     background: transparent;
     border: none;
-    border-radius: 50px;
+    border-radius: 8px;
     color: var(--dim);
     font-family: var(--font-display);
     font-size: 0.76rem;
@@ -162,12 +173,28 @@
     flex-shrink: 0;
 }
 
+/* Desktop: two columns — controls (label, select, "use my location")
+   on the left, the coverage list on the right so both are scannable
+   at once instead of one long stacked column. Mobile drops this back
+   to a single natural-order stack (see the max-width override below);
+   phones get a horizontally-scrolling coverage rail instead. */
 .home-availability-fields {
     flex: 1;
     min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 36px;
+    grid-template-areas:
+        "label   label"
+        "row     coverage"
+        "geo     coverage"
+        "status  coverage"
+        "fallback coverage";
+    align-items: start;
 }
 
 .home-availability-fields label {
+    grid-area: label;
     display: block;
     font-family: var(--font-display);
     font-size: 0.75rem;
@@ -177,9 +204,11 @@
 }
 
 .home-availability-row {
+    grid-area: row;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-self: start;
 }
 
 .home-availability-row select {
@@ -222,7 +251,8 @@
    to guess what's supported before picking one.
    ============================================ */
 .home-availability-coverage {
-    margin-top: 18px;
+    grid-area: coverage;
+    margin-top: 0;
 }
 
 .home-availability-coverage-label {
@@ -247,7 +277,7 @@
     color: var(--off);
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid var(--line);
-    border-radius: 50px;
+    border-radius: 7px;
     padding: 6px 16px;
     transition: border-color 0.2s ease, color 0.2s ease;
 }
@@ -260,6 +290,7 @@
 }
 
 .home-availability-fallback {
+    grid-area: fallback;
     margin-top: 16px;
     font-family: var(--font-body);
     font-size: 0.82rem;
@@ -280,6 +311,7 @@
 }
 
 .home-availability-geo-btn {
+    grid-area: geo;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -341,6 +373,7 @@
 }
 
 .home-availability-geo-status {
+    grid-area: status;
     margin-top: 8px;
     font-family: var(--font-body);
     font-size: 0.78rem;
@@ -360,12 +393,20 @@
     align-items: flex-start;
     gap: 12px;
     margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px dashed var(--line);
+    padding: 16px 18px;
+    background: var(--card-light);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line);
+    border-radius: 8px;
     font-family: var(--font-body);
     font-size: 0.9rem;
     line-height: 1.6;
     animation: servicesPanelIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.availability-result--yes {
+    border-left-color: var(--olive);
+    color: var(--off);
 }
 
 .availability-result--yes i {
@@ -374,13 +415,13 @@
     margin-top: 2px;
 }
 
-.availability-result--yes {
-    color: var(--off);
-}
-
 .availability-result--yes strong {
     color: var(--olive);
     font-weight: 600;
+}
+
+.availability-result--no {
+    border-left-color: var(--rust);
 }
 
 .availability-result--no i {
@@ -438,7 +479,7 @@
     flex-wrap: wrap;
     padding: 4px;
     border: 1px solid var(--line);
-    border-radius: 50px;
+    border-radius: 11px;
 }
 
 .gender-tab {
@@ -448,7 +489,7 @@
     padding: 9px 24px;
     background: transparent;
     border: none;
-    border-radius: 50px;
+    border-radius: 7px;
     color: var(--dim);
     font-family: var(--font-display);
     font-size: 0.68rem;
@@ -532,22 +573,45 @@
     display: none;
 }
 
+/* Bento layout: the first tile (real client work — see the comment on
+   HAIRCUT_REFERENCES.men in services.js) runs twice as wide and gets a
+   landscape frame, reading as the featured piece; everything else sits
+   in a calm uniform grid around it. grid-auto-flow: dense backfills any
+   gap the wide tile would otherwise leave. Collapses to a plain uniform
+   grid on phones — see the max-width overrides below, where an
+   odd-shaped tile only costs scroll space with no real payoff. */
 .haircut-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-flow: dense;
+    gap: 14px;
     margin-bottom: 32px;
 }
 
 .haircut-gallery-item {
     position: relative;
     aspect-ratio: 3 / 4;
-    border-radius: 14px;
+    border-radius: 10px;
     overflow: hidden;
     border: 1px solid var(--line);
     background: var(--card);
     transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     animation: servicesFadeIn 0.4s ease forwards;
+}
+
+.haircut-gallery-item:first-child {
+    grid-column: span 2;
+    aspect-ratio: 8 / 5;
+}
+
+.haircut-gallery-item:first-child .haircut-gallery-name {
+    font-size: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .haircut-gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 @keyframes servicesFadeIn {
@@ -697,6 +761,16 @@
     .haircut-gallery-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    /* Touch loses the wide hero tile — a phone screen is narrow enough
+       that the "featured" treatment just eats vertical space without
+       the visual contrast it has on a wider grid. */
+    .haircut-gallery-item:first-child {
+        grid-column: span 1;
+        aspect-ratio: 3 / 4;
+    }
+    .haircut-gallery-item:first-child .haircut-gallery-name {
+        font-size: 0.82rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -721,6 +795,225 @@
         width: 100%;
         justify-content: center;
     }
+}
+
+/* Gallery tiles are real <button> elements now (clickable → opens the
+   lightbox), so reset the default button chrome back to how the plain div
+   looked before. */
+.haircut-gallery-item {
+    display: block;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--card);
+    border: 1px solid var(--line);
+}
+
+/* Play icon shown over the poster frame of video reference clips. */
+.haircut-gallery-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    color: var(--white);
+    font-size: 0.85rem;
+    backdrop-filter: blur(2px);
+    transition: var(--transition);
+    pointer-events: none;
+}
+
+.haircut-gallery-play i {
+    margin-left: 2px; /* optically center the play triangle */
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .haircut-gallery-item:hover .haircut-gallery-play {
+        background: var(--steel);
+        border-color: var(--steel);
+        transform: translate(-50%, -50%) scale(1.08);
+    }
+}
+
+/* Small "multiple photos" badge for album entries (more than one shot of
+   the same style) — sits opposite the play icon so the two never collide. */
+.haircut-gallery-count {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    color: var(--white);
+    font-family: var(--font-mono, var(--font-display));
+    font-size: 0.68rem;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(2px);
+}
+
+/* ============================================
+   HAIRCUT GALLERY LIGHTBOX
+   Full-screen viewer for a reference tile's whole album (photos and/or
+   clips of that one style) plus its name. Kept intentionally simple —
+   no external lightbox library, just a fixed overlay + stage.
+   ============================================ */
+.gallery-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-lightbox[hidden] {
+    display: none;
+}
+
+/* Prevent the page from scrolling behind an open lightbox. */
+body.lightbox-open {
+    overflow: hidden;
+}
+
+.gallery-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    animation: servicesFadeIn 0.2s ease forwards;
+}
+
+.gallery-lightbox-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: min(92vw, 480px);
+    max-height: 92vh;
+    animation: servicesFadeIn 0.25s ease forwards;
+}
+
+.gallery-lightbox-stage {
+    width: 100%;
+    max-height: 74vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.gallery-lightbox-stage img,
+.gallery-lightbox-stage video {
+    display: block;
+    width: 100%;
+    max-height: 74vh;
+    object-fit: contain;
+    background: #000;
+}
+
+.gallery-lightbox-close {
+    position: absolute;
+    top: -46px;
+    right: 0;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--white);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.gallery-lightbox-close:hover,
+.gallery-lightbox-close:focus-visible {
+    background: var(--steel);
+    border-color: var(--steel);
+}
+
+.gallery-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    color: var(--white);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.gallery-lightbox-nav:hover,
+.gallery-lightbox-nav:focus-visible {
+    background: var(--steel);
+    border-color: var(--steel);
+}
+
+.gallery-lightbox-prev { left: -6px; }
+.gallery-lightbox-next { right: -6px; }
+
+.gallery-lightbox-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.gallery-lightbox-label {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: 0.4px;
+    color: var(--white);
+}
+
+.gallery-lightbox-counter {
+    font-family: var(--font-mono, var(--font-display));
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    color: var(--dim);
+}
+
+@media (max-width: 640px) {
+    .gallery-lightbox-content {
+        width: 94vw;
+    }
+    .gallery-lightbox-close {
+        top: -42px;
+        width: 34px;
+        height: 34px;
+    }
+    .gallery-lightbox-prev { left: 6px; }
+    .gallery-lightbox-next { right: 6px; }
 }
 
 /* ============================================
@@ -801,6 +1094,14 @@
     .home-availability { padding: 22px 20px; }
     .home-availability-check { flex-direction: column; gap: 10px; }
     .home-availability-check > i { display: none; }
+    /* Drop the desktop two-column grid back to a plain stack, in the
+       same order the fields already appear in the markup. */
+    .home-availability-fields {
+        display: block;
+    }
+    .home-availability-coverage {
+        margin-top: 18px;
+    }
     .service-type-toggle {
         display: flex;
         width: 100%;
@@ -818,6 +1119,28 @@
 @media (max-width: 640px) {
     .home-availability-row { flex-direction: column; }
     .home-availability-row select { width: 100%; min-height: 46px; }
+    /* Touch gets a swipeable coverage rail instead of a wrapped chip
+       cloud — one thumb gesture scans all covered areas, no wall of
+       text to visually parse. Desktop keeps the wrapped grid above. */
+    .home-availability-coverage-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 6px;
+        margin: 0 -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .home-availability-coverage-chips::-webkit-scrollbar { display: none; }
+    .coverage-chip {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+    }
     .gender-tabs { width: 100%; }
     .gender-tab { flex: 1; justify-content: center; min-height: 40px; }
     .services-book-cta { padding: 48px 0; }

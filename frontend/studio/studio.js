@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initMapLoadState();
     initCopyAddress();
     initBarberModal();
+    loadStudioBarbers();
     initOpenStatus();
 });
 
@@ -110,46 +111,15 @@ function fallbackCopy(text, onSuccess) {
 }
 
 // --------------------------------------------
-// Barber full-profile modal
+// Barber full-profile modal + "Meet the Team" mini list
 // --------------------------------------------
-// Same roster/data as about.js so a barber's profile reads identically
-// whichever page it was opened from. Ids match the data-barber-id
-// values on the .studio-barber-item buttons in studio.html.
-const studioBarbers = [
-    {
-        id: 'barber-russel',
-        name: 'Barber Russel',
-        role: 'Barber and Stylist',
-        photo: '../images/team.jpg',
-        specialties: ['Fades', 'Beard Sculpting', 'Classic Cuts'],
-        experience: 8,
-        rating: 4.9,
-        reviews: 127,
-        bio: 'Barber Russel has been behind the chair for eight years and specializes in sharp, clean fades and traditional barbering. If you want precision over trend-chasing, he\'s your guy.'
-    },
-    {
-        id: 'klark-dizon',
-        name: 'Barber Klark',
-        role: 'Owner and Master Barber',
-        photo: '../images/team1.jpg',
-        specialties: ['Modern Styles', 'Textured Crops', 'Color'],
-        experience: 6,
-        rating: 4.8,
-        reviews: 98,
-        bio: 'Barber Klark stays on top of every trend without losing the fundamentals. His textured crops and color work have built him a loyal client base of regulars.'
-    },
-    {
-        id: 'barber-jon',
-        name: 'Barber Jon',
-        role: 'Barber and Stylist',
-        photo: '../images/team1.jpg',
-        specialties: ['Precision Fades', 'Hair Color', 'Kids Cuts'],
-        experience: 5,
-        rating: 4.9,
-        reviews: 110,
-        bio: 'Barber Jon trained in both barbering and color, giving him range most barbers don\'t have. Patient with first-time kids\' cuts, precise with everything else.'
-    }
-];
+// Pulls from the same `barbers` Supabase table as about.js, so a
+// barber's name/photo/rating here always matches the About page —
+// previously this was a hardcoded 3-barber array that only ever
+// reflected whatever the roster looked like the day it was written,
+// so it silently drifted out of sync with real ratings and any
+// barber added, edited, or removed from the admin panel.
+let studioBarbers = [];
 
 function starRatingHtml(rating) {
     const full = Math.floor(rating);
@@ -162,21 +132,89 @@ function starRatingHtml(rating) {
     return html;
 }
 
-// Fills in each barber row's inline star rating on load.
-function renderBarberListRatings() {
-    const items = document.querySelectorAll('.studio-barber-item');
-    items.forEach(function (item) {
-        const barber = studioBarbers.find(b => b.id === item.dataset.barberId);
-        const ratingEl = item.querySelector('[data-rating]');
-        if (barber && ratingEl) {
-            ratingEl.innerHTML = starRatingHtml(barber.rating) + ' ' + barber.rating;
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Same relative/absolute image path handling as about.js, so a barber's
+// photo resolves the same way no matter which page rendered it.
+function resolveBarberImageSrc(barber, fallback) {
+    let src = barber.image_url || '';
+    if (src.includes('supabase.co')) {
+        // Already a full Supabase Storage URL — use as-is.
+    } else if (src && !src.startsWith('http')) {
+        src = src.replace(/^\.\.?\//, '');
+        src = '../' + src;
+    } else if (!src) {
+        src = fallback;
+    }
+    return src;
+}
+
+function showStudioBarberStatus(html) {
+    const list = document.getElementById('studioBarberList');
+    if (list) list.innerHTML = `<li class="studio-barber-status">${html}</li>`;
+}
+
+async function loadStudioBarbers() {
+    const list = document.getElementById('studioBarberList');
+    if (!list) return;
+
+    if (typeof supabaseClient === 'undefined') {
+        showStudioBarberStatus('Meet the team on our <a href="../aboutus/about.html#team">About page</a>.');
+        return;
+    }
+
+    try {
+        // Top-rated 3 active barbers — this card is a teaser for the full
+        // team page, so it's meant to lead with the shop's strongest reviews.
+        const { data, error } = await supabaseClient
+            .from('barbers')
+            .select('*')
+            .eq('is_active', true)
+            .order('rating', { ascending: false })
+            .limit(3);
+
+        if (error) {
+            console.error('Error loading barbers:', error);
+            showStudioBarberStatus('Couldn\u2019t load the team right now. <a href="../aboutus/about.html#team">See full team</a>');
+            return;
         }
-    });
+
+        studioBarbers = data || [];
+        renderStudioBarberList();
+    } catch (error) {
+        console.error('Error loading barbers:', error);
+        showStudioBarberStatus('Couldn\u2019t load the team right now. <a href="../aboutus/about.html#team">See full team</a>');
+    }
+}
+
+function renderStudioBarberList() {
+    const list = document.getElementById('studioBarberList');
+    if (!list) return;
+
+    if (!studioBarbers.length) {
+        showStudioBarberStatus('Team info coming soon.');
+        return;
+    }
+
+    list.innerHTML = studioBarbers.map(barber => {
+        const avatarSrc = resolveBarberImageSrc(barber, 'https://placehold.co/40x40/232323/666?text=%20');
+        return `
+        <li>
+            <button type="button" class="studio-barber-item" data-barber-id="${escapeHtml(barber.id)}">
+                <img src="${avatarSrc}" alt="" class="studio-barber-avatar" loading="lazy" onerror="this.src='https://placehold.co/40x40/232323/666?text=%20'" />
+                <span class="studio-barber-name">${escapeHtml(barber.name)}</span>
+                <span class="studio-barber-rating">${starRatingHtml(barber.rating || 0)} ${barber.rating || 0}</span>
+            </button>
+        </li>`;
+    }).join('');
 }
 
 function initBarberModal() {
-    renderBarberListRatings();
-
     const modal = document.getElementById('barberModal');
     const backdrop = document.getElementById('barberModalBackdrop');
     const closeBtn = document.getElementById('barberModalClose');
@@ -187,17 +225,27 @@ function initBarberModal() {
     let lastFocused = null;
 
     function openModal(barber) {
-        document.getElementById('barberModalPhoto').src = barber.photo;
-        document.getElementById('barberModalPhoto').alt = barber.name;
+        const photoSrc = resolveBarberImageSrc(barber, 'https://placehold.co/400x500/232323/666?text=Photo');
+        const photoEl = document.getElementById('barberModalPhoto');
+        photoEl.src = photoSrc;
+        photoEl.alt = barber.name;
+        photoEl.onerror = function () {
+            this.onerror = null;
+            this.src = 'https://placehold.co/400x500/232323/666?text=Photo';
+        };
         document.getElementById('barberModalName').textContent = barber.name;
-        document.getElementById('barberModalRole').textContent = barber.role;
+        document.getElementById('barberModalRole').textContent = barber.title || 'Barber';
         document.getElementById('barberModalRating').innerHTML =
-            `${starRatingHtml(barber.rating)} ${barber.rating} (${barber.reviews} reviews)`;
-        document.getElementById('barberModalBio').textContent = barber.bio;
-        document.getElementById('barberModalSpecialties').innerHTML =
-            barber.specialties.map(s => `<span class="barber-tag">${s}</span>`).join('');
-        document.getElementById('barberModalExperience').textContent = barber.experience;
-        document.getElementById('barberModalReviews').textContent = barber.reviews;
+            `${starRatingHtml(barber.rating || 0)} ${barber.rating || 0} (${barber.reviews || 0} reviews)`;
+        document.getElementById('barberModalBio').textContent = barber.bio || 'No bio available.';
+
+        const specialtiesEl = document.getElementById('barberModalSpecialties');
+        specialtiesEl.innerHTML = barber.specialties
+            ? barber.specialties.split(',').map(s => `<span class="barber-tag">${escapeHtml(s.trim())}</span>`).join('')
+            : '<span class="barber-tag">All services</span>';
+
+        document.getElementById('barberModalExperience').textContent = barber.experience || 0;
+        document.getElementById('barberModalReviews').textContent = barber.reviews || 0;
         if (bookLink) bookLink.href = `../booking/booking.html?barber=${barber.id}`;
 
         lastFocused = document.activeElement;
@@ -213,7 +261,9 @@ function initBarberModal() {
     }
 
     // Barber rows live inside the "View Barber List" card — listen on the
-    // list container and match by data-barber-id.
+    // list container and match by data-barber-id. Event delegation means
+    // this keeps working even though renderStudioBarberList() replaces
+    // the <li> items after this listener is attached.
     const list = document.getElementById('studioBarberList');
     if (list) {
         list.addEventListener('click', function (e) {

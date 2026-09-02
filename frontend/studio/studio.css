@@ -671,6 +671,24 @@
     transition: border-color 0.2s ease;
 }
 
+/* Loading / error / empty text row for the team card's mini list —
+   swapped in by studio.js while the Supabase fetch is in flight (or if
+   it fails / comes back empty), so the card never shows stale names. */
+.studio-barber-status {
+    padding: 6px 6px;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.82rem;
+    color: var(--dim);
+    line-height: 1.5;
+}
+
+.studio-barber-status a {
+    color: var(--white);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 /* ============================================
    BOOK APPOINTMENT CTA
    ============================================ */
