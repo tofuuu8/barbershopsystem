@@ -152,8 +152,12 @@
                 <p class="studio-subtitle">Drop by the studio or scope it out here first — the map, the space, the team, and the hours, all in one place.</p>
             </div>
 
-            <!-- Map + storefront photo gallery -->
-            <div class="studio-media-row">
+            <!-- Primary "visit" panel: the map is the main visual, paired
+                 with one consolidated info card (address, hours, phone,
+                 directions) instead of scattering that same information
+                 across a separate info bar + a duplicate "Get Directions"
+                 card further down the page. -->
+            <div class="studio-visit">
                 <div class="studio-map" id="studioMapWrapper">
                     <iframe
                         id="studioMapFrame"
@@ -174,78 +178,95 @@
                     </div>
                 </div>
 
-                <a class="studio-gallery" href="https://www.instagram.com/_toughcuts/" target="_blank" rel="noopener" aria-label="See more studio photos on Instagram">
-                    <div class="studio-gallery-item studio-gallery-item--featured">
-                        <img src="../images/booknowpic.jpg" alt="Toughcuts Studio interior" loading="lazy"
-                             onerror="this.src='https://placehold.co/400x400/191919/666?text=Studio'" />
-                        <div class="studio-gallery-caption">
-                            <span class="studio-gallery-name">Studio Interior</span>
-                        </div>
-                    </div>
-                    <div class="studio-gallery-item">
-                        <img src="../images/team.jpg" alt="Barbers at work" loading="lazy"
-                             onerror="this.src='https://placehold.co/400x400/191919/666?text=Studio'" />
-                        <div class="studio-gallery-caption">
-                            <span class="studio-gallery-name">Barbers at Work</span>
-                        </div>
-                    </div>
-                    <div class="studio-gallery-item">
-                        <img src="../images/toughcutshomepagepic.png" alt="Studio front area" loading="lazy"
-                             onerror="this.src='https://placehold.co/400x400/191919/666?text=Studio'" />
-                        <div class="studio-gallery-caption">
-                            <span class="studio-gallery-name">Front Area</span>
-                        </div>
-                    </div>
-                    <div class="studio-gallery-item studio-gallery-item--more">
-                        <img src="../images/landscape.jpg" alt="Studio surroundings" loading="lazy"
-                             onerror="this.src='https://placehold.co/400x400/191919/666?text=Studio'" />
-                        <div class="studio-gallery-caption">
-                            <span class="studio-gallery-more">
-                                <i class="fab fa-instagram" aria-hidden="true"></i> +12 More
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <!-- Info bar + detail cards, set on a near-black band so the
-                 page isn't one flat black stretch from hero to CTA. -->
-            <div class="studio-details-band">
-
-                <!-- Info bar: logo, address/hours, operating hours + phone -->
-                <div class="studio-info-bar">
-                    <div class="studio-info-brand">
+                <aside class="studio-visit-card cut-corner">
+                    <div class="studio-visit-brand">
                         <img src="../images/toughcutslogo.png" alt="Toughcuts Logo" class="studio-info-logo" loading="lazy" />
                         <span class="studio-info-sub">STUDIO</span>
                     </div>
 
-                    <div class="studio-info-address">
+                    <!-- Populated by studio.js on load with a real open/closed
+                         read (dot color + text swap); this static copy is what
+                         renders before JS runs and what shows if it doesn't. -->
+                    <p class="studio-visit-status" id="studioOpenStatus" data-default-text="Open 8 AM – 7 PM">
+                        <span class="studio-visit-status-dot" aria-hidden="true"></span>
+                        Open 8 AM – 7 PM
+                    </p>
+
+                    <div class="studio-visit-address">
                         <p class="studio-address-text" id="studioAddressText">
                             Phase 2 Block 11 Lot 16, Eastwind Homes,<br />
                             San Isidro, Rodriguez, 1860 Rizal
-                            <button class="studio-copy-btn" id="copyAddressBtn" type="button" aria-label="Copy address">
-                                <i class="fas fa-copy" aria-hidden="true"></i>
-                            </button>
                         </p>
-                        <p class="studio-hours-text">Open 8 AM – 7 PM</p>
+                        <button class="studio-copy-btn" id="copyAddressBtn" type="button" aria-label="Copy address">
+                            <i class="fas fa-copy" aria-hidden="true"></i> Copy
+                        </button>
                     </div>
 
-                    <div class="studio-info-contact">
-                        <p><i class="fas fa-phone" aria-hidden="true"></i> <a href="tel:+639497941205">0949 794 1205</a></p>
+                    <p class="studio-visit-phone">
+                        <i class="fas fa-phone" aria-hidden="true"></i>
+                        <a href="tel:+639497941205">0949 794 1205</a>
+                    </p>
+
+                    <a href="https://www.google.com/maps/dir/?api=1&amp;destination=14.741047,121.1546424"
+                       target="_blank" rel="noopener" class="btn-primary studio-visit-directions">
+                        <i class="fas fa-diamond-turn-right" aria-hidden="true"></i> Get Directions
+                    </a>
+                </aside>
+            </div>
+
+            <!-- Photo gallery — an editorial mosaic on desktop (pointer
+                 precision makes the asymmetric grid easy to scan), a
+                 horizontal scroll-snap strip on mobile (swiping one
+                 photo at a time reads far better on a narrow screen
+                 than four thumbnails squeezed into two columns). Same
+                 markup drives both — only the CSS display mode changes. -->
+            <a class="studio-gallery" href="https://www.instagram.com/_toughcuts/" target="_blank" rel="noopener" aria-label="See more studio photos on Instagram">
+                <div class="studio-gallery-item studio-gallery-item--featured">
+                    <img src="../images/booknowpic.jpg" alt="Toughcuts Studio interior" loading="lazy"
+                         onload="this.closest('.studio-gallery-item').classList.add('is-loaded')"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x400/191919/666?text=Studio';this.closest('.studio-gallery-item').classList.add('is-loaded')" />
+                    <div class="studio-gallery-caption">
+                        <span class="studio-gallery-name">Studio Interior</span>
                     </div>
                 </div>
+                <div class="studio-gallery-item">
+                    <img src="../images/team.jpg" alt="Barbers at work" loading="lazy"
+                         onload="this.closest('.studio-gallery-item').classList.add('is-loaded')"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x400/191919/666?text=Studio';this.closest('.studio-gallery-item').classList.add('is-loaded')" />
+                    <div class="studio-gallery-caption">
+                        <span class="studio-gallery-name">Barbers at Work</span>
+                    </div>
+                </div>
+                <div class="studio-gallery-item">
+                    <img src="../images/toughcutshomepagepic.png" alt="Studio front area" loading="lazy"
+                         onload="this.closest('.studio-gallery-item').classList.add('is-loaded')"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x400/191919/666?text=Studio';this.closest('.studio-gallery-item').classList.add('is-loaded')" />
+                    <div class="studio-gallery-caption">
+                        <span class="studio-gallery-name">Front Area</span>
+                    </div>
+                </div>
+                <div class="studio-gallery-item studio-gallery-item--more">
+                    <img src="../images/landscape.jpg" alt="Studio surroundings" loading="lazy"
+                         onload="this.closest('.studio-gallery-item').classList.add('is-loaded')"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x400/191919/666?text=Studio';this.closest('.studio-gallery-item').classList.add('is-loaded')" />
+                    <div class="studio-gallery-caption">
+                        <span class="studio-gallery-more">
+                            <i class="fab fa-instagram" aria-hidden="true"></i> +12 More
+                        </span>
+                    </div>
+                </div>
+            </a>
 
-                <!-- Four detail cards -->
-                <div class="studio-cards">
+            <!-- Three quick-fact cards: Team, Services, Hours. "Get
+                 Directions" and the address/hours block used to be
+                 repeated here too — both now live only in the visit
+                 card above, so nothing on the page says the same thing
+                 twice. -->
+            <div class="studio-facts">
 
-                <a class="studio-card studio-card--compact" href="https://www.google.com/maps/dir/?api=1&amp;destination=14.741047,121.1546424" target="_blank" rel="noopener">
-                    <div class="studio-card-icon"><i class="fas fa-diamond-turn-right" aria-hidden="true"></i></div>
-                    <span class="studio-card-label">Get Directions<br />on Google Maps</span>
-                </a>
-
-                <div class="studio-card">
+                <div class="studio-card studio-card--team">
                     <div class="studio-card-icon"><i class="fas fa-user-group" aria-hidden="true"></i></div>
-                    <span class="studio-card-label">View Barber List</span>
+                    <span class="studio-card-label">Meet the Team</span>
                     <ul class="studio-card-list studio-barber-list" id="studioBarberList">
                         <li>
                             <button type="button" class="studio-barber-item" data-barber-id="barber-russel">
@@ -276,7 +297,7 @@
 
                 <div class="studio-card">
                     <div class="studio-card-icon"><i class="fas fa-scissors" aria-hidden="true"></i></div>
-                    <span class="studio-card-label">View Available Services</span>
+                    <span class="studio-card-label">Services</span>
                     <ul class="studio-card-list">
                         <li>Haircuts — Men's &amp; Women's</li>
                         <li>In-Studio or Home Service</li>
@@ -288,19 +309,15 @@
 
                 <div class="studio-card">
                     <div class="studio-card-icon"><i class="fas fa-clock" aria-hidden="true"></i></div>
-                    <span class="studio-card-label">View Operating Hours</span>
-                    <ul class="studio-card-list studio-hours-list">
-                        <li>Open at 8 AM</li>
-                        <li>Close at 7 PM</li>
-                    </ul>
+                    <span class="studio-card-label">Hours</span>
+                    <p class="studio-card-hours">Every day<br /><strong>8 AM – 7 PM</strong></p>
+                    <span class="studio-card-note">Walk-ins welcome</span>
                 </div>
 
             </div>
 
-            </div>
-
             <!-- Big Book Appointment CTA -->
-            <div class="studio-cta">
+            <div class="studio-cta cut-corner">
                 <div class="studio-cta-text">
                     <h2>Ready for Your Next Cut?</h2>
                     <p>Walk-ins are welcome, but booking ahead guarantees your seat and your barber.</p>
@@ -317,7 +334,7 @@
     ========================================== -->
     <div class="barber-modal" id="barberModal" role="dialog" aria-modal="true" aria-labelledby="barberModalName" hidden>
         <div class="barber-modal-backdrop" id="barberModalBackdrop"></div>
-        <div class="barber-modal-panel">
+        <div class="barber-modal-panel cut-corner">
             <button class="barber-modal-close" id="barberModalClose" aria-label="Close profile">
                 <i class="fas fa-times" aria-hidden="true"></i>
             </button>

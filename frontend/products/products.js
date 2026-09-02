@@ -139,6 +139,18 @@ function fallbackImageText(dataCategory) {
     return 'ITEM';
 }
 
+// Shared empty/error state — an icon plus a message reads as a
+// deliberate, finished state rather than a stray line of leftover
+// text where the grid should be.
+function productsStatusMarkup(icon, message) {
+    return `
+        <div class="products-catalog-status">
+            <i class="fas fa-${icon}" aria-hidden="true"></i>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function renderProductCard(product) {
     const dataCategory = categoryToDataAttr(product.category);
     const gallery = Array.isArray(product.gallery) ? product.gallery : [];
@@ -155,24 +167,54 @@ function renderProductCard(product) {
     const safeName = escapeHtml(product.name);
     const price = Number(product.price) || 0;
 
+    // Image + name are now themselves an alternate way into the same
+    // details modal the "View more" link opens (findProduct/openModal in
+    // initProductModal() below) — role="button" + tabindex so it's a real
+    // keyboard target, not just a mouse affordance. This is on top of,
+    // not instead of, the link: two low-effort ways to reach the same
+    // place costs nothing and helps whichever one a visitor reaches for.
     return `
         <div class="product-card product-card--shop" data-category="${escapeHtml(dataCategory)}">
             <div class="product-brand">${escapeHtml(brandLabel(product.brand))}</div>
-            <div class="product-image">
+            <div class="product-image" role="button" tabindex="0" data-open-product="${safeId}" aria-label="View details for ${safeName}">
                 <img class="product-image-base" src="${escapeHtml(image)}" alt="${safeName}" loading="lazy"
                      onerror="this.src='https://placehold.co/120x120/232323/666?text=${encodeURIComponent(fallbackText)}'" />
                 ${hoverImage ? `<img class="product-image-hover" src="${escapeHtml(hoverImage)}" alt="" aria-hidden="true" loading="lazy"
                      onerror="this.remove()" />` : ''}
             </div>
-            <h3>${safeName}</h3>
+            <h3 role="button" tabindex="0" data-open-product="${safeId}" aria-label="View details for ${safeName}">${safeName}</h3>
             <p class="product-price">PHP ${price.toLocaleString('en-PH')}</p>
             <div class="product-card-actions">
-                <button class="product-btn" data-id="${safeId}" data-name="${safeName}" data-price="${price}">Add to Cart</button>
-                <button class="product-buy-btn" data-id="${safeId}" data-name="${safeName}" data-price="${price}">Buy Now</button>
+                <div class="product-card-actions-row">
+                    <button class="product-btn" data-id="${safeId}" data-name="${safeName}" data-price="${price}">Add to Cart</button>
+                    <button class="product-buy-btn" data-id="${safeId}" data-name="${safeName}" data-price="${price}">Buy Now</button>
+                </div>
                 <button class="product-view-more" type="button" data-product-id="${safeId}">View More Details</button>
             </div>
         </div>
     `;
+}
+
+// --------------------------------------------
+// Skeleton grid — shown the instant the page loads, in place of a
+// lone "Loading products…" line, so the catalog's actual shape (photo,
+// title, price, action row) is visible right away instead of a blank
+// beat before the real cards pop in all at once.
+// --------------------------------------------
+function renderSkeletonGrid(count) {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    grid.innerHTML = Array.from({ length: count }).map(function () {
+        return `
+            <div class="product-card product-card--shop product-card--skeleton" aria-hidden="true">
+                <div class="products-skeleton-line" style="width:38%;height:10px;margin:0 auto 14px;"></div>
+                <div class="products-skeleton-photo"></div>
+                <div class="products-skeleton-line" style="width:70%;height:16px;margin:0 auto 10px;"></div>
+                <div class="products-skeleton-line" style="width:40%;height:14px;margin:0 auto 18px;"></div>
+                <div class="products-skeleton-line" style="width:100%;height:38px;border-radius:50px;"></div>
+            </div>
+        `;
+    }).join('');
 }
 
 // --------------------------------------------
@@ -187,9 +229,11 @@ async function loadCatalogAndStock() {
     const grid = document.getElementById('productsGrid');
     if (!grid) return;
 
+    renderSkeletonGrid(6);
+
     if (typeof supabaseClient === 'undefined') {
         customerStockState.error = true;
-        grid.innerHTML = '<p class="products-catalog-status">Couldn\u2019t load products right now — please refresh the page.</p>';
+        grid.innerHTML = productsStatusMarkup('triangle-exclamation', "Couldn't load products right now — please refresh the page.");
         return;
     }
 
@@ -202,7 +246,7 @@ async function loadCatalogAndStock() {
     if (error) {
         console.error('Could not load product catalog:', error);
         customerStockState.error = true;
-        grid.innerHTML = '<p class="products-catalog-status">Couldn\u2019t load products right now — please refresh the page.</p>';
+        grid.innerHTML = productsStatusMarkup('triangle-exclamation', "Couldn't load products right now — please refresh the page.");
         updateProductModalStock();
         return;
     }
@@ -237,7 +281,7 @@ async function loadCatalogAndStock() {
     customerStockState.ready = true;
 
     if (!productsCatalog.length) {
-        grid.innerHTML = '<p class="products-catalog-status">No products are available right now — check back soon.</p>';
+        grid.innerHTML = productsStatusMarkup('basket-shopping', 'No products are available right now — check back soon.');
         return;
     }
 
@@ -418,12 +462,28 @@ function initProductModal() {
         }
     });
 
-    // "View More Details" buttons are static in the markup, so a single
-    // delegated listener on the grid covers all of them.
+    // "View More Details" links, plus the product image and name
+    // themselves (see the role="button" additions in renderProductCard)
+    // are all static/delegated, so one listener on the grid covers all
+    // three entry points into the same modal.
     grid.addEventListener('click', function (e) {
-        const btn = e.target.closest('.product-view-more');
+        const btn = e.target.closest('.product-view-more, [data-open-product]');
         if (!btn) return;
-        const product = findProduct(btn.dataset.productId);
+        const id = btn.dataset.productId || btn.dataset.openProduct;
+        const product = findProduct(id);
+        if (product) openModal(product);
+    });
+
+    // Keyboard equivalent for the image/name's role="button" — a real
+    // <button> gets this for free, but these are plain elements turned
+    // into keyboard targets via role/tabindex, so Enter/Space need to be
+    // wired up by hand.
+    grid.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const el = e.target.closest('[data-open-product]');
+        if (!el) return;
+        e.preventDefault();
+        const product = findProduct(el.dataset.openProduct);
         if (product) openModal(product);
     });
 

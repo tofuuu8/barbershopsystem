@@ -58,25 +58,153 @@
 /* ============================================
    PRODUCTS PAGE — VIEW MORE DETAILS BUTTON
    ============================================ */
+/* Restyled as a quiet text link rather than a third full-width bordered
+   pill — the image and product name are now their own click target into
+   the same modal (see the role="button" attributes in products.js), so
+   this no longer needs to carry the same visual weight as Add to
+   Cart/Buy Now above it; it's a secondary way in, not a co-equal action. */
 .product-view-more {
     display: inline-block;
-    width: 100%;
-    padding: 10px 20px;
-    background: transparent;
-    border: 1px solid var(--line);
-    border-radius: 50px;
+    width: auto;
+    margin: 2px auto 0;
+    padding: 4px 2px;
+    background: none;
+    border: none;
+    border-radius: 0;
     color: var(--dim);
-    font-family: var(--font-display);
-    font-size: 0.62rem;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: normal;
+    text-transform: none;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
     cursor: pointer;
-    transition: var(--transition);
+    transition: color 0.2s var(--transition), text-decoration-color 0.2s ease;
 }
 
 .product-view-more:hover {
-    border-color: var(--white);
+    border-color: transparent;
     color: var(--white);
+    background: none;
+    text-decoration-color: var(--steel);
+}
+
+/* --------------------------------------------
+   Card action hierarchy — Add to Cart + Buy Now sit side by side once
+   there's enough width for both to stay comfortably tappable (desktop
+   and tablet), so the two primary actions plus the view-more link don't
+   stack into three separate full-width rows. Mobile keeps them
+   full-width and stacked instead — precision is cheap with a mouse,
+   expensive with a thumb, so narrow screens get the larger, more
+   forgiving target instead of a cramped 50/50 split.
+   -------------------------------------------- */
+.product-card--shop .product-card-actions {
+    max-width: none;
+    align-items: center;
+}
+
+.product-card--shop .product-card-actions-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.product-card--shop .product-card-actions-row .product-btn,
+.product-card--shop .product-card-actions-row .product-buy-btn {
+    flex: 1;
+    max-width: none;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+@media (max-width: 640px) {
+    .product-card--shop .product-card-actions-row {
+        flex-direction: column;
+    }
+}
+
+/* --------------------------------------------
+   Clickable photo + name — an alternate, larger entry point into the
+   same details modal the view-more link opens. Desktop gets the
+   existing card-hover lift/cut-corner flip as its "this is clickable"
+   cue for free; this just adds the keyboard/focus equivalent so the
+   affordance isn't mouse-only.
+   -------------------------------------------- */
+.product-image[role="button"],
+.product-card--shop h3[role="button"] {
+    cursor: pointer;
+}
+
+.product-image[role="button"]:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 3px;
+}
+
+.product-card--shop h3[role="button"]:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ============================================
+   PRODUCTS PAGE — SKELETON LOADING GRID
+   Shown the instant the page loads (see renderSkeletonGrid() in
+   products.js), in the exact shape of a real card, instead of a lone
+   line of "Loading products…" text — the catalog's structure is
+   visible immediately rather than appearing all at once after a blank
+   beat.
+   ============================================ */
+.product-card--skeleton {
+    cursor: default;
+}
+
+.product-card--skeleton:hover {
+    transform: none;
+    border-color: var(--line);
+    box-shadow: none;
+}
+
+.product-card--skeleton:hover::before {
+    border-color: transparent var(--near-black) transparent transparent;
+}
+
+.products-skeleton-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--card-light);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.products-skeleton-line {
+    border-radius: 4px;
+    background: var(--card-light);
+    position: relative;
+    overflow: hidden;
+}
+
+.products-skeleton-photo::after,
+.products-skeleton-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    animation: productsSkeletonShimmer 1.4s infinite;
+}
+
+@keyframes productsSkeletonShimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .products-skeleton-photo::after,
+    .products-skeleton-line::after {
+        animation: none;
+    }
 }
 
 /* ============================================
@@ -509,11 +637,25 @@
    Supabase, and again if that fetch comes back empty or fails. */
 .products-catalog-status {
     grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
     text-align: center;
     padding: 60px 20px;
     color: var(--dim);
     font-family: var(--font-body);
     font-size: 0.95rem;
+}
+
+.products-catalog-status i {
+    font-size: 1.6rem;
+    color: var(--faint);
+}
+
+.products-catalog-status p {
+    max-width: 360px;
+    line-height: 1.6;
 }
 
 /* ============================================

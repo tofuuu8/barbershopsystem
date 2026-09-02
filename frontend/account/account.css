@@ -94,6 +94,10 @@
     font-weight: 400;
 }
 
+.login-field--last {
+    margin-bottom: 0;
+}
+
 /* ============================================
    SIGNED-OUT GATE
    Full-page centered card — this page's only content for a signed-out
@@ -318,20 +322,71 @@
     font-size: 0.72rem;
 }
 
+/* Quick-glance current-settings chips — lets a returning visitor see
+   their preferred barber / fulfillment choice without opening the
+   form below to check. Only meaningful facts are shown: the barber
+   chip stays hidden entirely when there's no preference set, rather
+   than announcing an empty state in a summary meant to be skimmed. */
+.account-summary-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.account-summary-facts[hidden],
+.account-fact-chip[hidden] {
+    display: none;
+}
+
+.account-fact-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 13px;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--off);
+}
+
+.account-fact-chip i {
+    color: var(--steel);
+    font-size: 0.7rem;
+}
+
 /* --------------------------------------------
-   Settings cards — Edit Profile / Change Password / Sign Out.
-   Two-column at desktop widths: profile on the left (taller form),
-   password + sign-out stacked on the right — cuts the page's vertical
-   scroll roughly in half versus a single stacked column, and lets a
-   mouse user compare/act on both cards without a long scroll.
+   Settings shell — a sticky section rail + one linear column, the
+   same structural idea Stripe/Linear settings pages use, replacing
+   the previous "two uneven columns" grid. #accountSettingsGrid is
+   kept as the outer id/class on purpose: every .account-settings-grid
+   descendant selector below (skeleton loading, save-button states,
+   danger-card, etc.) still matches regardless of this restructuring,
+   since they target descendants, not the grid's own display mode.
    -------------------------------------------- */
 .account-settings-grid {
     max-width: 720px;
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 24px;
-    align-items: start;
+    align-items: stretch;
+}
+
+.account-settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+    flex: 1;
+}
+
+.account-profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 .account-settings-grid .login-card {
@@ -341,15 +396,161 @@
     transition: border-color 0.25s var(--acct-ease);
 }
 
-@media (min-width: 860px) {
-    .account-settings-grid {
-        max-width: 940px;
-        grid-template-columns: 1fr 1fr;
+@media (hover: hover) and (pointer: fine) {
+    .account-settings-grid .login-card:hover {
+        border-color: var(--steel-dim, rgba(216, 210, 196, .45));
     }
-    .account-settings-col {
+}
+
+/* --------------------------------------------
+   Desktop section rail — hidden by default (mobile/tablet just read
+   the cards top-to-bottom), shown as a sticky vertical nav from
+   1025px up, where there's enough width for it to sit beside the
+   content without squeezing the forms.
+   -------------------------------------------- */
+.account-settings-nav {
+    display: none;
+}
+
+@media (min-width: 1025px) {
+    .account-settings-grid {
+        max-width: 960px;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 44px;
+    }
+
+    .account-settings-nav {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 2px;
+        width: 208px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 110px;
+    }
+}
+
+.account-settings-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 14px;
+    border-radius: var(--acct-radius);
+    border-left: 2px solid transparent;
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    color: var(--dim);
+    transition: background 0.18s var(--acct-ease), color 0.18s var(--acct-ease), border-color 0.18s var(--acct-ease);
+}
+
+.account-settings-nav-link i {
+    width: 16px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--faint);
+    transition: color 0.18s var(--acct-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-settings-nav-link:hover {
+        color: var(--white);
+        background: rgba(255, 255, 255, 0.05);
+    }
+}
+
+.account-settings-nav-link:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+}
+
+.account-settings-nav-link.is-active {
+    color: var(--white);
+    background: rgba(216, 210, 196, 0.08);
+    border-left-color: var(--steel);
+    font-weight: 600;
+}
+
+.account-settings-nav-link.is-active i {
+    color: var(--steel);
+}
+
+/* --------------------------------------------
+   Save row — hint + button share the same line on wide screens, but
+   the hint text is purely informational (the disabled/enabled button
+   already carries the actual state), so hiding it below the button
+   on narrow ones costs nothing.
+   -------------------------------------------- */
+.account-save-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.account-unsaved-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--acct-amber);
+}
+
+.account-unsaved-hint i {
+    font-size: 0.4rem;
+}
+
+.account-unsaved-hint[hidden] {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .account-save-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* --------------------------------------------
+   Field-level validation — matches the clay-border + icon + message
+   pattern used elsewhere on the site, so a required name or a
+   malformed phone number points at the exact field, not a banner at
+   the top of a page with five cards on it.
+   -------------------------------------------- */
+.login-field.has-error .login-input,
+.login-field.has-error select.login-input,
+.login-field.has-error textarea.login-input {
+    border-color: var(--acct-rust);
+}
+
+.login-field.has-error .login-input:focus {
+    border-color: var(--acct-rust);
+    box-shadow: 0 0 0 3px var(--acct-rust-bg);
+}
+
+.account-field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--acct-rust);
+    line-height: 1.4;
+    animation: accountFeedbackIn 0.18s var(--acct-ease-out);
+}
+
+.account-field-error i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .account-field-error {
+        animation: none;
     }
 }
 
@@ -397,6 +598,26 @@
     font-size: 0.76rem;
     color: var(--dim);
     line-height: 1.5;
+}
+
+/* --------------------------------------------
+   Save action row — deliberately NOT another .login-card. It's the
+   one place per form where feedback (banner) and the primary action
+   (button) sit together, right where the visitor's attention already
+   is after clicking Save — not back at the top of a form they've
+   scrolled past. The rule above it stands in for a card boundary
+   without visually competing with the real setting cards above.
+   -------------------------------------------- */
+.account-form-actions {
+    padding-top: 22px;
+    border-top: 1px dashed var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.account-form-actions:not(:has(.login-error:not([hidden]), .recovery-resent-note:not([hidden]))) {
+    gap: 0;
 }
 
 /* --------------------------------------------
@@ -524,6 +745,7 @@
 .account-summary.is-loading .account-summary-name,
 .account-summary.is-loading .account-summary-email,
 .account-summary.is-loading .account-summary-meta,
+.account-summary.is-loading .account-fact-chip span,
 .account-settings-grid.is-loading .login-input,
 .account-settings-grid.is-loading .account-email-static {
     color: transparent !important;
@@ -538,6 +760,10 @@
     animation: accountShimmer 1.4s ease-in-out infinite;
     pointer-events: none;
     user-select: none;
+}
+
+.account-summary.is-loading .account-fact-chip i {
+    opacity: 0.3;
 }
 
 .account-summary.is-loading .account-avatar-large {
@@ -556,6 +782,7 @@
     .account-summary.is-loading .account-summary-name,
     .account-summary.is-loading .account-summary-email,
     .account-summary.is-loading .account-summary-meta,
+    .account-summary.is-loading .account-fact-chip span,
     .account-settings-grid.is-loading .login-input,
     .account-settings-grid.is-loading .account-email-static,
     .account-summary.is-loading .account-avatar-large {
@@ -639,6 +866,10 @@
         flex-direction: column;
         text-align: center;
         padding: 28px 22px;
+    }
+
+    .account-summary-facts {
+        justify-content: center;
     }
 
     .account-danger-card {

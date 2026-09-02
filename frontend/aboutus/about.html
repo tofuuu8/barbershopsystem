@@ -218,7 +218,7 @@
                 <p class="section-subtitle">Every barber's specialties, experience, and ratings — pick who fits your style.</p>
             </div>
 
-            <div class="barber-grid" id="barberGrid">
+            <div class="barber-grid" id="barberGrid" aria-live="polite">
                 <!-- Cards are rendered by JS from the barbers array in main.js,
                      so the same data can populate both the card and the "View More" modal
                      without duplicating markup. -->
@@ -232,6 +232,7 @@
     <div class="barber-modal" id="barberModal" role="dialog" aria-modal="true" aria-labelledby="barberModalName" hidden>
         <div class="barber-modal-backdrop" id="barberModalBackdrop"></div>
         <div class="barber-modal-panel">
+            <div class="barber-modal-grabber" id="barberModalGrabber" aria-hidden="true"></div>
             <button class="barber-modal-close" id="barberModalClose" aria-label="Close profile">
                 <i class="fas fa-times" aria-hidden="true"></i>
             </button>

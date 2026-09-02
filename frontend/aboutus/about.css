@@ -1,4 +1,30 @@
 /* ============================================
+   ABOUT PAGE — LOCAL DESIGN TOKENS
+   Scoped to this page only. Extends the site's existing
+   near-black / steel identity with a small functional-color
+   set (clay / olive / amber) in the same desaturated family,
+   so state colors never look bolted-on.
+   ============================================ */
+:root{
+    --steel: #d8d2c4;
+    --steel-dim: rgba(216, 210, 196, .5);
+    --line-strong: rgba(255, 255, 255, .18);
+
+    --clay: #c5574c;          /* errors, destructive — ~4.7:1 on black */
+    --clay-bg: rgba(197, 87, 76, .12);
+    --olive: #87a06b;         /* success / confirmed — ~4.6:1 on black */
+    --olive-bg: rgba(135, 160, 107, .12);
+    --amber: #c9a24d;         /* ratings, pending */
+
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --cut: 22px; /* signature cut-corner size */
+}
+
+@media (prefers-reduced-motion: reduce){
+    :root{ --ease-out: linear; }
+}
+
+/* ============================================
    ABOUT PAGE — SHOP STORY
    ============================================ */
 .about-story {
@@ -65,15 +91,18 @@
 .value-card {
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 2px solid transparent;
     border-radius: var(--radius);
     padding: 36px 30px;
     text-align: center;
-    transition: var(--transition);
+    transition: transform .28s var(--ease-out), box-shadow .28s var(--ease-out), border-color .28s var(--ease-out);
 }
 
-.value-card:hover {
+.value-card:hover,
+.value-card:focus-visible {
     transform: translateY(-6px);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-top-color: var(--black);
 }
 
 .value-icon {
@@ -87,7 +116,10 @@
     justify-content: center;
     font-size: 1.4rem;
     margin: 0 auto 20px;
+    transition: transform .28s var(--ease-out);
 }
+
+.value-card:hover .value-icon { transform: scale(1.08) rotate(-4deg); }
 
 .value-card h3 {
     font-family: var(--font-display);
@@ -103,6 +135,11 @@
     font-size: 0.92rem;
     color: var(--gray);
     line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: reduce){
+    .value-card, .value-icon { transition: none; }
+    .value-card:hover .value-icon { transform: none; }
 }
 
 /* ============================================
@@ -160,6 +197,71 @@
     .barber-card-skel .skel-photo { animation: none; }
 }
 
+/* --------------------------------------------
+   Error state — always paired with an icon, a plain-language
+   explanation, and a way forward. Never a dead end.
+   -------------------------------------------- */
+.barber-error {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 64px 20px;
+    color: var(--dim);
+}
+
+.barber-error i {
+    font-size: 2rem;
+    margin-bottom: 16px;
+    display: block;
+    color: var(--clay);
+}
+
+.barber-error p {
+    font-family: var(--font-body);
+    margin-bottom: 20px;
+}
+
+.barber-error-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    padding: 12px 24px;
+    border: 1px solid var(--line-strong);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: border-color .2s var(--ease-out), background .2s var(--ease-out), transform .2s var(--ease-out);
+}
+
+.barber-error-retry:hover { border-color: var(--steel); background: rgba(216, 210, 196, .06); }
+.barber-error-retry:active { transform: scale(0.97); transition-duration: .08s; }
+.barber-error-retry:focus-visible { outline: 2px solid var(--steel); outline-offset: 3px; }
+.barber-error-retry.is-loading { color: transparent; pointer-events: none; position: relative; }
+.barber-error-retry.is-loading::after {
+    content: ''; position: absolute; inset: 0; margin: auto; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.2); border-top-color: var(--white); border-radius: 50%;
+    animation: barberSpin .7s linear infinite;
+}
+@keyframes barberSpin { to { transform: rotate(360deg); } }
+
+/* --------------------------------------------
+   Empty state (no active barbers)
+   -------------------------------------------- */
+.barber-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 64px 20px;
+    color: var(--dim);
+}
+.barber-empty i { font-size: 2rem; margin-bottom: 16px; display: block; }
+
+/* --------------------------------------------
+   Grid — desktop default: an auto-fit card grid.
+   Rewritten for tablet/mobile further down.
+   -------------------------------------------- */
 .barber-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -173,8 +275,8 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: var(--transition);
-    animation: barberCardIn 0.4s cubic-bezier(.16,1,.3,1) both;
+    transition: transform .32s var(--ease-out), box-shadow .32s var(--ease-out), border-color .32s var(--ease-out);
+    animation: barberCardIn 0.4s var(--ease-out) both;
 }
 
 @keyframes barberCardIn {
@@ -189,16 +291,22 @@
 .barber-card:nth-child(n+5) { animation-delay: 0.18s; }
 
 @media (prefers-reduced-motion: reduce) {
-    .barber-card { animation: none; }
+    .barber-card { animation: none; transition: none; }
 }
 
-.barber-card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+/* Hover feedback is a desktop-only affordance — touch devices have
+   no hover, so we never rely on it to reveal information there. */
+@media (hover: hover) and (pointer: fine) {
+    .barber-card:hover {
+        border-color: var(--steel-dim);
+        transform: translateY(-6px);
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.35);
+    }
+    .barber-card:hover .barber-card-photo img { transform: scale(1.06); }
 }
 
 .barber-card-photo {
+    position: relative;
     aspect-ratio: 4 / 5;
     background: var(--card-light);
     overflow: hidden;
@@ -208,11 +316,44 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    opacity: 0;
+    transition: transform 0.5s var(--ease-out), opacity .35s ease;
 }
 
-.barber-card:hover .barber-card-photo img {
-    transform: scale(1.05);
+.barber-card-photo img.is-loaded { opacity: 1; }
+
+/* Quick-view glyph — a desktop-only hint that the card opens a full
+   profile. Decorative and mouse-only (aria-hidden, not tab-stoppable);
+   the real "View Full Profile" control below remains the accessible
+   path for keyboard and touch. */
+.barber-quick-view {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5, 5, 5, .55);
+    border: 1px solid rgba(255, 255, 255, .22);
+    color: var(--white);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .22s var(--ease-out), transform .22s var(--ease-out), background .22s var(--ease-out);
+    cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .barber-card:hover .barber-quick-view { opacity: 1; transform: translateY(0); }
+    .barber-quick-view:hover { background: var(--steel); color: var(--black); border-color: var(--steel); }
+}
+
+@media (hover: none), (pointer: coarse) {
+    .barber-quick-view { display: none; }
 }
 
 .barber-card-body {
@@ -220,6 +361,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
 }
 
 .barber-card-name {
@@ -284,10 +426,7 @@
     color: var(--off);
 }
 
-.barber-card-rating i {
-    color: #f2b632;
-    font-size: 0.75rem;
-}
+.barber-card-rating i { color: var(--amber); font-size: 0.75rem; }
 
 .barber-card-actions {
     display: flex;
@@ -312,24 +451,19 @@
     padding: 11px 20px;
     border-radius: 50px;
     cursor: pointer;
-    transition: var(--transition);
+    transition: border-color .2s var(--ease-out), color .2s var(--ease-out), transform .2s var(--ease-out);
 }
 
-.barber-view-more:hover {
-    border-color: var(--white);
-    color: var(--white);
-}
-
-.barber-view-more:active {
-    transform: scale(0.97);
-    transition-duration: 0.08s;
-}
+.barber-view-more:hover { border-color: var(--white); color: var(--white); }
+.barber-view-more:active { transform: scale(0.97); transition-duration: 0.08s; }
 
 .barber-card-actions .btn-primary:focus-visible,
 .barber-view-more:focus-visible,
+.barber-quick-view:focus-visible,
 .value-card:focus-visible,
+.barber-error-retry:focus-visible,
 .barber-modal-close:focus-visible {
-    outline: 2px solid var(--steel, #d8d2c4);
+    outline: 2px solid var(--steel);
     outline-offset: 3px;
 }
 
@@ -371,7 +505,15 @@
     overflow-y: auto;
     padding: 32px;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
-    animation: barberPanelIn 0.28s cubic-bezier(.16,1,.3,1) both;
+    animation: barberPanelIn 0.28s var(--ease-out) both;
+}
+
+/* Signature cut corner, desktop only — a quiet echo of the "cut-card"
+   motif, placed bottom-left so it never collides with the close button. */
+@media (min-width: 681px) {
+    .barber-modal-panel {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+    }
 }
 
 @keyframes barberBackdropIn {
@@ -390,9 +532,9 @@
 }
 
 /* On touch/mobile, present the profile as a bottom sheet rather than
-   a centered dialog — easier to reach one-handed and matches the
-   platform's native sheet pattern instead of a desktop-style modal. */
-@media (max-width: 640px) {
+   a centered dialog — easier to reach one-handed, matches the
+   platform's native sheet pattern, and can be dragged closed. */
+@media (max-width: 680px) {
     .barber-modal {
         align-items: flex-end;
         padding: 0;
@@ -403,21 +545,37 @@
         max-height: 92vh;
         border-radius: 20px 20px 0 0;
         border-bottom: none;
-        animation: barberSheetIn 0.28s cubic-bezier(.16,1,.3,1) both;
+        clip-path: none;
+        animation: barberSheetIn 0.28s var(--ease-out) both;
     }
-    .barber-modal-panel::before {
-        content: '';
-        display: block;
-        width: 36px;
-        height: 4px;
-        border-radius: 2px;
-        background: var(--line-strong, rgba(255,255,255,.18));
-        margin: -12px auto 16px;
-    }
+    .barber-modal-panel.is-dragging { transition: none; }
     @keyframes barberSheetIn {
         from { transform: translateY(100%); }
         to { transform: translateY(0); }
     }
+}
+
+.barber-modal-grabber {
+    display: none;
+}
+
+@media (max-width: 680px) {
+    .barber-modal-grabber {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 6px;
+        margin: -8px -32px 10px;
+        touch-action: none;
+        cursor: grab;
+    }
+    .barber-modal-grabber::before {
+        content: '';
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--line-strong);
+    }
+    .barber-modal-grabber:active { cursor: grabbing; }
 }
 
 .barber-modal-close {
@@ -432,13 +590,11 @@
     color: var(--white);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: var(--transition);
+    transition: background .2s var(--ease-out), color .2s var(--ease-out), transform .2s var(--ease-out);
 }
 
-.barber-modal-close:hover {
-    background: var(--white);
-    color: var(--black);
-}
+.barber-modal-close:hover { background: var(--white); color: var(--black); }
+.barber-modal-close:active { transform: scale(0.92); transition-duration: .08s; }
 
 .barber-modal-header {
     display: flex;
@@ -480,10 +636,7 @@
     color: var(--off);
 }
 
-.barber-modal-rating i {
-    color: #f2b632;
-    font-size: 0.75rem;
-}
+.barber-modal-rating i { color: var(--amber); font-size: 0.75rem; }
 
 .barber-modal-bio {
     font-family: var(--font-body);
@@ -518,9 +671,7 @@
     border-bottom: 1px solid var(--line);
 }
 
-.barber-modal-stats > div {
-    text-align: center;
-}
+.barber-modal-stats > div { text-align: center; }
 
 .barber-modal-stat-value {
     display: block;
@@ -555,48 +706,6 @@
 }
 
 /* ============================================
-   ABOUT PAGE — RESPONSIVE
-   ============================================ */
-@media (max-width: 1024px) {
-    .about-story-wrapper {
-        grid-template-columns: 1fr;
-        gap: 36px;
-    }
-    .about-story-image {
-        max-width: 420px;
-        margin: 0 auto;
-    }
-    .values-grid {
-        grid-template-columns: 1fr;
-        max-width: 480px;
-        margin: 0 auto;
-    }
-}
-
-@media (max-width: 768px) {
-    .about-story { padding: 48px 0 64px; }
-    .about-story-title { font-size: 2.4rem; }
-    .about-values { padding: 64px 0; }
-    .barber-profiles { padding: 64px 0; }
-    .barber-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-}
-
-@media (max-width: 640px) {
-    .about-story-title { font-size: 2rem; }
-    .about-story-text { font-size: 0.92rem; }
-    .barber-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
-    .barber-card-body { padding: 16px 16px 18px; }
-    .barber-card-name { font-size: 1.05rem; }
-    .barber-modal-panel { padding: 24px; }
-    .barber-modal-header img { width: 60px; height: 60px; }
-    .barber-modal-header h3 { font-size: 1.15rem; }
-}
-
-@media (max-width: 400px) {
-    .barber-grid { grid-template-columns: 1fr; }
-}
-
-/* ============================================
    OWNER SPOTLIGHT
    ============================================ */
 .about-owner {
@@ -612,12 +721,13 @@
     align-items: center;
 }
 
+/* Signature cut corner, second and final use — the founder's
+   portrait is the one image on the page worth marking as "ours." */
 .owner-photo {
     aspect-ratio: 4 / 5;
-    border-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid var(--line);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+    clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+    filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.4));
 }
 
 .owner-photo img {
@@ -675,24 +785,106 @@
 }
 
 @media (max-width: 1024px) {
-    .owner-wrapper {
-        grid-template-columns: 1fr;
-        gap: 36px;
-    }
-    .owner-photo {
-        max-width: 380px;
-        margin: 0 auto;
-    }
-    .about-owner {
-        text-align: center;
-    }
-    .owner-quote {
-        text-align: left;
-    }
+    .owner-wrapper { grid-template-columns: 1fr; gap: 36px; }
+    .owner-photo { max-width: 380px; margin: 0 auto; }
+    .about-owner { text-align: center; }
+    .owner-quote { text-align: left; }
 }
 
 @media (max-width: 640px) {
     .about-owner { padding: 56px 0; }
     .owner-name { font-size: 2rem; }
     .owner-quote { font-size: 1rem; }
+}
+
+/* ============================================
+   ABOUT PAGE — RESPONSIVE (shop story / values)
+   ============================================ */
+@media (max-width: 1024px) {
+    .about-story-wrapper { grid-template-columns: 1fr; gap: 36px; }
+    .about-story-image { max-width: 420px; margin: 0 auto; }
+    .values-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+}
+
+@media (max-width: 768px) {
+    .about-story { padding: 48px 0 64px; }
+    .about-story-title { font-size: 2.4rem; }
+    .about-values { padding: 64px 0; }
+    .barber-profiles { padding: 64px 0; }
+}
+
+@media (max-width: 640px) {
+    .about-story-title { font-size: 2rem; }
+    .about-story-text { font-size: 0.92rem; }
+}
+
+/* ============================================
+   BARBER GRID — TABLET (two-up card grid, unchanged
+   card shape, tighter spacing)
+   ============================================ */
+@media (max-width: 900px) and (min-width: 681px) {
+    .barber-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
+}
+
+/* ============================================
+   BARBER GRID — MOBILE
+   A 2-up grid squeezes a photo, name, role, tags, stats and two
+   buttons into ~160px of width — everything gets truncated or
+   cramped. Below 680px we switch to a single-column ROW layout
+   instead: a fixed square thumbnail, one scannable line of text,
+   and two compact side-by-side actions. This is the pattern people
+   already know from booking apps — fast to scan with a thumb,
+   full detail is one tap away in the profile sheet.
+   ============================================ */
+@media (max-width: 680px) {
+    .barber-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    .barber-card { flex-direction: row; }
+    .barber-card:active { transform: scale(0.99); transition-duration: .08s; }
+
+    .barber-card-photo {
+        width: 104px;
+        flex: 0 0 104px;
+        aspect-ratio: 1 / 1;
+    }
+
+    .barber-card-body {
+        padding: 14px;
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .barber-card-name,
+    .barber-card-role {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .barber-card-role { margin-bottom: 8px; }
+
+    .barber-card-tags { display: none; }
+
+    .barber-card-stats {
+        border-style: solid;
+        padding: 8px 0;
+        margin-bottom: 10px;
+    }
+
+    .barber-card-actions { flex-direction: row; gap: 8px; }
+
+    .barber-card-actions .btn-primary,
+    .barber-view-more {
+        flex: 1;
+        padding: 10px 10px;
+        font-size: 0.64rem;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .barber-modal-panel { padding: 24px 24px 28px; }
+    .barber-modal-header img { width: 60px; height: 60px; }
+    .barber-modal-header h3 { font-size: 1.15rem; }
 }

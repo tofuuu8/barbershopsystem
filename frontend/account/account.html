@@ -172,23 +172,48 @@
                     <h2 class="account-summary-name" id="accountDisplayName">—</h2>
                     <p class="account-summary-email" id="accountDisplayEmail">—</p>
                     <p class="account-summary-meta"><i class="fas fa-id-badge" aria-hidden="true"></i> <span id="accountMemberSince"></span></p>
+                    <div class="account-summary-facts" id="accountSummaryFacts">
+                        <span class="account-fact-chip" id="accountFactBarber" hidden>
+                            <i class="fas fa-scissors" aria-hidden="true"></i> <span></span>
+                        </span>
+                        <span class="account-fact-chip" id="accountFactFulfillment">
+                            <i class="fas fa-store" aria-hidden="true"></i> <span></span>
+                        </span>
+                    </div>
                 </div>
             </div>
 
             <div class="account-settings-grid" id="accountSettingsGrid">
 
-                <!-- Edit Profile -->
-                <div class="login-card">
-                    <h3 class="account-section-title">Edit Profile</h3>
-                    <p class="account-section-sub">Update the name, phone number, and address on your account.</p>
+                <!-- Desktop-only section rail (Stripe/Linear-style settings
+                     nav) — hidden below 1025px, where the cards below just
+                     read top-to-bottom in one scroll instead. Active-state
+                     highlighting is scroll-driven by account.js, not just
+                     click state, so it stays honest about where you
+                     actually are on the page. -->
+                <nav class="account-settings-nav" id="accountSettingsNav" aria-label="Settings sections">
+                    <a href="#section-personal" class="account-settings-nav-link" data-section="section-personal"><i class="fas fa-user" aria-hidden="true"></i> Personal Info</a>
+                    <a href="#section-delivery" class="account-settings-nav-link" data-section="section-delivery"><i class="fas fa-truck" aria-hidden="true"></i> Delivery &amp; Preferences</a>
+                    <a href="#section-notifications" class="account-settings-nav-link" data-section="section-notifications"><i class="fas fa-bell" aria-hidden="true"></i> Notifications</a>
+                    <a href="#section-password" class="account-settings-nav-link" data-section="section-password"><i class="fas fa-lock" aria-hidden="true"></i> Security</a>
+                    <a href="#section-signout" class="account-settings-nav-link" data-section="section-signout"><i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out</a>
+                </nav>
 
-                    <div class="login-error" id="accountProfileError" role="alert" hidden></div>
-                    <div class="recovery-resent-note" id="accountProfileSuccess" role="status" aria-live="polite" hidden>
-                        <i class="fas fa-circle-check" aria-hidden="true"></i>
-                        <span>Your profile has been updated.</span>
-                    </div>
+                <div class="account-settings-content">
 
-                    <form id="accountNameForm" class="login-form" novalidate>
+                <!-- Edit Profile — split into three focused cards instead of
+                     one long undifferentiated form, so each concern (who you
+                     are / where things go / how we reach you) reads as its
+                     own scannable unit. All three still live inside ONE
+                     <form>, so account.js's single submit handler and every
+                     field id/name below are completely unchanged. -->
+                <form id="accountNameForm" class="account-profile-form" novalidate>
+
+                    <div class="login-card" id="section-personal">
+                        <h3 class="account-section-title">Personal Info</h3>
+                        <p class="account-section-sub">Your name and the phone number we'll use to reach you.</p>
+
+                        <div class="login-form">
                         <div class="login-field">
                             <label for="accountNameInput">Full Name</label>
                             <input type="text" id="accountNameInput" name="accountNameInput" class="login-input" placeholder="Juan Dela Cruz" autocomplete="name" />
@@ -199,6 +224,22 @@
                             <input type="tel" id="accountPhoneInput" name="accountPhoneInput" class="login-input" placeholder="09XX XXX XXXX" autocomplete="tel" maxlength="20" />
                         </div>
 
+                        <div class="login-field login-field--last">
+                            <label>Email Address</label>
+                            <div class="account-email-static">
+                                <i class="fas fa-envelope" aria-hidden="true"></i>
+                                <span id="accountEmailStatic">—</span>
+                            </div>
+                            <p class="account-field-note">Contact us at info@toughcuts.com to change the email on your account.</p>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="login-card" id="section-delivery">
+                        <h3 class="account-section-title">Delivery &amp; Preferences</h3>
+                        <p class="account-section-sub">Where orders ship, and who cuts your hair.</p>
+
+                        <div class="login-form">
                         <div class="login-field">
                             <label for="accountAddressInput">Default Address <span class="account-field-optional">(Optional)</span></label>
                             <textarea id="accountAddressInput" name="accountAddressInput" class="login-input account-address-input" placeholder="House/Unit No., Street, Barangay, City, Province" autocomplete="street-address" rows="3" maxlength="200"></textarea>
@@ -217,49 +258,59 @@
                             </select>
                         </div>
 
-                        <div class="login-field">
+                        <div class="login-field login-field--last">
                             <label for="accountFulfillmentInput">Default Order Fulfillment</label>
                             <select id="accountFulfillmentInput" name="accountFulfillmentInput" class="login-input">
                                 <option value="pickup">Pickup at Studio</option>
                                 <option value="delivery">Delivery</option>
                             </select>
                         </div>
+                        </div>
+                    </div>
 
-                        <fieldset class="login-field account-preferences-fieldset">
-                            <legend>Notifications</legend>
+                    <div class="login-card" id="section-notifications">
+                        <h3 class="account-section-title">Notifications</h3>
+                        <p class="account-section-sub">Choose how Toughcuts reaches you about orders and appointments.</p>
+
+                        <div class="login-form">
+                        <fieldset class="login-field account-preferences-fieldset login-field--last">
+                            <legend>Get notified by</legend>
                             <label class="account-checkbox-label"><input type="checkbox" id="accountEmailNotificationsInput" /> Email updates</label>
                             <label class="account-checkbox-label"><input type="checkbox" id="accountSmsNotificationsInput" /> SMS updates</label>
                             <label class="account-checkbox-label"><input type="checkbox" id="accountMarketingInput" /> Offers and promotions</label>
                         </fieldset>
+                        </div>
+                    </div>
 
-                        <div class="login-field">
-                            <label>Email Address</label>
-                            <div class="account-email-static">
-                                <i class="fas fa-envelope" aria-hidden="true"></i>
-                                <span id="accountEmailStatic">—</span>
-                            </div>
-                            <p class="account-field-note">Contact us at info@toughcuts.com to change the email on your account.</p>
+                    <!-- Save action — kept separate from the cards above so the
+                         confirmation/error message appears right next to the
+                         button that triggered it, not back at the top of a
+                         form the visitor has already scrolled past. Save
+                         starts disabled and only lights up once a field
+                         actually changes (see initFormDirtyTracking in
+                         account.js) — a form with nothing to save shouldn't
+                         invite a click. -->
+                    <div class="account-form-actions">
+                        <div class="login-error" id="accountProfileError" role="alert" hidden></div>
+                        <div class="recovery-resent-note" id="accountProfileSuccess" role="status" aria-live="polite" hidden>
+                            <i class="fas fa-circle-check" aria-hidden="true"></i>
+                            <span>Your profile has been updated.</span>
                         </div>
 
-                        <button type="submit" class="btn-primary login-submit" id="accountNameSubmitBtn">
-                            <span class="login-submit-text">Save Changes</span>
-                            <i class="fas fa-circle-notch fa-spin login-submit-spinner" aria-hidden="true" hidden></i>
-                        </button>
-                    </form>
-                </div>
-
-                <div class="account-settings-col">
+                        <div class="account-save-row">
+                            <span class="account-unsaved-hint" id="accountNameUnsavedHint" hidden><i class="fas fa-circle" aria-hidden="true"></i> Unsaved changes</span>
+                            <button type="submit" class="btn-primary login-submit" id="accountNameSubmitBtn" disabled>
+                                <span class="login-submit-text">Save Changes</span>
+                                <i class="fas fa-circle-notch fa-spin login-submit-spinner" aria-hidden="true" hidden></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
 
                 <!-- Change Password -->
-                <div class="login-card">
+                <div class="login-card" id="section-password">
                     <h3 class="account-section-title">Change Password</h3>
                     <p class="account-section-sub">Enter your current password, then choose a new one.</p>
-
-                    <div class="login-error" id="accountPasswordError" role="alert" hidden></div>
-                    <div class="recovery-resent-note" id="accountPasswordSuccess" role="status" aria-live="polite" hidden>
-                        <i class="fas fa-circle-check" aria-hidden="true"></i>
-                        <span>Your password has been updated.</span>
-                    </div>
 
                     <form id="accountPasswordForm" class="login-form" novalidate>
                         <div class="login-field">
@@ -284,7 +335,7 @@
                             <ul class="password-checklist" id="accountPasswordChecklist"></ul>
                         </div>
 
-                        <div class="login-field">
+                        <div class="login-field login-field--last">
                             <label for="accountConfirmPassword">Confirm New Password</label>
                             <div class="login-input-wrap">
                                 <input type="password" id="accountConfirmPassword" name="accountConfirmPassword" class="login-input" placeholder="Re-enter your new password" autocomplete="new-password" />
@@ -294,15 +345,23 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn-primary login-submit" id="accountPasswordSubmitBtn">
-                            <span class="login-submit-text">Update Password</span>
-                            <i class="fas fa-circle-notch fa-spin login-submit-spinner" aria-hidden="true" hidden></i>
-                        </button>
+                        <div class="account-form-actions">
+                            <div class="login-error" id="accountPasswordError" role="alert" hidden></div>
+                            <div class="recovery-resent-note" id="accountPasswordSuccess" role="status" aria-live="polite" hidden>
+                                <i class="fas fa-circle-check" aria-hidden="true"></i>
+                                <span>Your password has been updated.</span>
+                            </div>
+
+                            <button type="submit" class="btn-primary login-submit" id="accountPasswordSubmitBtn" disabled>
+                                <span class="login-submit-text">Update Password</span>
+                                <i class="fas fa-circle-notch fa-spin login-submit-spinner" aria-hidden="true" hidden></i>
+                            </button>
+                        </div>
                     </form>
                 </div>
 
                 <!-- Sign Out -->
-                <div class="login-card account-danger-card">
+                <div class="login-card account-danger-card" id="section-signout">
                     <div>
                         <h3 class="account-section-title">Sign Out</h3>
                         <p>Sign out of Toughcuts on this device.</p>

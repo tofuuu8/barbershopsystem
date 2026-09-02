@@ -5,7 +5,28 @@ document.addEventListener('DOMContentLoaded', function () {
     initMapLoadState();
     initCopyAddress();
     initBarberModal();
+    initOpenStatus();
 });
+
+// --------------------------------------------
+// Open / closed status
+// --------------------------------------------
+// The studio card ships with static "Open 8 AM – 7 PM" copy so it never
+// renders blank before JS runs (and still reads fine with JS disabled).
+// Here it's upgraded to an actual open/closed read off the visitor's
+// local clock, matching the daily 8:00–19:00 hours in this page's own
+// JSON-LD block above.
+function initOpenStatus() {
+    const el = document.getElementById('studioOpenStatus');
+    if (!el) return;
+
+    const hour = new Date().getHours();
+    const isOpen = hour >= 8 && hour < 19;
+
+    el.classList.add(isOpen ? 'is-open' : 'is-closed');
+    el.innerHTML = '<span class="studio-visit-status-dot" aria-hidden="true"></span>' +
+        (isOpen ? 'Open now — closes 7 PM' : 'Closed now — opens 8 AM');
+}
 
 // --------------------------------------------
 // Map skeleton + blocked-iframe fallback

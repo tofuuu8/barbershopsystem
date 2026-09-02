@@ -23,16 +23,16 @@ async function loadBarbers() {
 
         if (error) {
             console.error('❌ Error loading barbers:', error);
-            showBarberError('Could not load barbers. Please refresh the page.');
+            showBarberError('Could not load barbers. Please try again.');
             return;
         }
 
         barbers = data || [];
         console.log('✅ Loaded barbers:', barbers.length, barbers);
-        
+
         renderBarberCards();
         initBarberModal();
-        
+
     } catch (error) {
         console.error('❌ Error:', error);
         showBarberError('Something went wrong. Please try again.');
@@ -57,15 +57,30 @@ function showBarberSkeleton(count = 4) {
     `).join('');
 }
 
+// ============================================
+// ERROR STATE
+// Always paired with an icon, plain-language copy, and a way
+// forward — a "Try again" button that re-runs the same load,
+// so a flaky connection is never a dead end.
+// ============================================
 function showBarberError(message) {
     const grid = document.getElementById('barberGrid');
-    if (grid) {
-        grid.innerHTML = `
-            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--dim);">
-                <i class="fas fa-exclamation-circle" style="font-size:2rem; margin-bottom:16px; display:block;"></i>
-                <p>${message}</p>
-            </div>
-        `;
+    if (!grid) return;
+    grid.innerHTML = `
+        <div class="barber-error">
+            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+            <p>${message}</p>
+            <button type="button" class="barber-error-retry" id="barberRetryBtn">
+                <i class="fas fa-rotate-right" aria-hidden="true"></i> Try again
+            </button>
+        </div>
+    `;
+    const retryBtn = document.getElementById('barberRetryBtn');
+    if (retryBtn) {
+        retryBtn.addEventListener('click', () => {
+            retryBtn.classList.add('is-loading');
+            loadBarbers();
+        });
     }
 }
 
@@ -102,8 +117,8 @@ function renderBarberCards() {
 
     if (!barbers.length) {
         grid.innerHTML = `
-            <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--dim);">
-                <i class="fas fa-users" style="font-size:2rem; margin-bottom:16px; display:block;"></i>
+            <div class="barber-empty">
+                <i class="fas fa-users" aria-hidden="true"></i>
                 <p>No barbers available yet. Check back soon!</p>
             </div>
         `;
@@ -112,11 +127,11 @@ function renderBarberCards() {
 
     grid.innerHTML = barbers.map(barber => {
         let imageSrc = barber.image_url || '';
-        
+
         // If it's a Supabase URL, use it directly
         if (imageSrc.includes('supabase.co')) {
             // Use as is
-        } 
+        }
         // If it's a relative path, fix it
         else if (imageSrc && !imageSrc.startsWith('http')) {
             // Remove any leading ../ or ./
@@ -127,14 +142,18 @@ function renderBarberCards() {
         else {
             imageSrc = '../images/team.jpg';
         }
-        
+
         return `
         <article class="barber-card">
             <div class="barber-card-photo">
-                <img src="${imageSrc}" 
-                     alt="${barber.name}, ${barber.title || 'Barber'}" 
+                <img src="${imageSrc}"
+                     alt="${barber.name}, ${barber.title || 'Barber'}"
                      loading="lazy"
-                     onerror="this.src='../images/team.jpg'" />
+                     onload="this.classList.add('is-loaded')"
+                     onerror="this.src='../images/team.jpg'; this.classList.add('is-loaded')" />
+                <button class="barber-quick-view" type="button" tabindex="-1" aria-hidden="true" data-barber-id="${barber.id}">
+                    <i class="fas fa-expand" aria-hidden="true"></i>
+                </button>
             </div>
             <div class="barber-card-body">
                 <h3 class="barber-card-name">${escapeHtml(barber.name)}</h3>
@@ -154,6 +173,12 @@ function renderBarberCards() {
         </article>
     `}).join('');
 
+    // Cached images may never fire onload — mark anything already
+    // loaded so it doesn't sit invisible.
+    grid.querySelectorAll('.barber-card-photo img').forEach(img => {
+        if (img.complete) img.classList.add('is-loaded');
+    });
+
     attachModalListeners();
 }
 
@@ -165,51 +190,78 @@ function initBarberModal() {
     const backdrop = document.getElementById('barberModalBackdrop');
     const closeBtn = document.getElementById('barberModalClose');
     const returnBtn = document.getElementById('barberModalReturn');
+    const panel = modal ? modal.querySelector('.barber-modal-panel') : null;
+    const grabber = document.getElementById('barberModalGrabber');
     if (!modal) return;
 
     let lastFocused = null;
 
- function openModal(barber) {
-    // Use image_url from database
-    let imageSrc = barber.image_url || '';
-    if (!imageSrc) {
-        imageSrc = 'https://placehold.co/400x500/232323/666?text=Photo';
+    function focusableEls() {
+        return Array.from(modal.querySelectorAll(
+            'a[href], button:not([tabindex="-1"]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )).filter(el => el.offsetParent !== null);
     }
-    
-    document.getElementById('barberModalPhoto').src = imageSrc;
-    document.getElementById('barberModalPhoto').alt = barber.name;
-    document.getElementById('barberModalPhoto').onerror = function() {
-        this.src = 'https://placehold.co/400x500/232323/666?text=Photo';
-    };
-    
-    document.getElementById('barberModalName').textContent = barber.name;
-    document.getElementById('barberModalRole').textContent = barber.title || 'Barber';
-    document.getElementById('barberModalRating').innerHTML =
-        `${starRatingHtml(barber.rating || 0)} ${barber.rating || 0} (${barber.reviews || 0} reviews)`;
-    document.getElementById('barberModalBio').textContent = barber.bio || 'No bio available.';
-    
-    const specialtiesEl = document.getElementById('barberModalSpecialties');
-    if (barber.specialties) {
-        specialtiesEl.innerHTML = barber.specialties.split(',').map(s => 
-            `<span class="barber-tag">${escapeHtml(s.trim())}</span>`
-        ).join('');
-    } else {
-        specialtiesEl.innerHTML = '<span class="barber-tag">All services</span>';
-    }
-    
-    document.getElementById('barberModalExperience').textContent = barber.experience || 0;
-    document.getElementById('barberModalReviews').textContent = barber.reviews || 0;
-    document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${barber.id}`;
 
-    lastFocused = document.activeElement;
-    modal.hidden = false;
-    document.body.style.overflow = 'hidden';
-    if (closeBtn) closeBtn.focus();
-}
+    // Keep Tab/Shift+Tab cycling inside the dialog while it's open,
+    // so keyboard focus never escapes to content behind the backdrop.
+    function trapFocus(e) {
+        if (e.key !== 'Tab' || modal.hidden) return;
+        const els = focusableEls();
+        if (!els.length) return;
+        const first = els[0];
+        const last = els[els.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    }
+
+    function openModal(barber) {
+        // Use image_url from database
+        let imageSrc = barber.image_url || '';
+        if (!imageSrc) {
+            imageSrc = 'https://placehold.co/400x500/232323/666?text=Photo';
+        }
+
+        document.getElementById('barberModalPhoto').src = imageSrc;
+        document.getElementById('barberModalPhoto').alt = barber.name;
+        document.getElementById('barberModalPhoto').onerror = function() {
+            this.src = 'https://placehold.co/400x500/232323/666?text=Photo';
+        };
+
+        document.getElementById('barberModalName').textContent = barber.name;
+        document.getElementById('barberModalRole').textContent = barber.title || 'Barber';
+        document.getElementById('barberModalRating').innerHTML =
+            `${starRatingHtml(barber.rating || 0)} ${barber.rating || 0} (${barber.reviews || 0} reviews)`;
+        document.getElementById('barberModalBio').textContent = barber.bio || 'No bio available.';
+
+        const specialtiesEl = document.getElementById('barberModalSpecialties');
+        if (barber.specialties) {
+            specialtiesEl.innerHTML = barber.specialties.split(',').map(s =>
+                `<span class="barber-tag">${escapeHtml(s.trim())}</span>`
+            ).join('');
+        } else {
+            specialtiesEl.innerHTML = '<span class="barber-tag">All services</span>';
+        }
+
+        document.getElementById('barberModalExperience').textContent = barber.experience || 0;
+        document.getElementById('barberModalReviews').textContent = barber.reviews || 0;
+        document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${barber.id}`;
+
+        lastFocused = document.activeElement;
+        if (panel) panel.style.transform = '';
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        if (closeBtn) closeBtn.focus();
+    }
 
     function closeModal() {
         modal.hidden = true;
         document.body.style.overflow = '';
+        if (panel) panel.style.transform = '';
         if (lastFocused) lastFocused.focus();
     }
 
@@ -220,8 +272,47 @@ function initBarberModal() {
     if (returnBtn) returnBtn.addEventListener('click', closeModal);
 
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !modal.hidden) closeModal();
+        if (modal.hidden) return;
+        if (e.key === 'Escape') closeModal();
+        trapFocus(e);
     });
+
+    // Drag-to-dismiss for the mobile bottom sheet. Only engages on
+    // touch/pointer devices at the sheet breakpoint — on desktop the
+    // grabber isn't rendered (display:none), so this never triggers.
+    if (grabber && panel) {
+        let startY = 0;
+        let currentY = 0;
+        let dragging = false;
+
+        grabber.addEventListener('pointerdown', (e) => {
+            dragging = true;
+            startY = e.clientY;
+            panel.classList.add('is-dragging');
+            grabber.setPointerCapture(e.pointerId);
+        });
+
+        grabber.addEventListener('pointermove', (e) => {
+            if (!dragging) return;
+            currentY = Math.max(0, e.clientY - startY);
+            panel.style.transform = `translateY(${currentY}px)`;
+        });
+
+        function endDrag() {
+            if (!dragging) return;
+            dragging = false;
+            panel.classList.remove('is-dragging');
+            if (currentY > 110) {
+                closeModal();
+            } else {
+                panel.style.transform = '';
+            }
+            currentY = 0;
+        }
+
+        grabber.addEventListener('pointerup', endDrag);
+        grabber.addEventListener('pointercancel', endDrag);
+    }
 }
 
 // ============================================
@@ -232,7 +323,7 @@ function attachModalListeners() {
     if (!grid) return;
 
     grid.addEventListener('click', function(e) {
-        const btn = e.target.closest('.barber-view-more');
+        const btn = e.target.closest('.barber-view-more, .barber-quick-view');
         if (!btn) return;
         const barberId = btn.dataset.barberId;
         const barber = barbers.find(b => b.id === barberId);
@@ -247,12 +338,12 @@ function attachModalListeners() {
 // ============================================
 document.addEventListener('DOMContentLoaded', function () {
     console.log('📄 About page loaded!');
-    
+
     if (typeof supabaseClient === 'undefined') {
         console.error('❌ supabaseClient is not defined!');
         showBarberError('Unable to connect to the server. Please try again later.');
         return;
     }
-    
+
     loadBarbers();
 });

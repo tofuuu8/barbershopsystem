@@ -43,6 +43,7 @@
 // ------------------------------------------------------------------
 
 let currentProfile = null;
+let cachedBarbers = [];
 
 document.addEventListener('DOMContentLoaded', async function () {
     await authReadyPromise;
@@ -61,6 +62,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     initEditNameForm();
     initPasswordChangeForm();
     initLogoutButton();
+    initSettingsNav();
+
+    const nameForm = document.getElementById('accountNameForm');
+    const nameSubmitBtn = document.getElementById('accountNameSubmitBtn');
+    const nameHint = document.getElementById('accountNameUnsavedHint');
+    profileFormDirtyTracker = initFormDirtyTracking(nameForm, nameSubmitBtn, nameHint);
 });
 
 // --------------------------------------------
@@ -161,6 +168,7 @@ async function loadBarberOptions() {
             .order('name');
         if (!error && data && data.length) barbers = data;
     }
+    cachedBarbers = barbers;
 
     select.innerHTML = '<option value="">No preference</option>' + barbers.map(function (barber) {
         const option = document.createElement('option');
@@ -223,6 +231,29 @@ function renderProfile() {
     if (smsNotificationsInput) smsNotificationsInput.checked = currentProfile.notification_sms !== false;
     const marketingInput = document.getElementById('accountMarketingInput');
     if (marketingInput) marketingInput.checked = currentProfile.marketing_opt_in === true;
+
+    // Quick-glance chips on the member card — mirror whatever the form
+    // below currently holds, so a returning visitor can see their
+    // settings without opening the form. The barber chip only appears
+    // once there's an actual preference to show.
+    const factBarberEl = document.getElementById('accountFactBarber');
+    if (factBarberEl) {
+        const barber = cachedBarbers.find(function (b) { return b.id === currentProfile.preferred_barber_id; });
+        if (barber) {
+            factBarberEl.querySelector('span').textContent = barber.name;
+            factBarberEl.hidden = false;
+        } else {
+            factBarberEl.hidden = true;
+        }
+    }
+
+    const factFulfillmentEl = document.getElementById('accountFactFulfillment');
+    if (factFulfillmentEl) {
+        const isDelivery = currentProfile.default_fulfillment_type === 'delivery';
+        factFulfillmentEl.querySelector('span').textContent = isDelivery ? 'Delivery' : 'Pickup at Studio';
+        const icon = factFulfillmentEl.querySelector('i');
+        if (icon) icon.className = isDelivery ? 'fas fa-truck' : 'fas fa-store';
+    }
 }
 
 // --------------------------------------------
@@ -242,14 +273,27 @@ function showBanner(errorId, successId, message, isError) {
             text.textContent = String(message || 'Something went wrong. Please try again.');
             errorEl.replaceChildren(icon, text);
             errorEl.hidden = false;
+            scrollBannerIntoView(errorEl);
         }
     } else {
         if (errorEl) errorEl.hidden = true;
         if (successEl) {
             successEl.querySelector('span').textContent = message;
             successEl.hidden = false;
+            scrollBannerIntoView(successEl);
         }
     }
+}
+
+// Save buttons sit at the bottom of a fairly long form, but that's not
+// guaranteed to be where the visitor is scrolled to when the response
+// comes back (e.g. they scrolled down to click Save, but a slow network
+// response could land after they've scrolled elsewhere). Bringing the
+// banner into view — rather than relying on it already being on
+// screen — is what actually guarantees the feedback gets seen.
+function scrollBannerIntoView(el) {
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
 }
 
 function hideBanners(errorId, successId) {
@@ -263,6 +307,130 @@ function showProfileError(message) { showBanner('accountProfileError', 'accountP
 function showProfileSuccess(message) { showBanner('accountProfileError', 'accountProfileSuccess', message, false); }
 function showPasswordError(message) { showBanner('accountPasswordError', 'accountPasswordSuccess', message, true); }
 function showPasswordSuccess(message) { showBanner('accountPasswordError', 'accountPasswordSuccess', message, false); }
+
+// --------------------------------------------
+// Field-level validation. Points directly at the one field that's
+// wrong (clay border + inline fix, self-clearing on the next
+// keystroke) instead of leaving the visitor to match a banner at the
+// top of the page against five stacked cards.
+// --------------------------------------------
+function setFieldError(input, message) {
+    if (!input) return;
+    const field = input.closest('.login-field');
+    if (!field) return;
+
+    field.classList.add('has-error');
+
+    let msg = field.querySelector('.account-field-error');
+    if (!msg) {
+        msg = document.createElement('p');
+        msg.className = 'account-field-error';
+        field.appendChild(msg);
+    }
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-circle-exclamation';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = message;
+    msg.replaceChildren(icon, text);
+
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => input.focus(), 280);
+
+    if (!input.dataset.hasErrorClearListener) {
+        input.dataset.hasErrorClearListener = 'true';
+        input.addEventListener('input', () => clearFieldError(input));
+    }
+}
+
+function clearFieldError(input) {
+    if (!input) return;
+    const field = input.closest('.login-field');
+    if (!field) return;
+    field.classList.remove('has-error');
+    const msg = field.querySelector('.account-field-error');
+    if (msg) msg.remove();
+}
+
+// --------------------------------------------
+// Unsaved-changes tracking for the profile form. Save starts disabled
+// (see the HTML) and only lights up once something actually differs
+// from the last-loaded/last-saved snapshot — a form with nothing new
+// in it shouldn't invite a click. resetBaseline() is called again
+// right after a successful save, so Save disables itself once more
+// until the next real edit.
+// --------------------------------------------
+function serializeForm(form) {
+    return Array.from(form.elements)
+        .filter(el => el.id)
+        .map(el => el.type === 'checkbox' ? `${el.id}:${el.checked}` : `${el.id}:${el.value}`)
+        .join('|');
+}
+
+function initFormDirtyTracking(form, submitBtn, hintEl) {
+    if (!form || !submitBtn) return { resetBaseline() {} };
+
+    let baseline = serializeForm(form);
+
+    function check() {
+        const dirty = serializeForm(form) !== baseline;
+        submitBtn.disabled = !dirty;
+        if (hintEl) hintEl.hidden = !dirty;
+    }
+
+    form.addEventListener('input', check);
+    form.addEventListener('change', check);
+
+    return {
+        resetBaseline() {
+            baseline = serializeForm(form);
+            check();
+        }
+    };
+}
+
+let profileFormDirtyTracker = null;
+
+// --------------------------------------------
+// Desktop settings rail — click scrolls to the matching card;
+// IntersectionObserver keeps the highlighted link honest about which
+// section is actually in view as the visitor scrolls, rather than
+// only updating on click.
+// --------------------------------------------
+function initSettingsNav() {
+    const nav = document.getElementById('accountSettingsNav');
+    if (!nav) return;
+
+    const links = Array.from(nav.querySelectorAll('.account-settings-nav-link'));
+    if (!links.length) return;
+
+    nav.addEventListener('click', function (e) {
+        const link = e.target.closest('.account-settings-nav-link');
+        if (!link) return;
+        e.preventDefault();
+        const target = document.getElementById(link.dataset.section);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    if (!('IntersectionObserver' in window)) return;
+
+    const sections = links
+        .map(link => document.getElementById(link.dataset.section))
+        .filter(Boolean);
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            const link = links.find(l => l.dataset.section === entry.target.id);
+            if (!link) return;
+            links.forEach(l => l.classList.remove('is-active'));
+            link.classList.add('is-active');
+        });
+    }, { rootMargin: '-25% 0px -65% 0px', threshold: 0 });
+
+    sections.forEach(section => observer.observe(section));
+}
 
 // --------------------------------------------
 // Edit name form
@@ -301,13 +469,13 @@ function initEditNameForm() {
         const defaultFulfillmentType = fulfillmentInput && fulfillmentInput.value === 'delivery' ? 'delivery' : 'pickup';
 
         if (!name) {
-            showProfileError('Please enter your name.');
+            setFieldError(nameInput, 'Enter your name.');
             return;
         }
         // Loose on purpose — PH numbers, landlines, and +country formats
         // all vary — this just catches obvious garbage, not a strict format.
         if (phone && !/^[0-9+()\-.\s]{7,20}$/.test(phone)) {
-            showProfileError('Please enter a valid phone number.');
+            setFieldError(phoneInput, 'Enter a valid phone number.');
             return;
         }
 
@@ -376,6 +544,10 @@ function initEditNameForm() {
         currentProfile.notification_sms = smsNotificationsInput ? smsNotificationsInput.checked : true;
         currentProfile.marketing_opt_in = marketingInput ? marketingInput.checked : false;
         renderProfile();
+        // Table update succeeded (the tableError branch above already
+        // returned otherwise) — the form now matches what's actually
+        // saved, so Save disables itself again until the next real edit.
+        if (profileFormDirtyTracker) profileFormDirtyTracker.resetBaseline();
 
         if (userError) {
             // Table saved fine; the auth metadata copy of the name (used
@@ -406,6 +578,18 @@ function initPasswordChangeForm() {
 
     initPasswordChecklist(newInput, checklist);
 
+    // Update starts disabled (see the HTML) — enabling it only once all
+    // three fields actually have something in them avoids an eager
+    // click landing on an obviously-incomplete form.
+    function checkPasswordFormFilled() {
+        const filled = [currentInput, newInput, confirmInput].every(i => i && i.value.trim().length > 0);
+        submitBtn.disabled = !filled;
+    }
+    [currentInput, newInput, confirmInput].forEach(input => {
+        if (input) input.addEventListener('input', checkPasswordFormFilled);
+    });
+    checkPasswordFormFilled();
+
     newInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -422,15 +606,17 @@ function initPasswordChangeForm() {
         const confirmPassword = confirmInput.value;
 
         if (!currentPassword || !newPassword || !confirmPassword) {
-            showPasswordError('Please fill in all three fields.');
+            if (!currentPassword) setFieldError(currentInput, 'Enter your current password.');
+            else if (!newPassword) setFieldError(newInput, 'Enter a new password.');
+            else setFieldError(confirmInput, 'Re-enter your new password.');
             return;
         }
         if (!passwordMeetsRequirements(newPassword)) {
-            showPasswordError('New password must be at least 8 characters and include a letter, a number, and one of ! $ @ %.');
+            setFieldError(newInput, 'Doesn\'t meet the requirements above yet.');
             return;
         }
         if (newPassword !== confirmPassword) {
-            showPasswordError('New passwords do not match.');
+            setFieldError(confirmInput, 'New passwords do not match.');
             return;
         }
 
@@ -452,7 +638,7 @@ function initPasswordChangeForm() {
             submitBtn.disabled = false;
             submitText.textContent = 'Update Password';
             spinner.hidden = true;
-            showPasswordError('Your current password is incorrect.');
+            setFieldError(currentInput, 'Your current password is incorrect.');
             return;
         }
 
@@ -469,6 +655,7 @@ function initPasswordChangeForm() {
 
         form.reset();
         initPasswordChecklist(newInput, checklist); // reset the checklist back to its empty state
+        checkPasswordFormFilled(); // fields are empty again — disable Update until refilled
         showPasswordSuccess('Your password has been updated.');
     });
 }
