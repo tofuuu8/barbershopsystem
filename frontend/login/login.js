@@ -143,7 +143,7 @@ function friendlyAuthError(error) {
 }
 
 // --------------------------------------------
-// Form submission
+// Form submission — UPDATED with status tracking
 // --------------------------------------------
 function initLoginForm() {
     const form = document.getElementById('loginForm');
@@ -192,7 +192,7 @@ function initLoginForm() {
         submitText.textContent = 'Logging In...';
         spinner.hidden = false;
 
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
         if (error) {
             submitBtn.disabled = false;
@@ -205,12 +205,26 @@ function initLoginForm() {
             return;
         }
 
+        // ============================================
+        // ✅ UPDATE USER STATUS — ONLINE
+        // ============================================
+        if (data && data.user) {
+            try {
+                await supabaseClient
+                    .from('profiles')
+                    .update({ 
+                        status: 'online',
+                        last_login: new Date().toISOString()
+                    })
+                    .eq('id', data.user.id);
+                console.log('✅ User status updated to online');
+            } catch (statusError) {
+                console.error('Error updating user status:', statusError);
+            }
+        }
+
         // onAuthStateChange (in main.js) picks this session up automatically;
-        // no need to store anything ourselves. "Remember me" isn't wired to
-        // anything special here — Supabase's session is persisted in
-        // localStorage by default, so every login already survives a
-        // browser restart. (See the note at the bottom of this file if you
-        // want signed-out-on-close behavior instead.)
+        // no need to store anything ourselves.
         const redirect = getRedirectParam();
         window.location.href = redirect || '../index.html';
     });

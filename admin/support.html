@@ -28,14 +28,17 @@
             grid-template-columns: 340px 1fr;
             gap: 16px;
             align-items: start;
+            height: calc(100vh - 280px); /* Para magkasya sa screen */
+            min-height: 400px;
         }
         @media (max-width: 900px) {
             .admin-support-grid { grid-template-columns: 1fr; }
         }
 
         .admin-support-list {
-            max-height: 70vh;
+            max-height: 100%;
             overflow-y: auto;
+            flex: 1;
         }
         .admin-support-convo {
             display: flex;
@@ -110,7 +113,8 @@
         .admin-support-thread-wrap {
             display: flex;
             flex-direction: column;
-            height: 70vh;
+            height: 100%;
+            min-height: 400px;
         }
         .admin-support-thread-header {
             display: flex;
@@ -161,6 +165,7 @@
             flex-direction: column;
             gap: 10px;
             padding: 4px;
+            max-height: 100%;
         }
         .admin-support-msg {
             max-width: 75%;
