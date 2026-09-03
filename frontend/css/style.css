@@ -2011,6 +2011,7 @@ input:focus-visible {
 }
 
 .gallery-item {
+    display: block;
     border-radius: 14px;
     aspect-ratio: 3 / 4;
     width: 100%;
@@ -2019,7 +2020,8 @@ input:focus-visible {
     border: 1px solid rgba(0, 0, 0, 0.06);
     background: #eeece7;
     transition: var(--transition);
-    cursor: default;
+    cursor: pointer;
+    text-decoration: none;
 }
 
 .gallery-item img {
