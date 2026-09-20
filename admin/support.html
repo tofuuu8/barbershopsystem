@@ -237,36 +237,65 @@
 
     <div class="admin-shell">
 
-        <!-- ========================================
-        SIDEBAR
-        ======================================== -->
-        <aside class="admin-sidebar">
-            <div class="admin-sidebar-brand">
-                <i class="fas fa-scissors" aria-hidden="true"></i>
-                <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
-            </div>
+       <!-- ========================================
+SIDEBAR
+======================================== -->
+<aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">
+        <i class="fas fa-scissors" aria-hidden="true"></i>
+        <span class="admin-sidebar-brand-text">Toughcuts<span>ADMIN</span></span>
+    </div>
 
-           <nav class="admin-nav">
-                <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
-                <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
-                <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
-                <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
-                <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
-                <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
-                <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
-                <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
-                <a href="support.html" class="admin-nav-link"><i class="fas fa-headset"></i> Support</a>
-                <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
-            </nav>
+    <!-- Dropdown Toggle Button (Mobile) -->
+    <button class="admin-sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+        <span style="font-size:0.65rem; font-family:var(--font-ui); letter-spacing:0.5px;">Menu</span>
+    </button>
 
-            <div class="admin-sidebar-footer">
-                <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
-                <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
-                    <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
-                </button>
-            </div>
-        </aside>
+    <!-- Navigation (Desktop - visible always) -->
+    <nav class="admin-nav">
+        <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+        <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+        <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+        <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+        <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+        <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+        <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+        <a href="support.html" class="admin-nav-link"><i class="fas fa-headset"></i> Support</a>
+        <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
+    </nav>
 
+    <!-- Dropdown Panel (Mobile) -->
+    <div class="admin-sidebar-dropdown" id="sidebarDropdown">
+        <nav class="admin-nav">
+            <a href="dashboard.html" class="admin-nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+            <a href="users.html" class="admin-nav-link"><i class="fas fa-users"></i> Users</a>
+            <a href="bookings.html" class="admin-nav-link"><i class="fas fa-calendar-check"></i> Bookings</a>
+            <a href="availability.html" class="admin-nav-link"><i class="fas fa-clock"></i> Availability</a>
+            <a href="products.html" class="admin-nav-link"><i class="fas fa-box"></i> Products</a>
+            <a href="orders.html" class="admin-nav-link"><i class="fas fa-bag-shopping"></i> Orders</a>
+            <a href="revenue.html" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Revenue</a>
+            <a href="barbers.html" class="admin-nav-link"><i class="fas fa-user-tie"></i> Barbers</a>
+            <a href="support.html" class="admin-nav-link"><i class="fas fa-headset"></i> Support</a>
+            <a href="admin-account.html" class="admin-nav-link"><i class="fas fa-user-shield"></i> Admin Account</a>
+        </nav>
+        <div class="admin-sidebar-footer" style="display:block; margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+            <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+            <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+                <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+            </button>
+        </div>
+    </div>
+
+    <!-- Desktop Footer -->
+    <div class="admin-sidebar-footer">
+        <p class="admin-sidebar-user"><strong>Signed in as</strong><span id="adminSidebarEmail">—</span></p>
+        <button type="button" class="admin-logout-btn" id="adminLogoutBtn">
+            <i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign Out
+        </button>
+    </div>
+</aside>
         <!-- ========================================
         MAIN
         ======================================== -->
@@ -282,37 +311,41 @@
                         <i class="fas fa-bell" aria-hidden="true"></i>
                         <span class="admin-notif-badge" id="notifBadge" hidden>0</span>
                     </button>
-                    <div class="admin-notif-panel" id="notifPanel" hidden>
-                        <div class="admin-notif-panel-header">Notifications</div>
+                  <div class="admin-notif-panel" id="notifPanel" hidden>
+    <div class="admin-notif-panel-header">Notifications</div>
 
-                        <div class="admin-notif-section">
-                            <div class="admin-notif-section-title"><i class="fas fa-user-plus" aria-hidden="true"></i> Accounts</div>
-                            <div class="admin-notif-list" id="notifAccounts">
-                                <div class="admin-notif-empty">Loading...</div>
-                            </div>
-                        </div>
+    <!-- Accounts -->
+    <div class="admin-notif-section">
+        <div class="admin-notif-section-title"><i class="fas fa-user-plus" aria-hidden="true"></i> Accounts</div>
+        <div class="admin-notif-list" id="notifAccounts">
+            <div class="admin-notif-empty">Loading...</div>
+        </div>
+    </div>
 
-                        <div class="admin-notif-section">
-                            <div class="admin-notif-section-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</div>
-                            <div class="admin-notif-list" id="notifBookings">
-                                <div class="admin-notif-empty">Loading...</div>
-                            </div>
-                        </div>
+    <!-- Bookings -->
+    <div class="admin-notif-section">
+        <div class="admin-notif-section-title"><i class="fas fa-calendar-check" aria-hidden="true"></i> Bookings</div>
+        <div class="admin-notif-list" id="notifBookings">
+            <div class="admin-notif-empty">Loading...</div>
+        </div>
+    </div>
 
-                        <div class="admin-notif-section">
-                            <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
-                            <div class="admin-notif-list" id="notifProducts">
-                                <div class="admin-notif-empty">Loading...</div>
-                            </div>
-                        </div>
+    <!-- Orders -->
+    <div class="admin-notif-section">
+        <div class="admin-notif-section-title"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</div>
+        <div class="admin-notif-list" id="notifOrders">
+            <div class="admin-notif-empty">Loading...</div>
+        </div>
+    </div>
 
-                        <div class="admin-notif-section">
-                            <div class="admin-notif-section-title"><i class="fas fa-bag-shopping" aria-hidden="true"></i> Orders</div>
-                            <div class="admin-notif-list" id="notifOrders">
-                                <div class="admin-notif-empty">Loading...</div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Products -->
+    <div class="admin-notif-section">
+        <div class="admin-notif-section-title"><i class="fas fa-box" aria-hidden="true"></i> Products</div>
+        <div class="admin-notif-list" id="notifProducts">
+            <div class="admin-notif-empty">Loading...</div>
+        </div>
+    </div>
+</div>
                 </div>
             </div>
 

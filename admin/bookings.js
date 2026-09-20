@@ -474,6 +474,31 @@ async function updateBookingStatus(newStatus) {
         updated_at: new Date().toISOString()
     };
 
+    // ============================================
+    // ✅ FIX: Skip RPC for cancellation — direct update
+    // ============================================
+    if (newStatus === 'cancelled') {
+        // Direct update — no date validation
+        const { data, error } = await supabaseClient
+            .from('bookings')
+            .update({
+                status: 'cancelled',
+                admin_notes: payload.admin_notes,
+                updated_at: payload.updated_at
+            })
+            .eq('id', activeBookingId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        const booking = allBookings.find(b => b.id === activeBookingId);
+        if (booking) Object.assign(booking, data);
+        return data;
+    }
+
+    // ============================================
+    // For other status changes, use the RPC
+    // ============================================
     const rpcResult = await supabaseClient.rpc('update_booking_admin', {
         p_booking_id: activeBookingId,
         p_new_status: newStatus,

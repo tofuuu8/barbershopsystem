@@ -2055,3 +2055,483 @@ input, select, textarea { font: inherit; }
     vertical-align: middle;
     letter-spacing: 0.5px;
 }
+/* ============================================
+   RESPONSIVE FIXES — FIXED SIDEBAR
+   ============================================ */
+
+/* Desktop - Hide mobile toggle */
+@media (min-width: 901px) {
+    .admin-sidebar-toggle {
+        display: none !important;
+    }
+    .admin-sidebar-dropdown {
+        display: none !important;
+    }
+}
+
+/* Tablet & Mobile */
+@media (max-width: 900px) {
+    /* === SHELL === */
+    .admin-shell {
+        display: block !important;
+        min-height: 100vh !important;
+    }
+    
+    /* === SIDEBAR — FIXED === */
+    .admin-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1000 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 6px 12px !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+        background: var(--near-black) !important;
+        border-bottom: 1px solid var(--line) !important;
+        overflow: visible !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important;
+    }
+    
+    .admin-sidebar-brand {
+        flex-shrink: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+    }
+    
+    .admin-sidebar-brand-text {
+        font-size: 0.85rem !important;
+    }
+    
+    .admin-sidebar-brand-text span {
+        display: inline !important;
+        font-size: 0.5rem !important;
+    }
+    
+    /* Hide desktop nav */
+    .admin-sidebar .admin-nav {
+        display: none !important;
+    }
+    
+    .admin-sidebar .admin-sidebar-footer {
+        display: none !important;
+    }
+    
+    /* === HAMBURGER === */
+    .admin-sidebar-toggle {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        background: transparent !important;
+        border: none !important;
+        color: var(--white) !important;
+        font-size: 1rem !important;
+        padding: 4px 10px !important;
+        cursor: pointer !important;
+        border-radius: 6px !important;
+        flex-shrink: 0 !important;
+        height: 32px !important;
+    }
+    
+    .admin-sidebar-toggle:hover {
+        background: var(--card-light) !important;
+    }
+    
+    .admin-sidebar-toggle span {
+        font-size: 0.55rem !important;
+    }
+    
+    /* === DROPDOWN === */
+    .admin-sidebar-dropdown {
+        position: fixed !important;
+        top: 48px !important; /* Same height as sidebar */
+        left: 0 !important;
+        right: 0 !important;
+        background: var(--near-black) !important;
+        border-bottom: 1px solid var(--line) !important;
+        padding: 10px 14px 14px !important;
+        z-index: 999 !important;
+        max-height: calc(100vh - 48px) !important;
+        overflow-y: auto !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
+        display: none !important;
+    }
+    
+    .admin-sidebar-dropdown.open {
+        display: block !important;
+    }
+    
+    .admin-sidebar-dropdown .admin-nav {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2px !important;
+    }
+    
+    .admin-sidebar-dropdown .admin-nav-link {
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+        border-radius: 6px !important;
+    }
+    
+    .admin-sidebar-dropdown .admin-nav-link i {
+        width: 18px !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .admin-sidebar-dropdown .admin-sidebar-footer {
+        display: block !important;
+        margin-top: 10px !important;
+        padding-top: 10px !important;
+        border-top: 1px solid var(--line) !important;
+    }
+    
+    .admin-sidebar-dropdown .admin-sidebar-user {
+        font-size: 0.7rem !important;
+    }
+    
+    .admin-sidebar-dropdown .admin-logout-btn {
+        font-size: 0.6rem !important;
+        padding: 6px !important;
+    }
+    
+    /* === MAIN CONTENT — WITH PADDING FOR FIXED HEADER === */
+    .admin-main {
+        padding: 60px 16px 16px !important; /* 48px header + 12px spacing */
+        width: 100% !important;
+    }
+    
+    .admin-main-wide {
+        padding: 60px 16px 16px !important;
+    }
+    
+    .admin-page-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .admin-page-title {
+        font-size: 1.1rem !important;
+    }
+    
+    .admin-page-sub {
+        font-size: 0.6rem !important;
+    }
+    
+    /* === STAT CARDS === */
+    .admin-stat-row {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .admin-stat-card {
+        padding: 8px 10px !important;
+        min-width: unset !important;
+        flex: none !important;
+    }
+    
+    .admin-stat-value {
+        font-size: 1rem !important;
+    }
+    
+    .admin-stat-label {
+        font-size: 0.45rem !important;
+        letter-spacing: 0.3px !important;
+    }
+    
+    .admin-stat-icon {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 0.65rem !important;
+    }
+    
+    /* === DASHBOARD GRID === */
+    .admin-dash-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+    
+    .admin-panel {
+        padding: 10px 12px !important;
+    }
+    
+    .admin-panel-header h3 {
+        font-size: 0.8rem !important;
+    }
+    
+    .admin-panel-header .admin-panel-sub {
+        font-size: 0.5rem !important;
+    }
+    
+    /* === TABLES — SCROLL === */
+    .admin-table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 6px !important;
+    }
+    
+    .admin-table {
+        min-width: 650px !important;
+        font-size: 0.65rem !important;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 5px 8px !important;
+        font-size: 0.55rem !important;
+        white-space: nowrap !important;
+    }
+    
+    .admin-table th {
+        font-size: 0.5rem !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    .admin-badge,
+    .admin-status-badge {
+        font-size: 0.4rem !important;
+        padding: 2px 6px !important;
+    }
+    
+    /* === TOOLBAR === */
+    .admin-toolbar {
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+    }
+    
+    .admin-search {
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+    
+    .admin-search input {
+        font-size: 0.7rem !important;
+        padding: 4px 8px 4px 28px !important;
+    }
+    
+    .admin-search i {
+        font-size: 0.7rem !important;
+        left: 10px !important;
+    }
+    
+    .admin-filter-pills {
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+    }
+    
+    .admin-filter-pill {
+        font-size: 0.45rem !important;
+        padding: 2px 8px !important;
+    }
+    
+    .admin-drawer-save {
+        font-size: 0.45rem !important;
+        padding: 4px 8px !important;
+        height: auto !important;
+    }
+    
+    .admin-toolbar-count {
+        font-size: 0.5rem !important;
+    }
+    
+    /* === ACTION BUTTONS === */
+    .admin-action-btns {
+        gap: 3px !important;
+    }
+    
+    .admin-action-btn {
+        width: 22px !important;
+        height: 22px !important;
+        font-size: 0.5rem !important;
+    }
+    
+    /* === MODALS === */
+    .admin-modal {
+        max-width: 95% !important;
+        padding: 12px !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+    }
+    
+    .admin-modal-title {
+        font-size: 0.9rem !important;
+    }
+    
+    .admin-modal-sub {
+        font-size: 0.6rem !important;
+    }
+    
+    .admin-modal--wide {
+        max-width: 95% !important;
+    }
+    
+    .admin-form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 4px !important;
+    }
+    
+    .admin-detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 4px !important;
+    }
+    
+    /* === DRAWER === */
+    .admin-drawer {
+        max-width: 100% !important;
+        padding: 12px !important;
+    }
+    
+    /* === NOTIFICATIONS === */
+    .admin-notif-btn {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    .admin-notif-panel {
+        width: 250px !important;
+        max-height: 300px !important;
+        right: -10px !important;
+    }
+    
+    /* === SUPPORT === */
+    .admin-support-grid {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        min-height: auto !important;
+    }
+    
+    .admin-support-grid .admin-panel:last-child {
+        min-height: 200px !important;
+    }
+    
+    .admin-support-convo {
+        padding: 8px 10px !important;
+    }
+    
+    .admin-support-thread-wrap {
+        min-height: 200px !important;
+        height: auto !important;
+    }
+    
+    /* === QUICK ACTIONS === */
+    .admin-quick-action {
+        font-size: 0.5rem !important;
+        padding: 6px 8px !important;
+        gap: 4px !important;
+    }
+    
+    .admin-quick-action i {
+        font-size: 0.7rem !important;
+    }
+    
+    /* === REVENUE CHART === */
+    .admin-chart {
+        height: 100px !important;
+    }
+    
+    .admin-chart-bars {
+        gap: 3px !important;
+        padding-bottom: 10px !important;
+    }
+    
+    .admin-chart-bar {
+        max-width: 12px !important;
+    }
+    
+    .admin-chart-bar-col span {
+        font-size: 0.4rem !important;
+    }
+    
+    /* === RECENT ITEMS === */
+    .admin-recent-item {
+        padding: 4px 0 !important;
+    }
+    
+    .admin-recent-item-name {
+        font-size: 0.6rem !important;
+    }
+    
+    .admin-recent-item-meta {
+        font-size: 0.5rem !important;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .admin-stat-row {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 4px !important;
+    }
+    
+    .admin-stat-card {
+        padding: 4px 6px !important;
+    }
+    
+    .admin-stat-value {
+        font-size: 0.85rem !important;
+    }
+    
+    .admin-stat-label {
+        font-size: 0.35rem !important;
+        letter-spacing: 0.2px !important;
+    }
+    
+    .admin-table {
+        min-width: 400px !important;
+        font-size: 0.55rem !important;
+    }
+    
+    .admin-table th,
+    .admin-table td {
+        padding: 3px 5px !important;
+        font-size: 0.5rem !important;
+    }
+    
+    .admin-page-title {
+        font-size: 0.9rem !important;
+    }
+    
+    .admin-panel {
+        padding: 8px 8px !important;
+    }
+    
+    .admin-filter-pill {
+        font-size: 0.4rem !important;
+        padding: 2px 5px !important;
+    }
+    
+    .admin-drawer-save {
+        font-size: 0.4rem !important;
+        padding: 3px 6px !important;
+    }
+    
+    .admin-sidebar-brand-text {
+        font-size: 0.75rem !important;
+    }
+    
+    .admin-sidebar {
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+        padding: 4px 8px !important;
+    }
+    
+    .admin-sidebar-dropdown {
+        top: 44px !important;
+        max-height: calc(100vh - 44px) !important;
+    }
+    
+    .admin-main {
+        padding: 56px 10px 10px !important;
+    }
+}
