@@ -14,7 +14,7 @@ const HOME_TRAVEL_FEE = 150;
 // match towns nowhere near the shop. 'san isidro' is kept for the studio's own barangay, but
 // since "San Isidro" is a very common barangay name nationwide, this is still a best-effort
 // match, not real geocoding — false positives are possible for other San Isidros.
-const HOME_SERVICE_AREAS = [
+let HOME_SERVICE_AREAS = [
     { name: 'san isidro', fee: 80, lat: 14.7306, lng: 121.1214 },
     // "Montalban" is the old name for Rodriguez — same town, same coverage/fee,
     // so it's shown as one entry rather than two identical-looking options.
@@ -26,6 +26,31 @@ const HOME_SERVICE_AREAS = [
     { name: 'taytay', fee: 220, lat: 14.5561, lng: 121.1327 },
     { name: 'quezon city', fee: 250, lat: 14.6760, lng: 121.0437 }
 ];
+
+// Fees and labels now live in the delivery_areas table (the same rows booking
+// reads), so a price change is one row edit. The list above stays as the
+// fallback and as the source of lat/lng for "Use my current location", which
+// the table doesn't store. A table row with no coordinates here simply isn't
+// offered by the geolocation shortcut; the dropdown still lists it.
+async function loadHomeServiceAreas() {
+    if (typeof supabaseClient === 'undefined') return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('delivery_areas')
+            .select('name, label, fee, is_active')
+            .eq('is_active', true)
+            .order('fee', { ascending: true });
+        if (error || !data || !data.length) return;
+        const coords = {};
+        HOME_SERVICE_AREAS.forEach(a => { coords[a.name] = { lat: a.lat, lng: a.lng }; });
+        HOME_SERVICE_AREAS = data.map(row => {
+            const name = String(row.name).toLowerCase();
+            return Object.assign({ name, label: row.label || undefined, fee: Number(row.fee) || 0 }, coords[name] || {});
+        });
+    } catch (err) {
+        console.warn('Could not load delivery areas, using built-in list:', err);
+    }
+}
 
 // The area <select> only ever offers these exact area names as values (no free
 // text), so matching is a direct lookup — no fuzzy/word-boundary logic needed.
@@ -59,6 +84,7 @@ function nearestCoveredArea(lat, lng) {
     let best = null;
     let bestKm = Infinity;
     HOME_SERVICE_AREAS.forEach(area => {
+        if (typeof area.lat !== 'number' || typeof area.lng !== 'number') return;
         const km = haversineKm(lat, lng, area.lat, area.lng);
         if (km < bestKm) {
             bestKm = km;
@@ -516,7 +542,11 @@ function renderHaircutGallery(gender) {
             : 'Starting At';
     }
     if (bookBtn) {
-        bookBtn.href = `../booking/booking.html?type=${currentType}&gender=${gender}`;
+        const areaSelect = document.getElementById('areaSelect');
+        const areaParam = currentType === 'home' && areaSelect && areaSelect.value
+            ? `&area=${encodeURIComponent(areaSelect.value)}`
+            : '';
+        bookBtn.href = `../booking/booking.html?type=${currentType}&gender=${gender}${areaParam}`;
     }
 }
 
@@ -853,10 +883,13 @@ function initAvailabilityCheck() {
     // doesn't force people to re-select their area. applyTypeToUI(), called
     // later during init, handles showing/hiding based on homeServiceUnlocked.
     const saved = loadHomeServiceCheck();
-    if (saved && saved.unlocked) {
+    // Only restore if that area is still covered — a stale entry shouldn't
+    // keep Home Service unlocked for an area that's since been removed.
+    if (saved && saved.unlocked && (!saved.areaName || findCoveredArea(saved.areaName))) {
         homeServiceUnlocked = true;
-        currentTravelFee = saved.fee || HOME_TRAVEL_FEE;
-        if (saved.areaName) select.value = saved.areaName;
+        const savedArea = saved.areaName ? findCoveredArea(saved.areaName) : null;
+        currentTravelFee = savedArea ? savedArea.fee : (saved.fee || HOME_TRAVEL_FEE);
+        if (savedArea) select.value = savedArea.name;
         yesPanel.hidden = false;
         if (feeText) feeText.textContent = `₱${currentTravelFee} travel fee`;
     }
@@ -877,7 +910,8 @@ function initGenderTabs() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    await loadHomeServiceAreas();
     readInitialStateFromUrl();
 
     initServiceTypeToggle();

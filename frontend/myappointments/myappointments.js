@@ -356,10 +356,10 @@ async function handleCancelAppointment(bookingId) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Appointment';
         }
-        alert(
+        showErrorNotice(
             /row-level security|permission denied/i.test(error.message || '')
-                ? 'Cancelling isn\u2019t enabled for customer accounts yet \u2014 an RLS policy needs to allow updating your own bookings\u2019 status. Please call the studio to cancel for now.'
-                : (error.message || 'Something went wrong \u2014 please try again.')
+                ? 'This appointment can\u2019t be cancelled online right now \u2014 please call the studio and we\u2019ll take care of it.'
+                : friendlyErrorMessage(error, 'Something went wrong \u2014 please try again.')
         );
         return;
     }
@@ -372,7 +372,7 @@ async function handleCancelAppointment(bookingId) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Appointment';
         }
-        alert('Cancelling isn\u2019t enabled for customer accounts yet \u2014 an RLS policy needs to allow updating your own bookings\u2019 status. Please call the studio to cancel for now.');
+        showErrorNotice('This appointment can\u2019t be cancelled online right now \u2014 please call the studio and we\u2019ll take care of it.');
         return;
     }
 
@@ -414,10 +414,10 @@ async function handleDeleteAppointment(bookingId) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-trash" aria-hidden="true"></i> Delete Appointment';
         }
-        alert(
+        showErrorNotice(
             /row-level security|permission denied/i.test(error.message || '')
-                ? 'Deleting isn\u2019t enabled for customer accounts yet \u2014 an RLS policy needs to allow deleting your own cancelled bookings. Please call the studio to remove this for now.'
-                : (error.message || 'Something went wrong \u2014 please try again.')
+                ? 'This appointment can\u2019t be removed online right now \u2014 please call the studio and we\u2019ll take care of it.'
+                : friendlyErrorMessage(error, 'Something went wrong \u2014 please try again.')
         );
         return;
     }
@@ -427,7 +427,7 @@ async function handleDeleteAppointment(bookingId) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-trash" aria-hidden="true"></i> Delete Appointment';
         }
-        alert('Deleting isn\u2019t enabled for customer accounts yet \u2014 an RLS policy needs to allow deleting your own cancelled bookings. Please call the studio to remove this for now.');
+        showErrorNotice('This appointment can\u2019t be removed online right now \u2014 please call the studio and we\u2019ll take care of it.');
         return;
     }
 
@@ -568,7 +568,7 @@ async function downloadApptReceipt() {
     const node = document.getElementById('apptReceiptCapture');
     const btn = document.getElementById('apptReceiptDownloadBtn');
     if (!node || typeof html2canvas === 'undefined') {
-        alert('Saving isn\u2019t available right now \u2014 please take a screenshot instead.');
+        showErrorNotice('Saving isn\u2019t available right now \u2014 please take a screenshot instead.');
         return;
     }
 
@@ -590,7 +590,7 @@ async function downloadApptReceipt() {
         link.click();
     } catch (err) {
         console.error(err);
-        alert('Couldn\u2019t save the receipt \u2014 please try taking a screenshot instead.');
+        showErrorNotice('Couldn\u2019t save the receipt \u2014 please try taking a screenshot instead.');
     } finally {
         if (btn) {
             btn.disabled = false;

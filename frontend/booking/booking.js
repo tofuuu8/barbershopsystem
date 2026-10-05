@@ -58,7 +58,7 @@ const HAIRCUT_SERVICE_IDS = {
 // what booking needs (name + flat travel fee) — no geolocation shortcut
 // here since booking's own area <select> is a simpler, self-contained
 // pick-and-go rather than a full availability check.
-const BOOKING_HOME_AREAS = [
+let BOOKING_HOME_AREAS = [
     { name: 'san isidro', fee: 80 },
     { name: 'rodriguez', label: 'Rodriguez (Montalban)', fee: 100 },
     { name: 'san mateo', fee: 150 },
@@ -71,6 +71,46 @@ const BOOKING_HOME_AREAS = [
 
 function findBookingArea(name) {
     return BOOKING_HOME_AREAS.find(a => a.name === name) || null;
+}
+
+// The hardcoded list above is only a fallback now. The real source of
+// truth is the delivery_areas table (name, label, fee, is_active), so a
+// fee change is one row edit instead of three code edits. If the table
+// can't be read (RLS, offline), the fallback keeps booking usable.
+async function loadBookingAreas() {
+    if (typeof supabaseClient === 'undefined') return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('delivery_areas')
+            .select('name, label, fee, is_active')
+            .eq('is_active', true)
+            .order('fee', { ascending: true });
+        if (error || !data || !data.length) return;
+        BOOKING_HOME_AREAS = data.map(row => ({
+            name: String(row.name).toLowerCase(),
+            label: row.label || undefined,
+            fee: Number(row.fee) || 0
+        }));
+    } catch (err) {
+        console.warn('Could not load delivery areas, using built-in list:', err);
+    }
+}
+
+function renderCoverageChips() {
+    const wrap = document.getElementById('bookingCoverageChips');
+    if (!wrap) return;
+    wrap.replaceChildren();
+    BOOKING_HOME_AREAS.forEach(area => {
+        const chip = document.createElement('span');
+        chip.className = 'booking-coverage-chip';
+        chip.textContent = areaLabel(area);
+        wrap.appendChild(chip);
+    });
+}
+
+// PHP amount for display; tolerant of numeric strings from Postgres.
+function php(n) {
+    return `PHP ${(Number(n) || 0).toLocaleString()}`;
 }
 
 // --------------------------------------------
@@ -222,8 +262,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     showBookingContent();
+    await loadBookingAreas();
     readInitialStateFromUrl();
     initLocationToggle();
+    initRadioGroups();
+    applyInitialArea();
     initGenderTabs();
     initContactMethodToggle();
     initNotesCounter();
@@ -239,6 +282,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     await initPreferredBarber();
     await initPhoneField();
     await initEmailField();
+    await initSavedAddresses();
     await initDateTimeInputs();
     updateSummary();
     loadUpcomingBookings();
@@ -294,11 +338,33 @@ function showBookingContent() {
 // ============================================
 // DEEP-LINKING (?type=home&gender=women&barber=barber-russel)
 // ============================================
+// Area handed over from the services page: either ?area= on the link, or
+// the area that page saved in sessionStorage when the visitor checked
+// coverage. Only used for Home Service, and only if it's still a covered area.
+let initialAreaName = null;
+const HOME_SERVICE_STORAGE_KEY = 'toughcuts_home_service_check';
+
+function savedServicesPageArea() {
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(HOME_SERVICE_STORAGE_KEY) || 'null');
+        return saved && saved.unlocked && saved.areaName ? String(saved.areaName).toLowerCase() : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function applyInitialArea() {
+    if (currentLocation !== 'home') return;
+    const name = initialAreaName || savedServicesPageArea();
+    if (name && findBookingArea(name)) setSelectedArea(name);
+}
+
 function readInitialStateFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const type = params.get('type');
     const gender = params.get('gender');
     const barber = params.get('barber');
+    initialAreaName = (params.get('area') || '').toLowerCase() || null;
 
     if (type === 'home' || type === 'studio') currentLocation = type;
     if (gender === 'men' || gender === 'women') currentGender = gender;
@@ -316,11 +382,39 @@ function applyLocationToUI() {
     document.querySelectorAll('.booking-location-btn').forEach(btn => {
         const active = btn.dataset.location === currentLocation;
         btn.classList.toggle('active', active);
-        btn.setAttribute('aria-selected', String(active));
+        btn.setAttribute('aria-checked', String(active));
+        btn.tabIndex = active ? 0 : -1;
     });
 
     const homeFields = document.getElementById('bookingHomeFields');
     if (homeFields) homeFields.hidden = currentLocation !== 'home';
+}
+
+// The three segmented toggles (location, service gender, contact method)
+// pick exactly one option and have no panels, so they're radio groups, not
+// tabs. This adds the keyboard model radio groups promise: one tab stop per
+// group, arrow keys move the selection.
+function initRadioGroups() {
+    document.querySelectorAll('.booking-location-toggle, .booking-gender-tabs, .booking-contact-method').forEach(group => {
+        if (group.dataset.radioReady) return;
+        group.dataset.radioReady = 'true';
+        const items = () => Array.from(group.querySelectorAll('[role="radio"]'));
+        items().forEach(i => { i.tabIndex = i.getAttribute('aria-checked') === 'true' ? 0 : -1; });
+
+        group.addEventListener('keydown', function (e) {
+            const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+            if (!(e.key in step) && e.key !== 'Home' && e.key !== 'End') return;
+            const list = items();
+            const current = list.indexOf(e.target.closest('[role="radio"]'));
+            if (current === -1) return;
+            e.preventDefault();
+            const next = e.key === 'Home' ? 0
+                : e.key === 'End' ? list.length - 1
+                : (current + step[e.key] + list.length) % list.length;
+            list[next].focus();
+            list[next].click();
+        });
+    });
 }
 
 function initLocationToggle() {
@@ -335,26 +429,45 @@ function initLocationToggle() {
     });
 
     populateAreaSelect();
+    renderCoverageChips();
 
     const areaSelect = document.getElementById('bookingAreaSelect');
     if (areaSelect) {
         areaSelect.addEventListener('change', function () {
-            const area = findBookingArea(areaSelect.value);
-            selectedAreaName = area ? area.name : null;
-            currentTravelFee = area ? area.fee : 0;
-            const feeNote = document.getElementById('bookingTravelFeeNote');
-            if (feeNote) {
-                feeNote.hidden = !area;
-                if (area) feeNote.textContent = `+ PHP ${area.fee} travel fee`;
-            }
-            updateSummary();
+            setSelectedArea(areaSelect.value);
         });
     }
+}
+
+// Single place that applies an area choice (dropdown, deep link, or a
+// saved address) so state, fee note, slots and summary never disagree.
+function setSelectedArea(name) {
+    const area = name ? findBookingArea(name) : null;
+    selectedAreaName = area ? area.name : null;
+    currentTravelFee = area ? area.fee : 0;
+
+    const areaSelect = document.getElementById('bookingAreaSelect');
+    if (areaSelect && areaSelect.value !== (area ? area.name : '')) {
+        areaSelect.value = area ? area.name : '';
+        clearFieldError(areaSelect);
+    }
+
+    const feeNote = document.getElementById('bookingTravelFeeNote');
+    if (feeNote) {
+        feeNote.hidden = !area;
+        if (area) feeNote.textContent = `+ ${php(area.fee)} travel fee`;
+    }
+
+    // Area can change how long the barber is tied up (travel buffer), so
+    // availability has to be re-checked, not just the summary.
+    refreshTimeSlots();
+    updateSummary();
 }
 
 function populateAreaSelect() {
     const select = document.getElementById('bookingAreaSelect');
     if (!select) return;
+    select.querySelectorAll('option:not([value=""])').forEach(o => o.remove());
     BOOKING_HOME_AREAS.forEach(area => {
         const option = document.createElement('option');
         option.value = area.name;
@@ -370,7 +483,8 @@ function applyGenderToUI() {
     document.querySelectorAll('.booking-gender-tab').forEach(tab => {
         const active = tab.dataset.gender === currentGender;
         tab.classList.toggle('active', active);
-        tab.setAttribute('aria-selected', String(active));
+        tab.setAttribute('aria-checked', String(active));
+        tab.tabIndex = active ? 0 : -1;
     });
 }
 
@@ -468,7 +582,8 @@ function applyContactMethodToUI() {
     document.querySelectorAll('.booking-contact-method-btn').forEach(btn => {
         const active = btn.dataset.method === contactMethod;
         btn.classList.toggle('active', active);
-        btn.setAttribute('aria-selected', String(active));
+        btn.setAttribute('aria-checked', String(active));
+        btn.tabIndex = active ? 0 : -1;
     });
 
     const phoneField = document.getElementById('bookingPhoneField');
@@ -529,7 +644,7 @@ async function initPhoneField() {
         return;
     }
 
-    input.value = data.phone;
+    input.value = formatPhMobile(data.phone);
 }
 
 async function initEmailField() {
@@ -542,21 +657,165 @@ async function initEmailField() {
     if (user.email) input.value = user.email;
 }
 
+// --------------------------------------------
+// Saved addresses (Home Service)
+// --------------------------------------------
+// Reads profiles.address (the account page's default address) and
+// profiles.saved_addresses (jsonb array) and offers them as a picker above
+// the street-address box. The jsonb shape is written by the account page,
+// so entries are normalized defensively: a plain string, or an object with
+// a label and an address under any of the usual key names.
+let savedAddressOptions = [];
+
+function normalizeSavedAddress(entry, isDefault) {
+    if (!entry) return null;
+    if (typeof entry === 'string') {
+        const text = cleanAddressText(entry);
+        return text ? { label: isDefault ? 'Default' : '', address: text, area: null, isDefault } : null;
+    }
+    if (typeof entry !== 'object') return null;
+    const pick = (...keys) => keys.map(k => entry[k]).find(v => typeof v === 'string' && v.trim());
+    const address = cleanAddressText(pick('address', 'street', 'full_address', 'line1', 'value') || '');
+    if (!address) return null;
+    const area = (pick('area') || '').toLowerCase();
+    return {
+        label: pick('label', 'name', 'title') || (isDefault ? 'Default' : ''),
+        address,
+        area: findBookingArea(area) ? area : null,
+        isDefault: !!(isDefault || entry.is_default || entry.isDefault || entry.default)
+    };
+}
+
+async function initSavedAddresses() {
+    const field = document.getElementById('bookingSavedAddressField');
+    const select = document.getElementById('bookingSavedAddressSelect');
+    const textarea = document.getElementById('bookingAddressInput');
+    if (!field || !select || !textarea) return;
+
+    field.hidden = true;
+
+    const user = getCurrentUser();
+    if (!user || typeof supabaseClient === 'undefined') return;
+
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('address, saved_addresses')
+        .eq('id', user.id)
+        .maybeSingle();
+    if (error || !data) return;
+
+    const seen = new Set();
+    const found = [];
+    const add = item => {
+        if (!item) return;
+        const key = item.address.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        found.push(item);
+    };
+
+    add(normalizeSavedAddress(data.address, true));
+    (Array.isArray(data.saved_addresses) ? data.saved_addresses : [])
+        .forEach(e => add(normalizeSavedAddress(e, false)));
+
+    // Default address first, then the rest in the order the account page stores them.
+    found.sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
+    savedAddressOptions = found;
+    if (!savedAddressOptions.length) return;
+
+    select.replaceChildren();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose a saved address';
+    select.appendChild(placeholder);
+    savedAddressOptions.forEach((item, i) => {
+        const option = document.createElement('option');
+        option.value = String(i);
+        const text = item.address.length > 60 ? item.address.slice(0, 57) + '\u2026' : item.address;
+        option.textContent = item.label ? `${item.label} \u2014 ${text}` : text;
+        select.appendChild(option);
+    });
+    field.hidden = false;
+
+    if (!select.dataset.bound) {
+        select.dataset.bound = 'true';
+        select.addEventListener('change', function () {
+            const item = savedAddressOptions[Number(select.value)];
+            if (!item) return;
+            textarea.value = item.address;
+            clearFieldError(textarea);
+            if (item.area) setSelectedArea(item.area);
+            updateSummary();
+        });
+    }
+
+    // Prefill the default so the common case is zero typing, but never over
+    // something the visitor already typed.
+    const defaultIndex = savedAddressOptions.findIndex(a => a.isDefault);
+    if (defaultIndex !== -1 && !textarea.value.trim()) {
+        select.value = String(defaultIndex);
+        textarea.value = savedAddressOptions[defaultIndex].address;
+        if (savedAddressOptions[defaultIndex].area && !selectedAreaName) {
+            setSelectedArea(savedAddressOptions[defaultIndex].area);
+        }
+    }
+}
+
+// If the visitor edits the street box by hand, the picker no longer
+// describes what's in it.
+document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'bookingAddressInput') {
+        const select = document.getElementById('bookingSavedAddressSelect');
+        if (select && select.value) {
+            const item = savedAddressOptions[Number(select.value)];
+            if (!item || cleanAddressText(e.target.value) !== item.address) select.value = '';
+        }
+    }
+});
+
+// Rules live in main.js (validatePhMobile / validateEmailText /
+// validateAddressText) so booking, checkout and My Account all agree.
 function isValidBookingPhone(phone) {
-    return /^[0-9+()\-.\s]{7,20}$/.test(phone);
+    return !validatePhMobile(phone).error;
 }
 
 function isValidBookingEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return !validateEmailText(email);
 }
 
 // ============================================
 // DATE & TIME
 // ============================================
+// Home visits take travel time, so the server needs to know where the
+// appointment is to block the barber for the right window. These two
+// params only exist once the matching migration is applied (see
+// 202610050001_home_service_travel_buffer.sql). Until then the call is
+// retried without them, so booking keeps working exactly as before.
+let locationParamsSupported = true;
+
+function locationParams() {
+    return {
+        p_location_type: currentLocation,
+        p_area: currentLocation === 'home' ? selectedAreaName : null
+    };
+}
+
+async function rpcWithLocation(fn, params) {
+    if (locationParamsSupported) {
+        const result = await supabaseClient.rpc(fn, Object.assign({}, params, locationParams()));
+        const missing = result.error && /could not find the function|does not exist|PGRST202/i.test(
+            (result.error.message || '') + ' ' + (result.error.code || '')
+        );
+        if (!missing) return result;
+        locationParamsSupported = false;
+    }
+    return supabaseClient.rpc(fn, params);
+}
+
 async function fetchAvailableBookingSlots(barberId, dateStr, durationMinutes) {
     if (!dateStr || typeof supabaseClient === 'undefined') return [];
 
-    const { data, error } = await supabaseClient.rpc('get_available_booking_slots', {
+    const { data, error } = await rpcWithLocation('get_available_booking_slots', {
         p_date: dateStr,
         p_barber_id: barberId || null,
         p_gender: currentGender,
@@ -897,8 +1156,10 @@ function updateSummary() {
     setText('bookingSummaryFee', `PHP ${currentTravelFee.toLocaleString()}`);
     setText('bookingSummaryTotal', `PHP ${total.toLocaleString()}`);
 
-    const confirmBtn = document.getElementById('bookingConfirmBtn');
-    if (confirmBtn) confirmBtn.disabled = !isSelectionComplete(sel);
+    // Confirm stays clickable on purpose: pressing it with something
+    // missing highlights what to fix (see the submit handler) instead of
+    // a greyed-out button with no explanation. It's only disabled while
+    // a booking is being sent.
 
     updateStepProgress(sel);
     maybeRefreshHold();
@@ -912,7 +1173,7 @@ function updateSummary() {
 // --------------------------------------------
 function updateStepProgress(sel) {
     const stepDone = {
-        1: currentLocation === 'studio' || (!!selectedAreaName && sel.address.length >= MIN_ADDRESS_LENGTH),
+        1: currentLocation === 'studio' || (!!selectedAreaName && !validateAddressText(sel.address)),
         2: !!sel.service,
         3: !!sel.service, // a barber value always exists once a service is picked (Random is a valid default)
         4: !!(sel.date && sel.time),
@@ -994,7 +1255,7 @@ function isSelectionComplete(sel) {
     if (!sel.service || !sel.date || !sel.time) return false;
     if (contactMethod === 'phone' && (!sel.phone || !isValidBookingPhone(sel.phone))) return false;
     if (contactMethod === 'email' && (!sel.email || !isValidBookingEmail(sel.email))) return false;
-    if (currentLocation === 'home' && (!selectedAreaName || sel.address.length < MIN_ADDRESS_LENGTH)) return false;
+    if (currentLocation === 'home' && (!selectedAreaName || validateAddressText(sel.address))) return false;
     return true;
 }
 
@@ -1117,7 +1378,8 @@ async function renewExpiredHold() {
 // updateSummary() firing from an unrelated field) doesn't spam the RPC.
 function currentHoldKey(sel) {
     if (!sel.date || !sel.time || !sel.service) return null;
-    return [currentGender, selectedBarberId || '', sel.date, sel.time, sel.service.id].join('|');
+    return [currentGender, selectedBarberId || '', sel.date, sel.time, sel.service.id,
+        currentLocation, currentLocation === 'home' ? (selectedAreaName || '') : ''].join('|');
 }
 
 async function requestHold(sel, previousHoldId) {
@@ -1128,7 +1390,7 @@ async function requestHold(sel, previousHoldId) {
     const durationMinutes = parseDurationMinutes(sel.service.duration);
     const key = currentHoldKey(sel);
 
-    const { data, error } = await supabaseClient.rpc('create_booking_hold', {
+    const { data, error } = await rpcWithLocation('create_booking_hold', {
         p_gender: currentGender,
         p_barber_id: selectedBarberId,
         p_booking_date: sel.date,
@@ -1223,13 +1485,18 @@ function hideBookingError() {
 // so fixing the value removes the error immediately rather than
 // waiting for another submit attempt.
 // --------------------------------------------
-function setFieldError(input, message) {
+function setFieldError(input, message, opts) {
     if (!input) return;
     const field = input.closest('.booking-field');
     if (!field) return;
 
+    // On-blur checks pass { focus: false } so tabbing away from a field
+    // never yanks the page or the cursor somewhere else.
+    const shouldFocus = !opts || opts.focus !== false;
+
     field.classList.add('has-error');
     field.classList.remove('has-success');
+    input.setAttribute('aria-invalid', 'true');
 
     let msg = field.querySelector('.booking-field-error');
     if (!msg) {
@@ -1244,8 +1511,10 @@ function setFieldError(input, message) {
     text.textContent = message;
     msg.replaceChildren(icon, text);
 
-    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    window.setTimeout(() => input.focus(), 280);
+    if (shouldFocus) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => input.focus(), 280);
+    }
 
     if (!input.dataset.hasErrorClearListener) {
         input.dataset.hasErrorClearListener = 'true';
@@ -1259,39 +1528,93 @@ function clearFieldError(input) {
     const field = input.closest('.booking-field');
     if (!field) return;
     field.classList.remove('has-error');
+    input.removeAttribute('aria-invalid');
     const msg = field.querySelector('.booking-field-error');
     if (msg) msg.remove();
+}
+
+// Checks one field and shows/clears its inline message. Returns true
+// when the field is fine. Shared by the on-blur hints and the submit check.
+function validateBookingField(input, opts) {
+    if (!input) return true;
+    let message = '';
+    if (input.id === 'bookingPhoneInput') message = validatePhMobile(input.value).error;
+    else if (input.id === 'bookingEmailInput') message = validateEmailText(input.value);
+    else if (input.id === 'bookingAddressInput') message = validateAddressText(input.value);
+    else if (input.id === 'bookingAreaSelect') message = input.value ? '' : 'Select your area for Home Service.';
+
+    if (message) {
+        setFieldError(input, message, opts);
+        return false;
+    }
+    clearFieldError(input);
+    return true;
 }
 
 function initBookingForm() {
     const form = document.getElementById('bookingForm');
     if (!form) return;
 
+    // Tell the visitor as soon as they leave a field, not only on submit.
+    // Empty fields stay quiet until they try to continue.
+    ['bookingPhoneInput', 'bookingEmailInput', 'bookingAddressInput'].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('blur', function () {
+            if (!input.value.trim()) return;
+            validateBookingField(input, { focus: false });
+        });
+    });
+
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         hideBookingError();
 
         const sel = currentSelection();
-        if (!sel.service || !sel.date || !sel.time) {
-            showBookingError('Please fill in every required field before confirming.');
+
+        // Name exactly what's still missing, e.g. "Please choose a date and a time."
+        const missing = [];
+        if (!sel.service) missing.push('a service');
+        if (!sel.date) missing.push('a date');
+        if (!sel.time) missing.push('a time');
+        const missingSelections = missing.length > 0;
+
+        // Check every visible field and show all problems at once; only
+        // the first one scrolls/focuses, so fixing it doesn't just reveal
+        // the next error on the following attempt.
+        const fieldsToCheck = [];
+        if (currentLocation === 'home') {
+            fieldsToCheck.push(document.getElementById('bookingAreaSelect'));
+            fieldsToCheck.push(document.getElementById('bookingAddressInput'));
+        }
+        fieldsToCheck.push(document.getElementById(contactMethod === 'phone' ? 'bookingPhoneInput' : 'bookingEmailInput'));
+
+        // When a service/date/time is missing the banner below is what
+        // scrolls into view, so the fields get highlighted without also
+        // fighting it for focus.
+        let firstInvalid = !missingSelections;
+        let allValid = true;
+        fieldsToCheck.forEach(function (input) {
+            const ok = validateBookingField(input, { focus: firstInvalid });
+            if (!ok) {
+                allValid = false;
+                firstInvalid = false;
+            }
+        });
+
+        if (missingSelections) {
+            const list = missing.length > 1
+                ? missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1]
+                : missing[0];
+            showBookingError('Please choose ' + list + ' to continue.');
             return;
         }
-        if (contactMethod === 'phone' && (!sel.phone || !isValidBookingPhone(sel.phone))) {
-            setFieldError(document.getElementById('bookingPhoneInput'), 'Enter a valid contact number so your barber can reach you.');
-            return;
-        }
-        if (contactMethod === 'email' && (!sel.email || !isValidBookingEmail(sel.email))) {
-            setFieldError(document.getElementById('bookingEmailInput'), 'Enter a valid email address so we can notify you.');
-            return;
-        }
-        if (currentLocation === 'home' && !selectedAreaName) {
-            setFieldError(document.getElementById('bookingAreaSelect'), 'Select your area for Home Service.');
-            return;
-        }
-        if (currentLocation === 'home' && sel.address.length < MIN_ADDRESS_LENGTH) {
-            setFieldError(document.getElementById('bookingAddressInput'), 'Enter a complete street address so your barber can find you.');
-            return;
-        }
+        if (!allValid) return;
+
+        // Send the cleaned-up number (09XXXXXXXXX) rather than whatever
+        // formatting the visitor typed.
+        if (contactMethod === 'phone') sel.phone = validatePhMobile(sel.phone).value;
+        if (currentLocation === 'home') sel.address = cleanAddressText(sel.address);
 
         const user = getCurrentUser();
         if (!user) {
@@ -1326,7 +1649,17 @@ function initBookingForm() {
         };
         if (activeHoldId) bookingParams.p_hold_id = activeHoldId;
 
-        const { data, error } = await supabaseClient.rpc('create_booking_atomic', bookingParams);
+        let data = null;
+        let error = null;
+        try {
+            const result = await supabaseClient.rpc('create_booking_atomic', bookingParams);
+            data = result.data;
+            error = result.error;
+        } catch (thrown) {
+            // Network drop mid-request - supabase-js usually returns this
+            // as `error`, but some browsers/extensions make fetch throw.
+            error = thrown;
+        }
 
         if (error || !data) {
             confirmBtn.disabled = false;
@@ -1337,8 +1670,8 @@ function initBookingForm() {
                 /booked|outside|available/i.test(error?.message || '')
                     ? (error.message || 'That time is no longer available. Please pick another slot.')
                     : /function .*create_booking_atomic|does not exist/i.test(error?.message || '')
-                        ? 'Secure booking availability is not installed yet — run the latest Supabase migrations first.'
-                        : (error?.message || 'Something went wrong. Please try again.')
+                        ? 'Booking is temporarily unavailable. Please try again shortly or call the studio.'
+                        : friendlyErrorMessage(error, "We couldn't complete your booking. Please try again.")
             );
             // Whatever hold we had didn't get us through — drop it and
             // let refreshTimeSlots()/updateSummary() sort out whether a
@@ -1367,7 +1700,18 @@ function showBookingSuccess(booking, sel) {
     if (formWrap) formWrap.hidden = true;
     if (success) success.hidden = false;
 
-    setText('bookingSuccessService', `${booking.service_name} — PHP ${booking.service_price.toLocaleString()}`);
+    // Prefer what the server stored; fall back to what the visitor was quoted
+    // so the receipt can never show less than the summary did.
+    const servicePrice = Number(booking.service_price ?? (sel.service ? sel.service.price : 0)) || 0;
+    const isHome = booking.location_type === 'home';
+    const travelFee = isHome ? (Number(booking.travel_fee ?? currentTravelFee) || 0) : 0;
+    const totalPrice = Number(booking.total_price ?? (servicePrice + travelFee)) || (servicePrice + travelFee);
+
+    setText('bookingSuccessService', `${booking.service_name} \u2014 ${php(servicePrice)}`);
+    const feeRow = document.getElementById('bookingSuccessFeeRow');
+    if (feeRow) feeRow.hidden = !isHome || !travelFee;
+    setText('bookingSuccessFee', php(travelFee));
+    setText('bookingSuccessTotal', php(totalPrice));
     setText('bookingSuccessBarber', booking.barber_name || 'Random');
     setText('bookingSuccessLocation', booking.location_type === 'home'
         ? `Home Service${booking.area ? ' — ' + areaLabel(findBookingArea(booking.area) || { name: booking.area }) : ''} (${booking.address})`
@@ -1377,7 +1721,10 @@ function showBookingSuccess(booking, sel) {
         ? `Email: ${sel.email}`
         : `Phone: ${booking.contact_phone || sel.phone}`);
 
-    renderReceiptQr(booking, sel);
+    renderReceiptQr(Object.assign({}, booking, {
+        travel_fee: travelFee,
+        total_price: totalPrice
+    }), sel);
 
     success.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -1418,11 +1765,19 @@ function renderReceiptQr(booking, sel) {
     // booking could end up not refreshing the visitor's appointment
     // list, on top of losing the QR itself. Ref/Booking ID alone are
     // enough to look this appointment up.
-    const qrPayload = [
+    // Booking ID goes before the money lines so the 200-char cap can only
+    // ever trim the tail, never the lookup key.
+    const qrLines = [
         'TOUGHCUTS APPOINTMENT',
         `Ref: ${refId}`,
         `Booking ID: ${booking.id}`
-    ].join('\n').slice(0, 200);
+    ];
+    if (Number(booking.travel_fee) > 0) {
+        const area = booking.area ? areaLabel(findBookingArea(booking.area) || { name: booking.area }) : 'Home';
+        qrLines.push(`Travel: ${php(booking.travel_fee)} (${area})`);
+    }
+    qrLines.push(`Total: ${php(booking.total_price)}`);
+    const qrPayload = qrLines.join('\n').slice(0, 200);
 
     try {
         new QRCode(container, {
@@ -1450,7 +1805,7 @@ function initReceiptDownloadButton() {
     btn.addEventListener('click', async function () {
         const node = document.getElementById('bookingReceiptCapture');
         if (!node || typeof html2canvas === 'undefined') {
-            alert('Saving isn\u2019t available right now \u2014 please take a screenshot instead.');
+            showSiteNotice('Saving isn\u2019t available right now \u2014 please take a screenshot instead.', 'error');
             return;
         }
 
@@ -1477,7 +1832,7 @@ function initReceiptDownloadButton() {
             link.click();
         } catch (err) {
             console.error(err);
-            alert('Couldn\u2019t save the receipt \u2014 please try taking a screenshot instead.');
+            showSiteNotice('Couldn\u2019t save the receipt \u2014 please try taking a screenshot instead.', 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
@@ -1531,6 +1886,7 @@ function initResetButton() {
         applyContactMethodToUI();
         await initPhoneField();
         await initEmailField();
+        await initSavedAddresses();
         await refreshTimeSlots();
         updateSummary();
         initNotesCounter();
@@ -1620,7 +1976,21 @@ async function loadUpcomingBookings() {
         const phone = b.contact_phone ? `&middot; ${escapeHtml(String(b.contact_phone))}` : '';
         const status = String(b.status || 'unknown');
         const statusLabel = escapeHtml(status);
-        const location = b.location_type === 'home' ? 'Home Service' : 'In-Studio';
+        const isHome = b.location_type === 'home';
+        const areaText = isHome && b.area
+            ? areaLabel(findBookingArea(String(b.area).toLowerCase()) || { name: String(b.area) })
+            : '';
+        const location = isHome
+            ? `Home Service${areaText ? ' \u2014 ' + escapeHtml(areaText) : ''}`
+            : 'In-Studio';
+        const addressLine = isHome && b.address
+            ? `<p class="booking-history-address"><i class="fas fa-location-dot" aria-hidden="true"></i> ${escapeHtml(String(b.address))}</p>`
+            : '';
+        const servicePrice = Number(b.service_price) || 0;
+        const travelFee = isHome ? (Number(b.travel_fee) || 0) : 0;
+        const total = Number(b.total_price) || (servicePrice + travelFee);
+        const priceLine = `<p class="booking-history-price">${php(total)}${travelFee
+            ? ` <span>(${php(servicePrice)} + ${php(travelFee)} travel)</span>` : ''}</p>`;
         const cancelButton = status === 'pending' || status === 'confirmed'
             ? `<button type="button" class="booking-history-cancel" data-id="${id}">Cancel</button>`
             : '';
@@ -1635,6 +2005,8 @@ async function loadUpcomingBookings() {
                         &middot; ${barberName}
                         ${phone}
                     </p>
+                    ${addressLine}
+                    ${priceLine}
                 </div>
                 <div class="booking-history-aside">
                     <span class="${statusBadgeClass(status)}">${statusLabel}</span>
@@ -1677,7 +2049,7 @@ async function cancelBooking(id, btn) {
             btn.disabled = false;
             btn.textContent = 'Cancel';
         }
-        alert('Could not cancel that appointment — please try again.');
+        showSiteNotice(friendlyErrorMessage(error, 'Could not cancel that appointment — please try again.'), 'error');
         return;
     }
 
@@ -1689,7 +2061,7 @@ async function cancelBooking(id, btn) {
             btn.disabled = false;
             btn.textContent = 'Cancel';
         }
-        alert('This appointment can no longer be cancelled from here — please refresh the page.');
+        showSiteNotice('This appointment can no longer be cancelled from here — please refresh the page.', 'error');
         return;
     }
 

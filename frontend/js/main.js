@@ -52,6 +52,211 @@ const ANNOUNCE_BAR = {
     linkPath: 'booking/booking.html'
 };
 
+// ============================================
+// SHARED FORM VALIDATION + ERROR HELPERS
+// ============================================
+// Used by booking.js and checkout.js (and checkout-enhance.js) so every
+// form on the site applies the same rules and shows the same wording.
+// Each validator returns an error string ('' when fine) or, for the
+// phone, { error, value } where value is the cleaned 09XXXXXXXXX form.
+
+// Philippine mobile numbers only (09XX XXX XXXX, +63 9XX XXX XXXX,
+// 639XXXXXXXXX) - the number is used for SMS and delivery/appointment
+// calls, so a landline would save fine but never actually reach anyone.
+function validatePhMobile(raw) {
+    const text = (raw || '').trim();
+    if (!text) return { error: 'Enter your mobile number.', value: '' };
+
+    if (/[A-Za-z]/.test(text)) return { error: 'Phone number can only contain numbers.', value: '' };
+    if (!/^[0-9+()\-.\s]+$/.test(text)) return { error: 'Use numbers only - remove any special characters.', value: '' };
+    if (text.lastIndexOf('+') > 0) return { error: 'The + sign can only be at the very start.', value: '' };
+
+    let digits = text.replace(/\D/g, '');
+    if (digits.startsWith('63') && (text.startsWith('+') || digits.length === 12)) {
+        digits = '0' + digits.slice(2);
+    } else if (digits.startsWith('9') && digits.length === 10) {
+        digits = '0' + digits;
+    }
+
+    if (digits.length >= 2 && !digits.startsWith('09')) {
+        return { error: 'Enter a Philippine mobile number starting with 09 or +63 9.', value: '' };
+    }
+    if (digits.length < 11) {
+        return { error: 'That number is too short - mobile numbers have 11 digits (09XX XXX XXXX).', value: '' };
+    }
+    if (digits.length > 11) {
+        return { error: 'That number is too long - mobile numbers have 11 digits (09XX XXX XXXX).', value: '' };
+    }
+    return { error: '', value: digits };
+}
+
+// "09171234567" -> "0917 123 4567"; anything that isn't a valid number
+// is returned untouched so old saved values are never mangled.
+function formatPhMobile(stored) {
+    const d = validatePhMobile(stored).value;
+    return d ? d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7) : (stored || '');
+}
+
+function cleanAddressText(raw) {
+    return (raw || '').replace(/\s+/g, ' ').trim();
+}
+
+function validateAddressText(raw) {
+    const text = cleanAddressText(raw);
+    if (!text) return 'Enter your street address.';
+    if (text.length > 200) return 'Keep the address under 200 characters.';
+    if (text.length < 10) return 'That address is too short - include your street, barangay, and city.';
+    if (!/[A-Za-z]/.test(text)) return 'Add a street, barangay, or city name - numbers alone are not enough.';
+    if (text.split(/[\s,]+/).filter(Boolean).length < 3) {
+        return 'Add more detail, e.g. house/unit no., street, barangay, city.';
+    }
+    return '';
+}
+
+function validateEmailText(raw) {
+    const text = (raw || '').trim();
+    if (!text) return 'Enter your email address.';
+    if (text.length > 254) return 'That email address is too long.';
+    if (/\s/.test(text)) return 'Email addresses cannot contain spaces.';
+    if (!text.includes('@')) return 'Email addresses need an @, e.g. you@email.com.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(text)) return 'Enter a complete email, e.g. you@email.com.';
+    return '';
+}
+
+function validatePersonName(raw) {
+    const text = (raw || '').replace(/\s+/g, ' ').trim();
+    if (!text) return 'Enter your full name.';
+    if (text.length < 2) return 'That name looks too short.';
+    if (text.length > 60) return 'Keep your name under 60 characters.';
+    if (!/\p{L}/u.test(text)) return 'Your name needs to include letters.';
+    if (/\d/.test(text)) return 'Names cannot contain numbers.';
+    return '';
+}
+
+// Shows/clears an inline message under one input. Works for any form by
+// naming the wrapper class and the "has an error" class it uses, e.g.
+//   showFieldMessage(input, 'Too short.', { wrapper: '.checkout-field', errorClass: 'is-error', messageClass: 'checkout-field-error' })
+// Pass { focus: false } for on-blur checks so tabbing away never moves
+// the page or the cursor.
+function showFieldMessage(input, message, opts) {
+    if (!input) return;
+    const o = opts || {};
+    const field = input.closest(o.wrapper || '.form-field');
+    if (!field) return;
+
+    field.classList.add(o.errorClass || 'is-error');
+    field.classList.remove('is-success', 'has-success');
+    input.setAttribute('aria-invalid', 'true');
+
+    const messageClass = o.messageClass || 'field-error';
+    let msg = field.querySelector('.' + messageClass);
+    if (!msg) {
+        msg = document.createElement('p');
+        msg.className = messageClass;
+        msg.setAttribute('role', 'alert');
+        field.appendChild(msg);
+    }
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-circle-exclamation';
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = message;
+    msg.replaceChildren(icon, text);
+
+    if (o.focus !== false) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(function () { input.focus(); }, 280);
+    }
+
+    if (!input.dataset.hasMessageClearListener) {
+        input.dataset.hasMessageClearListener = 'true';
+        const clear = function () { clearFieldMessage(input, o); };
+        input.addEventListener('input', clear);
+        input.addEventListener('change', clear);
+    }
+}
+
+function clearFieldMessage(input, opts) {
+    if (!input) return;
+    const o = opts || {};
+    const field = input.closest(o.wrapper || '.form-field');
+    if (!field) return;
+    field.classList.remove(o.errorClass || 'is-error');
+    input.removeAttribute('aria-invalid');
+    const msg = field.querySelector('.' + (o.messageClass || 'field-error'));
+    if (msg) msg.remove();
+}
+
+// Turns whatever Supabase/the network threw into something a customer
+// can act on. Messages raised on purpose by our own database functions
+// (e.g. "That time is no longer available") pass through untouched;
+// raw database/technical text and bare network errors do not.
+function friendlyErrorMessage(error, fallback) {
+    const base = fallback || 'Something went wrong. Please try again.';
+    const message = String((error && (error.message || error.error_description || error.error)) || error || '');
+    if (!message) return base;
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        return "You appear to be offline - check your connection and try again.";
+    }
+    if (/failed to fetch|networkerror|network request failed|load failed|fetch failed/i.test(message)) {
+        return "Can't reach the server - check your internet connection and try again.";
+    }
+    if (/timeout|timed out|aborted/i.test(message)) {
+        return 'The request took too long. Please try again.';
+    }
+    if (/jwt|token.*(expired|invalid)|not authenticated|not logged in|session.*(expired|missing)|invalid refresh/i.test(message)) {
+        return 'Your session expired - please log in again.';
+    }
+    if (/row-level security|permission denied|not allowed|forbidden|policy/i.test(message)) {
+        return "You don't have permission to do that. If this looks wrong, please contact the studio.";
+    }
+    if (/rate limit|too many requests|429/i.test(message)) {
+        return 'Too many attempts - please wait a moment and try again.';
+    }
+    if (/violates|constraint|syntax|column|relation|schema cache|pgrst|null value|invalid input|does not exist|could not find the function|stack depth|deadlock/i.test(message)) {
+        return base;
+    }
+    return message;
+}
+
+// Small non-blocking notice that replaces alert() for error/info
+// messages. Auto-dismisses; one at a time.
+function showSiteNotice(message, type) {
+    let notice = document.getElementById('siteNotice');
+    if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'siteNotice';
+        notice.className = 'site-notice';
+        notice.setAttribute('role', 'status');
+        notice.setAttribute('aria-live', 'polite');
+        document.body.appendChild(notice);
+    }
+    notice.className = 'site-notice' + (type === 'error' ? ' is-error' : '');
+    notice.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
+    const icon = document.createElement('i');
+    icon.className = 'fas ' + (type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info');
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = String(message);
+    notice.replaceChildren(icon, text);
+
+    // Force a reflow so re-showing mid-animation restarts the transition.
+    void notice.offsetWidth;
+    notice.classList.add('is-visible');
+
+    clearTimeout(notice._hideTimeout);
+    notice._hideTimeout = setTimeout(function () {
+        notice.classList.remove('is-visible');
+    }, 6000);
+}
+
+// Shorthand used where the old code called alert() with an error.
+function showErrorNotice(message) {
+    showSiteNotice(message, 'error');
+}
+
 // The header bell link is written as a plain relative href
 // ("notifications/notifications.html") in each page's HTML, which only
 // resolves correctly from the homepage. From services/, studio/, etc. it

@@ -63,11 +63,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     initPasswordChangeForm();
     initLogoutButton();
     initSettingsNav();
+    initAddressManager();
+    initNotificationPreferences();
 
     const nameForm = document.getElementById('accountNameForm');
     const nameSubmitBtn = document.getElementById('accountNameSubmitBtn');
     const nameHint = document.getElementById('accountNameUnsavedHint');
     profileFormDirtyTracker = initFormDirtyTracking(nameForm, nameSubmitBtn, nameHint);
+    initUnsavedChangesGuard();
 });
 
 // --------------------------------------------
@@ -208,16 +211,7 @@ function renderProfile() {
     const phoneInput = document.getElementById('accountPhoneInput');
     if (phoneInput) phoneInput.value = formatPhoneDisplay(currentProfile.phone);
 
-    const addressInput = document.getElementById('accountAddressInput');
-    if (addressInput) addressInput.value = currentProfile.address || '';
-
-    const savedAddressesInput = document.getElementById('accountSavedAddressesInput');
-    if (savedAddressesInput) {
-        const saved = Array.isArray(currentProfile.saved_addresses) ? currentProfile.saved_addresses : [];
-        savedAddressesInput.value = saved.map(function (item) {
-            return typeof item === 'string' ? item : (item && item.address) || '';
-        }).filter(Boolean).join('\n');
-    }
+    loadAddressesFromProfile();
 
     const preferredBarberInput = document.getElementById('accountPreferredBarberInput');
     if (preferredBarberInput) preferredBarberInput.value = currentProfile.preferred_barber_id || '';
@@ -231,6 +225,7 @@ function renderProfile() {
     if (smsNotificationsInput) smsNotificationsInput.checked = currentProfile.notification_sms !== false;
     const marketingInput = document.getElementById('accountMarketingInput');
     if (marketingInput) marketingInput.checked = currentProfile.marketing_opt_in === true;
+    updateSmsWarning();
 
     // Quick-glance chips on the member card — mirror whatever the form
     // below currently holds, so a returning visitor can see their
@@ -435,7 +430,7 @@ function serializeForm(form) {
 }
 
 function initFormDirtyTracking(form, submitBtn, hintEl) {
-    if (!form || !submitBtn) return { resetBaseline() {} };
+    if (!form || !submitBtn) return { isDirty() { return false; }, resetBaseline() {} };
 
     let baseline = serializeForm(form);
 
@@ -449,6 +444,9 @@ function initFormDirtyTracking(form, submitBtn, hintEl) {
     form.addEventListener('change', check);
 
     return {
+        isDirty() {
+            return serializeForm(form) !== baseline;
+        },
         resetBaseline() {
             baseline = serializeForm(form);
             check();
@@ -508,13 +506,8 @@ function initEditNameForm() {
 
     const nameInput = document.getElementById('accountNameInput');
     const phoneInput = document.getElementById('accountPhoneInput');
-    const addressInput = document.getElementById('accountAddressInput');
-    const savedAddressesInput = document.getElementById('accountSavedAddressesInput');
     const preferredBarberInput = document.getElementById('accountPreferredBarberInput');
     const fulfillmentInput = document.getElementById('accountFulfillmentInput');
-    const emailNotificationsInput = document.getElementById('accountEmailNotificationsInput');
-    const smsNotificationsInput = document.getElementById('accountSmsNotificationsInput');
-    const marketingInput = document.getElementById('accountMarketingInput');
     const submitBtn = document.getElementById('accountNameSubmitBtn');
     const submitText = submitBtn.querySelector('.login-submit-text');
     const spinner = submitBtn.querySelector('.login-submit-spinner');
@@ -528,47 +521,30 @@ function initEditNameForm() {
             if (result.error) setFieldError(phoneInput, result.error, { focus: false });
         });
     }
-    if (addressInput) {
-        addressInput.addEventListener('blur', function () {
-            const message = validateAddress(addressInput.value);
-            if (message) setFieldError(addressInput, message, { focus: false });
-        });
-    }
-    if (savedAddressesInput) {
-        savedAddressesInput.addEventListener('blur', function () {
-            const lines = savedAddressesInput.value.split('\n').map(cleanAddress).filter(Boolean);
-            if (lines.length > 5) {
-                setFieldError(savedAddressesInput, 'You can save up to 5 addresses — remove ' + (lines.length - 5) + '.', { focus: false });
-                return;
-            }
-            for (let i = 0; i < lines.length; i++) {
-                const message = validateAddress(lines[i]);
-                if (message) {
-                    setFieldError(savedAddressesInput, 'Line ' + (i + 1) + ': ' + message, { focus: false });
-                    return;
-                }
-            }
-        });
-    }
 
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         hideBanners('accountProfileError', 'accountProfileSuccess');
 
         const name = nameInput.value.trim();
-        // Phone and address are optional — not every visitor wants to
-        // store them — but if they ARE filled in, they have to be usable.
-        const rawSavedLines = savedAddressesInput
-            ? savedAddressesInput.value.split('\n').map(cleanAddress).filter(Boolean)
-            : [];
         const preferredBarberId = preferredBarberInput ? preferredBarberInput.value : '';
         const defaultFulfillmentType = fulfillmentInput && fulfillmentInput.value === 'delivery' ? 'delivery' : 'pickup';
 
+        // An address that's still open in the editor hasn't been added to
+        // the list yet — saving now would silently drop it.
+        if (isAddressEditorOpen()) {
+            setAddressEditorError('Save or cancel this address before saving your profile.');
+            focusAddressEditor();
+            return;
+        }
+
         // Collect every problem first, then show them all together (only
         // the first one scrolls/focuses) so fixing one field doesn't
-        // reveal a new error on the next save attempt.
+        // reveal a new error on the next save attempt. Phone is optional,
+        // but if it IS filled in, it has to be usable. Addresses are
+        // validated one at a time as they're added/edited.
         const problems = [];
-        [nameInput, phoneInput, addressInput, savedAddressesInput].forEach(clearFieldError);
+        [nameInput, phoneInput].forEach(clearFieldError);
 
         if (!name) problems.push({ input: nameInput, message: 'Enter your name.' });
 
@@ -576,36 +552,10 @@ function initEditNameForm() {
         if (phoneResult.error) problems.push({ input: phoneInput, message: phoneResult.error });
         const phone = phoneResult.value;
 
-        const addressError = validateAddress(addressInput ? addressInput.value : '');
-        if (addressError) problems.push({ input: addressInput, message: addressError });
-        const address = cleanAddress(addressInput ? addressInput.value : '');
-
-        let savedAddresses = [];
-        if (savedAddressesInput) {
-            if (rawSavedLines.length > 5) {
-                problems.push({ input: savedAddressesInput, message: 'You can save up to 5 addresses — remove ' + (rawSavedLines.length - 5) + '.' });
-            } else {
-                for (let i = 0; i < rawSavedLines.length; i++) {
-                    const lineError = validateAddress(rawSavedLines[i]);
-                    if (lineError) {
-                        problems.push({ input: savedAddressesInput, message: 'Line ' + (i + 1) + ': ' + lineError });
-                        break;
-                    }
-                }
-            }
-            // Drop repeats (case-insensitive) so the same address isn't stored twice.
-            const seen = new Set();
-            savedAddresses = rawSavedLines.filter(function (line) {
-                const key = line.toLowerCase();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        }
-        if (address && !savedAddresses.some(line => line.toLowerCase() === address.toLowerCase())) {
-            savedAddresses.unshift(address);
-        }
-        savedAddresses = savedAddresses.slice(0, 5);
+        // The list is ordered default-first, so the default address is
+        // simply the first entry (same convention the old textarea used).
+        const savedAddresses = savedAddressList.slice(0, MAX_SAVED_ADDRESSES);
+        const address = savedAddresses[0] || '';
 
         if (problems.length) {
             problems.forEach(function (problem, index) {
@@ -637,10 +587,7 @@ function initEditNameForm() {
                     address: address,
                     preferred_barber_id: preferredBarberId || null,
                     default_fulfillment_type: defaultFulfillmentType,
-                    saved_addresses: savedAddresses,
-                    notification_email: emailNotificationsInput ? emailNotificationsInput.checked : true,
-                    notification_sms: smsNotificationsInput ? smsNotificationsInput.checked : true,
-                    marketing_opt_in: marketingInput ? marketingInput.checked : false
+                    saved_addresses: savedAddresses
                 })
                 .eq('id', user.id),
             supabaseClient.auth.updateUser({ data: { name: name } })
@@ -675,9 +622,6 @@ function initEditNameForm() {
         currentProfile.preferred_barber_id = preferredBarberId || null;
         currentProfile.default_fulfillment_type = defaultFulfillmentType;
         currentProfile.saved_addresses = savedAddresses;
-        currentProfile.notification_email = emailNotificationsInput ? emailNotificationsInput.checked : true;
-        currentProfile.notification_sms = smsNotificationsInput ? smsNotificationsInput.checked : true;
-        currentProfile.marketing_opt_in = marketingInput ? marketingInput.checked : false;
         renderProfile();
         // Table update succeeded (the tableError branch above already
         // returned otherwise) — the form now matches what's actually
@@ -710,8 +654,35 @@ function initPasswordChangeForm() {
     const submitBtn = document.getElementById('accountPasswordSubmitBtn');
     const submitText = submitBtn.querySelector('.login-submit-text');
     const spinner = submitBtn.querySelector('.login-submit-spinner');
+    const followup = document.getElementById('accountPasswordFollowup');
+    const followupText = document.getElementById('accountPasswordFollowupText');
+    const signOutOthersBtn = document.getElementById('accountSignOutOthersBtn');
+    const FOLLOWUP_DEFAULT_TEXT = followupText ? followupText.textContent : '';
 
     initPasswordChecklist(newInput, checklist);
+
+    // After a successful change, offer to end every OTHER session. Changing
+    // a password doesn't sign other devices out by itself, so anyone who
+    // changed it because of a lost phone or a shared computer would
+    // otherwise still be logged in there. scope: 'others' keeps this device.
+    if (signOutOthersBtn) {
+        signOutOthersBtn.addEventListener('click', async function () {
+            signOutOthersBtn.disabled = true;
+            signOutOthersBtn.textContent = 'Signing out...';
+
+            const { error: signOutError } = await supabaseClient.auth.signOut({ scope: 'others' });
+
+            if (signOutError) {
+                signOutOthersBtn.disabled = false;
+                signOutOthersBtn.textContent = 'Sign out other devices';
+                showPasswordError(friendlyErrorMessage(signOutError, "Couldn't sign out your other devices. Please try again."));
+                return;
+            }
+
+            if (followupText) followupText.textContent = "Done. You're now signed in on this device only.";
+            signOutOthersBtn.hidden = true;
+        });
+    }
 
     // Update starts disabled (see the HTML) — enabling it only once all
     // three fields actually have something in them avoids an eager
@@ -735,6 +706,7 @@ function initPasswordChangeForm() {
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         hideBanners('accountPasswordError', 'accountPasswordSuccess');
+        if (followup) followup.hidden = true;
 
         const currentPassword = currentInput.value;
         const newPassword = newInput.value;
@@ -773,7 +745,15 @@ function initPasswordChangeForm() {
             submitBtn.disabled = false;
             submitText.textContent = 'Update Password';
             spinner.hidden = true;
-            setFieldError(currentInput, 'Your current password is incorrect.');
+            // Only a genuine credentials rejection means "wrong password".
+            // Offline, rate-limited, or server errors say so instead of
+            // wrongly blaming the password the visitor typed.
+            const wrongPassword = reauthError.status === 400 || /invalid login credentials/i.test(reauthError.message || '');
+            if (wrongPassword) {
+                setFieldError(currentInput, 'Your current password is incorrect.');
+            } else {
+                showPasswordError(friendlyErrorMessage(reauthError, 'Could not verify your current password. Please try again.'));
+            }
             return;
         }
 
@@ -784,14 +764,35 @@ function initPasswordChangeForm() {
         spinner.hidden = true;
 
         if (error) {
-            showPasswordError(error.message || 'Could not update your password. Please try again.');
+            showPasswordError(friendlyErrorMessage(error, 'Could not update your password. Please try again.'));
             return;
         }
 
         form.reset();
+        resetPasswordVisibility(form); // form.reset() doesn't undo a "Show password" toggle
         initPasswordChecklist(newInput, checklist); // reset the checklist back to its empty state
         checkPasswordFormFilled(); // fields are empty again — disable Update until refilled
         showPasswordSuccess('Your password has been updated.');
+
+        if (followup && signOutOthersBtn) {
+            if (followupText) followupText.textContent = FOLLOWUP_DEFAULT_TEXT;
+            signOutOthersBtn.hidden = false;
+            signOutOthersBtn.disabled = false;
+            signOutOthersBtn.textContent = 'Sign out other devices';
+            followup.hidden = false;
+        }
+    });
+}
+
+// Puts every password field back to hidden, with the toggle button's icon
+// and label to match. The toggles themselves are wired in main.js
+// (initPasswordToggles); this only undoes their state after form.reset().
+function resetPasswordVisibility(form) {
+    form.querySelectorAll('.login-toggle-pass[data-toggle-target]').forEach(function (btn) {
+        const input = document.getElementById(btn.dataset.toggleTarget);
+        if (input) input.type = 'password';
+        btn.innerHTML = '<i class="fas fa-eye" aria-hidden="true"></i>';
+        btn.setAttribute('aria-label', 'Show password');
     });
 }
 
@@ -802,6 +803,485 @@ function initLogoutButton() {
     const btn = document.getElementById('accountLogoutBtn');
     if (!btn) return;
     btn.addEventListener('click', function () {
+        if (!confirmLeaveIfUnsaved()) return;
         logOut();
     });
+}
+
+// ============================================
+// SAVED ADDRESSES
+// ============================================
+// One list replaces the old "default address" box + "one address per
+// line" box. The list is ordered default-first, which is the same
+// convention the old code stored (profiles.address === saved_addresses[0]),
+// so checkout and any other page reading those columns keep working
+// unchanged. Edits are held in memory and written by the form's normal
+// Save Changes button — a hidden input (#accountSavedAddressesData)
+// mirrors the list so the unsaved-changes tracking sees them.
+const MAX_SAVED_ADDRESSES = 5;
+const ADDRESS_LIMIT_NOTE = 'You\'ve reached the limit of ' + MAX_SAVED_ADDRESSES + ' saved addresses. Delete one to add another.';
+const ADDRESS_DEFAULT_NOTE = 'Your default address is used first at checkout. Changes apply when you press Save Changes.';
+
+let savedAddressList = [];  // default first
+let addressEditor = null;   // { index: number | null (null = adding), original, textarea, errorEl } while open
+
+function makeEl(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+}
+
+function makeIcon(className) {
+    const icon = document.createElement('i');
+    icon.className = className;
+    icon.setAttribute('aria-hidden', 'true');
+    return icon;
+}
+
+function normalizeAddressList(profile) {
+    const seen = new Set();
+    const list = [];
+    function add(raw) {
+        const text = cleanAddress(raw);
+        const key = text.toLowerCase();
+        if (!text || seen.has(key)) return;
+        seen.add(key);
+        list.push(text);
+    }
+    // The single-address column always leads (it was the default), then
+    // whatever was saved, de-duplicated case-insensitively.
+    add(profile.address);
+    (Array.isArray(profile.saved_addresses) ? profile.saved_addresses : []).forEach(function (item) {
+        add(typeof item === 'string' ? item : (item && item.address) || '');
+    });
+    return list.slice(0, MAX_SAVED_ADDRESSES);
+}
+
+function loadAddressesFromProfile() {
+    if (!currentProfile) return;
+    savedAddressList = normalizeAddressList(currentProfile);
+    addressEditor = null;
+    renderAddressList();
+}
+
+function initAddressManager() {
+    const addBtn = document.getElementById('accountAddressAddBtn');
+    if (addBtn) addBtn.addEventListener('click', startAddressAdd);
+}
+
+function announceAddressChange(message) {
+    const live = document.getElementById('accountAddressAnnounce');
+    if (live) live.textContent = message;
+}
+
+// focus: { type: 'add' } or { type: 'edit', index } — where keyboard focus
+// should land after the re-render, since the button that was just
+// pressed no longer exists.
+function renderAddressList(focus) {
+    const list = document.getElementById('accountAddressList');
+    const addBtn = document.getElementById('accountAddressAddBtn');
+    const note = document.getElementById('accountAddressNote');
+    if (!list) return;
+
+    list.replaceChildren();
+
+    const adding = addressEditor && addressEditor.index === null;
+    if (!savedAddressList.length && !adding) {
+        list.append(makeEl('p', 'account-address-empty', 'No saved addresses yet.'));
+    }
+    savedAddressList.forEach(function (address, index) {
+        list.append(addressEditor && addressEditor.index === index
+            ? buildAddressEditor(index, address)
+            : buildAddressItem(address, index));
+    });
+    if (adding) list.append(buildAddressEditor(null, ''));
+
+    const full = savedAddressList.length >= MAX_SAVED_ADDRESSES;
+    if (addBtn) addBtn.disabled = !!addressEditor || full;
+    if (note) note.textContent = full ? ADDRESS_LIMIT_NOTE : ADDRESS_DEFAULT_NOTE;
+
+    // Mirror into the hidden input so the form's dirty tracking notices.
+    const data = document.getElementById('accountSavedAddressesData');
+    if (data) {
+        const next = JSON.stringify(savedAddressList);
+        if (data.value !== next) {
+            data.value = next;
+            data.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+
+    if (focus) {
+        const target = focus.type === 'add'
+            ? addBtn
+            : list.querySelector('[data-index="' + focus.index + '"] .js-address-edit');
+        if (target && !target.disabled) target.focus();
+        else if (addBtn && !addBtn.disabled) addBtn.focus();
+    }
+}
+
+function makeAddressButton(label, iconClass, ariaLabel, onClick, extraClass) {
+    const btn = makeEl('button', 'account-mini-btn' + (extraClass ? ' ' + extraClass : ''));
+    btn.type = 'button';
+    btn.append(makeIcon(iconClass), document.createTextNode(' ' + label));
+    btn.setAttribute('aria-label', ariaLabel);
+    btn.disabled = !!addressEditor; // finish or cancel the open editor first
+    btn.addEventListener('click', onClick);
+    return btn;
+}
+
+function buildAddressItem(address, index) {
+    const isDefault = index === 0;
+    const item = makeEl('div', 'account-address-item' + (isDefault ? ' is-default' : ''));
+    item.dataset.index = String(index);
+    item.setAttribute('role', 'group');
+    item.setAttribute('aria-label', 'Address ' + (index + 1) + (isDefault ? ', default' : ''));
+
+    const body = makeEl('div', 'account-address-body');
+    if (isDefault) {
+        const badge = makeEl('span', 'account-address-badge');
+        badge.append(makeIcon('fas fa-check'), document.createTextNode(' Default'));
+        body.append(badge);
+    }
+    body.append(makeEl('p', 'account-address-text', address));
+
+    const actions = makeEl('div', 'account-address-actions');
+    if (!isDefault) {
+        actions.append(makeAddressButton('Set as default', 'fas fa-star', 'Set address ' + (index + 1) + ' as default', function () {
+            setDefaultAddress(index);
+        }));
+    }
+    const editBtn = makeAddressButton('Edit', 'fas fa-pen', 'Edit address ' + (index + 1), function () {
+        startAddressEdit(index);
+    }, 'js-address-edit');
+    actions.append(editBtn);
+    actions.append(makeAddressButton('Delete', 'fas fa-trash', 'Delete address ' + (index + 1), function () {
+        deleteAddress(index);
+    }, 'is-danger'));
+
+    item.append(body, actions);
+    return item;
+}
+
+function buildAddressEditor(index, value) {
+    const wrap = makeEl('div', 'account-address-editor');
+    wrap.append(makeEl('span', 'account-address-editor-title', index === null ? 'New address' : 'Edit address'));
+
+    // No id on purpose: the form's dirty tracking serializes every field
+    // that has one, and a half-typed address shouldn't light up Save —
+    // only a completed add/edit changes the list.
+    const textarea = makeEl('textarea', 'login-input account-address-input');
+    textarea.rows = 3;
+    textarea.maxLength = 200;
+    textarea.value = value;
+    textarea.placeholder = 'House/Unit No., Street, Barangay, City, Province';
+    textarea.autocomplete = 'street-address';
+    textarea.setAttribute('aria-label', index === null ? 'New delivery address' : 'Edit delivery address');
+
+    const errorEl = makeEl('p', 'account-field-error account-address-error');
+    errorEl.setAttribute('role', 'alert');
+    errorEl.hidden = true;
+
+    const buttons = makeEl('div', 'account-address-editor-actions');
+    const saveBtn = makeEl('button', 'account-mini-btn is-primary', index === null ? 'Add address' : 'Save address');
+    saveBtn.type = 'button';
+    const cancelBtn = makeEl('button', 'account-mini-btn', 'Cancel');
+    cancelBtn.type = 'button';
+    buttons.append(saveBtn, cancelBtn);
+
+    saveBtn.addEventListener('click', commitAddressEditor);
+    cancelBtn.addEventListener('click', cancelAddressEditor);
+    textarea.addEventListener('input', function () { setAddressEditorError(''); });
+    textarea.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            cancelAddressEditor();
+        } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            commitAddressEditor();
+        }
+    });
+
+    wrap.append(textarea, errorEl, buttons);
+    addressEditor.textarea = textarea;
+    addressEditor.errorEl = errorEl;
+    addressEditor.original = value;
+    return wrap;
+}
+
+function isAddressEditorOpen() {
+    return !!addressEditor;
+}
+
+// True only when the open editor holds text that differs from what it
+// opened with — an editor opened and left untouched isn't "unsaved".
+function isAddressEditorDirty() {
+    if (!addressEditor || !addressEditor.textarea) return false;
+    return cleanAddress(addressEditor.textarea.value) !== cleanAddress(addressEditor.original);
+}
+
+function focusAddressEditor() {
+    if (!addressEditor || !addressEditor.textarea) return;
+    addressEditor.textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    addressEditor.textarea.focus({ preventScroll: true });
+}
+
+function setAddressEditorError(message) {
+    if (!addressEditor || !addressEditor.errorEl) return;
+    const errorEl = addressEditor.errorEl;
+    if (!message) {
+        errorEl.hidden = true;
+        errorEl.replaceChildren();
+        addressEditor.textarea.removeAttribute('aria-invalid');
+        return;
+    }
+    errorEl.replaceChildren(makeIcon('fas fa-circle-exclamation'), makeEl('span', '', message));
+    errorEl.hidden = false;
+    addressEditor.textarea.setAttribute('aria-invalid', 'true');
+}
+
+function startAddressAdd() {
+    if (addressEditor || savedAddressList.length >= MAX_SAVED_ADDRESSES) return;
+    addressEditor = { index: null };
+    renderAddressList();
+    focusAddressEditor();
+}
+
+function startAddressEdit(index) {
+    if (addressEditor) return;
+    addressEditor = { index: index };
+    renderAddressList();
+    focusAddressEditor();
+}
+
+function cancelAddressEditor() {
+    if (!addressEditor) return;
+    const wasAdding = addressEditor.index === null;
+    const index = addressEditor.index;
+    addressEditor = null;
+    renderAddressList(wasAdding ? { type: 'add' } : { type: 'edit', index: index });
+}
+
+function commitAddressEditor() {
+    if (!addressEditor) return;
+    const text = cleanAddress(addressEditor.textarea.value);
+    const editingIndex = addressEditor.index;
+
+    let message = text ? validateAddress(text) : 'Enter an address.';
+    if (!message && savedAddressList.some(function (a, i) { return i !== editingIndex && a.toLowerCase() === text.toLowerCase(); })) {
+        message = 'You\'ve already saved that address.';
+    }
+    if (!message && editingIndex === null && savedAddressList.length >= MAX_SAVED_ADDRESSES) {
+        message = ADDRESS_LIMIT_NOTE;
+    }
+    if (message) {
+        setAddressEditorError(message);
+        focusAddressEditor();
+        return;
+    }
+
+    let focusIndex;
+    if (editingIndex === null) {
+        savedAddressList.push(text); // first-ever address is index 0, so it becomes the default automatically
+        focusIndex = savedAddressList.length - 1;
+        announceAddressChange(focusIndex === 0
+            ? 'Address added and set as your default. Press Save Changes to apply.'
+            : 'Address added. Press Save Changes to apply.');
+    } else {
+        savedAddressList[editingIndex] = text;
+        focusIndex = editingIndex;
+        announceAddressChange('Address updated. Press Save Changes to apply.');
+    }
+    addressEditor = null;
+    renderAddressList({ type: 'edit', index: focusIndex });
+}
+
+function setDefaultAddress(index) {
+    if (addressEditor || index <= 0 || index >= savedAddressList.length) return;
+    const moved = savedAddressList.splice(index, 1)[0];
+    savedAddressList.unshift(moved);
+    announceAddressChange('That address is now your default. Press Save Changes to apply.');
+    renderAddressList({ type: 'edit', index: 0 });
+}
+
+function deleteAddress(index) {
+    if (addressEditor || index < 0 || index >= savedAddressList.length) return;
+    const wasDefault = index === 0;
+    savedAddressList.splice(index, 1);
+    announceAddressChange(wasDefault && savedAddressList.length
+        ? 'Default address deleted. Your next address is now the default. Press Save Changes to apply.'
+        : 'Address deleted. Press Save Changes to apply.');
+    renderAddressList({ type: 'add' });
+}
+
+
+// ============================================
+// NOTIFICATION PREFERENCES — save on toggle
+// ============================================
+// These three checkboxes live OUTSIDE #accountNameForm, so they never
+// affect the Save button or the unsaved-changes prompt. Each one writes
+// only its own column the moment it's switched; on failure it flips back
+// so the screen never claims something that didn't save.
+let notificationStatusTimer = null;
+
+function setNotificationStatus(message, kind) {
+    const status = document.getElementById('accountNotificationStatus');
+    if (!status) return;
+    clearTimeout(notificationStatusTimer);
+    status.className = 'account-autosave-status' + (kind ? ' is-' + kind : '');
+    if (!message) {
+        status.replaceChildren();
+        return;
+    }
+    const iconClass = kind === 'success' ? 'fas fa-circle-check'
+        : kind === 'error' ? 'fas fa-circle-exclamation'
+        : 'fas fa-circle-notch fa-spin';
+    status.replaceChildren(makeIcon(iconClass), makeEl('span', '', message));
+    if (kind === 'success') {
+        notificationStatusTimer = setTimeout(function () { setNotificationStatus(''); }, 2500);
+    }
+}
+
+// SMS only reaches someone if a phone number is actually SAVED on the
+// account, so the check uses the stored profile — not whatever happens
+// to be typed in the phone box right now.
+function updateSmsWarning() {
+    const warning = document.getElementById('accountSmsWarning');
+    const smsInput = document.getElementById('accountSmsNotificationsInput');
+    const text = document.getElementById('accountSmsWarningText');
+    const action = document.getElementById('accountSmsWarningAction');
+    if (!warning || !smsInput || !text || !action) return;
+
+    const hasSavedPhone = !!(currentProfile && currentProfile.phone);
+    const phoneInput = document.getElementById('accountPhoneInput');
+    const hasTypedPhone = !!(phoneInput && phoneInput.value.trim());
+
+    const show = smsInput.checked && !hasSavedPhone;
+    warning.hidden = !show;
+    if (!show) return;
+
+    if (hasTypedPhone) {
+        text.textContent = 'SMS updates are on, but the phone number you entered isn\'t saved yet. Press Save Changes above and we\'ll text that number. ';
+        action.hidden = true;
+    } else {
+        text.textContent = 'SMS updates are on, but there\'s no phone number on your account, so no texts will be sent. ';
+        action.hidden = false;
+    }
+}
+
+function initNotificationPreferences() {
+    const preferences = [
+        { id: 'accountEmailNotificationsInput', column: 'notification_email' },
+        { id: 'accountSmsNotificationsInput', column: 'notification_sms' },
+        { id: 'accountMarketingInput', column: 'marketing_opt_in' }
+    ];
+
+    preferences.forEach(function (pref) {
+        const input = document.getElementById(pref.id);
+        if (!input) return;
+
+        input.addEventListener('change', async function () {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const desired = input.checked;
+            const hadFocus = document.activeElement === input;
+            input.disabled = true; // one request per toggle at a time
+            updateSmsWarning();
+            setNotificationStatus('Saving...', 'saving');
+
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ [pref.column]: desired })
+                .eq('id', user.id);
+
+            input.disabled = false;
+            if (hadFocus) input.focus();
+
+            if (error) {
+                console.error(error);
+                input.checked = !desired;
+                setNotificationStatus(friendlyErrorMessage(error, 'Couldn\'t save that change. Please try again.'), 'error');
+            } else {
+                input.checked = desired;
+                if (currentProfile) currentProfile[pref.column] = desired;
+                setNotificationStatus('Saved', 'success');
+            }
+            updateSmsWarning();
+        });
+    });
+
+    const phoneInput = document.getElementById('accountPhoneInput');
+    if (phoneInput) phoneInput.addEventListener('input', updateSmsWarning);
+
+    const action = document.getElementById('accountSmsWarningAction');
+    if (action) {
+        action.addEventListener('click', function () {
+            const target = document.getElementById('accountPhoneInput');
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            window.setTimeout(function () { target.focus({ preventScroll: true }); }, 280);
+        });
+    }
+
+    updateSmsWarning();
+}
+
+
+// ============================================
+// UNSAVED-CHANGES GUARD
+// ============================================
+// Covers the ways someone can leave with edits pending: closing the tab,
+// reloading, the browser's back/forward buttons (all via beforeunload),
+// and clicking any link that goes to another page — header, footer,
+// mobile bottom nav — plus Log Out. The settings rail is NOT guarded:
+// its links only scroll within this page, so nothing is lost by using
+// them.
+let skipBeforeUnloadPrompt = false;
+const UNSAVED_CHANGES_MESSAGE = 'You have unsaved changes. Leave without saving?';
+
+function hasUnsavedProfileChanges() {
+    return !!((profileFormDirtyTracker && profileFormDirtyTracker.isDirty()) || isAddressEditorDirty());
+}
+
+// Used for in-page actions that navigate away (links, Log Out). Returns
+// false if the visitor chose to stay. When they choose to leave, the
+// native beforeunload prompt is suppressed once so they aren't asked twice.
+function confirmLeaveIfUnsaved() {
+    if (!hasUnsavedProfileChanges()) return true;
+    if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) return false;
+    skipBeforeUnloadPrompt = true;
+    window.setTimeout(function () { skipBeforeUnloadPrompt = false; }, 1500);
+    return true;
+}
+
+function initUnsavedChangesGuard() {
+    window.addEventListener('beforeunload', function (e) {
+        if (skipBeforeUnloadPrompt || !hasUnsavedProfileChanges()) return;
+        e.preventDefault();
+        e.returnValue = ''; // required by some browsers to show the prompt
+    });
+
+    // Capture phase so this runs before any other click handler on the
+    // page (nav drawer, bottom-nav, etc.) gets a chance to navigate.
+    document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const link = e.target.closest ? e.target.closest('a[href]') : null;
+        if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+
+        const href = link.getAttribute('href') || '';
+        if (!href || href.charAt(0) === '#' || /^(mailto|tel|javascript):/i.test(href)) return;
+
+        const url = new URL(link.href, window.location.href);
+        const samePage = url.origin === window.location.origin
+            && url.pathname === window.location.pathname
+            && url.search === window.location.search;
+        if (samePage) return;
+
+        if (!confirmLeaveIfUnsaved()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
 }

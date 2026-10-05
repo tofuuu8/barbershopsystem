@@ -2068,3 +2068,46 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ---- Receipt total + appointment-history detail (fee/area/address) ---- */
+.booking-success-row--total {
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px dashed var(--line);
+    font-weight: 600;
+}
+
+.booking-success-row--total span:last-child {
+    font-family: var(--font-display);
+    font-size: 1rem;
+}
+
+.booking-history-address {
+    margin-top: 4px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--dim);
+    overflow-wrap: anywhere;
+}
+
+.booking-history-address i {
+    margin-right: 4px;
+}
+
+.booking-history-price {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+    color: var(--white);
+}
+
+.booking-history-price span {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--dim);
+}
+
+.booking-success-row[hidden],
+.booking-field[hidden] {
+    display: none;
+}

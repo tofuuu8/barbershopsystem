@@ -226,7 +226,7 @@ async function handleResumePayment(orderId, btn) {
     });
 
     if (error || !data || data.error || !data.checkoutUrl) {
-        alert((data && data.error) || 'Could not resume payment. Please try again.');
+        showErrorNotice((data && data.error) || 'Could not resume payment. Please try again.');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-credit-card" aria-hidden="true"></i> Complete Payment';
         return;
@@ -271,10 +271,10 @@ async function handleCancelOrder(orderId, btn) {
 
     if (error) {
         console.error(error);
-        alert(
+        showErrorNotice(
             /cancel_order_atomic|PGRST202|does not exist/i.test(error.message || '')
-                ? 'Secure order cancellation is not installed yet — please contact the studio.'
-                : (error.message || 'Something went wrong — please try again.')
+                ? 'Order cancellation isn\u2019t available right now — please contact the studio.'
+                : friendlyErrorMessage(error, 'Something went wrong — please try again.')
         );
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
@@ -282,7 +282,7 @@ async function handleCancelOrder(orderId, btn) {
     }
 
     if (!data) {
-        alert('The order could not be cancelled. Please refresh and try again.');
+        showErrorNotice('The order could not be cancelled. Please refresh and try again.');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-xmark" aria-hidden="true"></i> Cancel Order';
         return false;

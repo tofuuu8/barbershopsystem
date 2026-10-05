@@ -140,11 +140,15 @@ function initMobileStickyBar() {
 // submit time.
 // --------------------------------------------
 function initLiveFieldFeedback() {
+    // Each check returns an error message ('' when fine). The rules come
+    // from main.js so this stays in step with what checkout.js enforces
+    // at submit time.
+    const opts = { wrapper: '.checkout-field', errorClass: 'is-error', messageClass: 'checkout-field-error', focus: false };
     const fields = [
-        { input: 'checkoutNameInput', test: v => v.trim().length > 1 },
-        { input: 'checkoutPhoneInput', test: v => v.replace(/\D/g, '').length >= 10 },
-        { input: 'checkoutAddressInput', test: v => v.trim().length > 5 },
-        { input: 'checkoutAreaInput', test: v => v.trim().length > 1 },
+        { input: 'checkoutNameInput', check: v => validatePersonName(v) },
+        { input: 'checkoutPhoneInput', check: v => validatePhMobile(v).error },
+        { input: 'checkoutAddressInput', check: v => validateAddressText(v) },
+        { input: 'checkoutAreaInput', check: v => v ? '' : 'Select your delivery area.' },
     ];
 
     fields.forEach(function (f) {
@@ -153,19 +157,28 @@ function initLiveFieldFeedback() {
         const field = input.closest('.checkout-field');
         if (!field) return;
 
-        input.addEventListener('blur', function () {
+        function validate() {
             if (!input.value.trim()) {
-                field.classList.remove('is-error', 'is-success');
+                clearFieldMessage(input, opts);
+                field.classList.remove('is-success');
                 return;
             }
-            const valid = f.test(input.value);
-            field.classList.toggle('is-success', valid);
-            field.classList.toggle('is-error', !valid);
-        });
+            const message = f.check(input.value);
+            if (message) {
+                showFieldMessage(input, message, opts);
+            } else {
+                clearFieldMessage(input, opts);
+                field.classList.add('is-success');
+            }
+        }
+
+        input.addEventListener('blur', validate);
+        if (input.tagName === 'SELECT') input.addEventListener('change', validate);
 
         input.addEventListener('input', function () {
-            if (field.classList.contains('is-error') && f.test(input.value)) {
-                field.classList.remove('is-error');
+            // Typing again clears a stale error; success shows once it's valid.
+            if (field.classList.contains('is-error') && !f.check(input.value)) {
+                clearFieldMessage(input, opts);
                 field.classList.add('is-success');
             }
         });

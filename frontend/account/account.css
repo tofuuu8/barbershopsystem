@@ -887,3 +887,343 @@
         width: 100%;
     }
 }
+
+/* ============================================
+   SAVED ADDRESSES LIST
+   Default is marked by a steel rule on its left edge (same motif the
+   settings rail uses for "you are here") AND a text badge — never
+   color alone. Controls are quiet text buttons so a list of five
+   doesn't shout five times; the one filled button is Save/Add inside
+   the editor.
+   ============================================ */
+.account-address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.account-address-empty {
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    font-style: italic;
+    color: var(--dim);
+    padding: 4px 0 2px;
+}
+
+.account-address-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--card-light, rgba(255, 255, 255, .04));
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line);
+    border-radius: var(--acct-radius);
+}
+
+.account-address-item.is-default {
+    border-left-color: var(--steel);
+}
+
+.account-address-body {
+    min-width: 0;
+    flex: 1;
+}
+
+.account-address-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+    font-family: var(--font-body);
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--steel);
+}
+
+.account-address-badge i {
+    font-size: 0.66rem;
+}
+
+.account-address-text {
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--white);
+    overflow-wrap: anywhere;
+}
+
+.account-address-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px 6px;
+    flex-shrink: 0;
+    max-width: 260px;
+}
+
+.account-mini-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: 50px;
+    background: transparent;
+    color: var(--off);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.18s var(--acct-ease), color 0.18s var(--acct-ease), border-color 0.18s var(--acct-ease);
+}
+
+.account-mini-btn i {
+    font-size: 0.72rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-mini-btn:not(:disabled):hover {
+        background: rgba(255, 255, 255, .07);
+        color: var(--white);
+    }
+    .account-mini-btn.is-danger:not(:disabled):hover {
+        background: var(--acct-rust-bg);
+        color: #f2a6a1;
+    }
+}
+
+.account-mini-btn:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 2px;
+}
+
+.account-mini-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.account-mini-btn.is-primary {
+    background: var(--steel);
+    color: var(--black);
+    font-weight: 600;
+    padding-left: 18px;
+    padding-right: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-mini-btn.is-primary:not(:disabled):hover {
+        background: var(--white);
+        color: var(--black);
+    }
+}
+
+.account-address-add {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    min-height: 44px;
+    padding: 10px 20px;
+    border: 1px dashed var(--steel-dim, rgba(216, 210, 196, .45));
+    border-radius: 50px;
+    background: transparent;
+    color: var(--steel);
+    font-family: var(--font-body);
+    font-size: 0.86rem;
+    cursor: pointer;
+    transition: background 0.18s var(--acct-ease), border-color 0.18s var(--acct-ease), color 0.18s var(--acct-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-address-add:not(:disabled):hover {
+        background: rgba(216, 210, 196, .08);
+        border-style: solid;
+        color: var(--white);
+    }
+}
+
+.account-address-add:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 3px;
+}
+
+.account-address-add:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.account-address-editor {
+    padding: 14px 16px 16px;
+    background: var(--card-light, rgba(255, 255, 255, .04));
+    border: 1px solid var(--steel-dim, rgba(216, 210, 196, .45));
+    border-radius: var(--acct-radius);
+}
+
+.account-address-editor-title {
+    display: block;
+    margin-bottom: 10px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--off);
+}
+
+.account-address-editor-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* .account-field-error is display:flex, which would otherwise beat the
+   hidden attribute and leave an empty red row under the textarea. */
+.account-address-error[hidden] {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .account-address-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .account-address-actions {
+        justify-content: flex-start;
+        max-width: none;
+        margin-left: -12px;
+    }
+    .account-mini-btn {
+        min-height: 44px;
+    }
+    .account-address-editor-actions .account-mini-btn {
+        flex: 1;
+    }
+}
+
+/* ============================================
+   NOTIFICATIONS — autosave status + SMS warning
+   ============================================ */
+.account-autosave-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 6px;
+    min-height: 1.3em; /* reserved so "Saved" appearing never shifts the card */
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--dim);
+}
+
+.account-autosave-status.is-success { color: var(--acct-olive); }
+.account-autosave-status.is-error { color: var(--acct-rust); }
+.account-autosave-status i { font-size: 0.8rem; }
+
+.account-inline-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 4px 0 8px 26px; /* tucks under the SMS label, past its checkbox */
+    padding: 10px 14px;
+    border: 1px solid rgba(201, 162, 77, .4);
+    border-radius: var(--acct-radius);
+    background: rgba(201, 162, 77, .1);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--off);
+}
+
+.account-inline-warning[hidden] {
+    display: none;
+}
+
+.account-inline-warning > i {
+    margin-top: 3px;
+    flex-shrink: 0;
+    color: var(--acct-amber);
+}
+
+.account-inline-link {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--steel);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.account-inline-link[hidden] {
+    display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .account-inline-link:hover { color: var(--white); }
+}
+
+.account-inline-link:focus-visible {
+    outline: 2px solid var(--steel);
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+
+@media (max-width: 640px) {
+    .account-inline-warning { margin-left: 0; }
+}
+
+/* ============================================
+   PASSWORD — "sign out other devices" follow-up
+   ============================================ */
+.account-password-followup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--acct-radius);
+    background: var(--card-light, rgba(255, 255, 255, .04));
+}
+
+.account-password-followup[hidden] {
+    display: none;
+}
+
+.account-password-followup:not([hidden]) {
+    animation: accountFeedbackIn 0.28s var(--acct-ease-out) both;
+}
+
+.account-password-followup p {
+    flex: 1 1 240px;
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    color: var(--off);
+}
+
+.account-followup-btn {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 10px 22px;
+}
+
+.account-followup-btn[hidden] {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .account-followup-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .account-password-followup:not([hidden]) { animation: none; }
+    .account-autosave-status .fa-spin { animation-duration: 1.4s; }
+}

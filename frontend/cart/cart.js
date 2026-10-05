@@ -181,7 +181,7 @@ async function updateItemQuantity(id, delta) {
 
     if (error) {
         console.warn('Could not update cart item:', error.message);
-        alert("Couldn't update that item — please try again.");
+        showErrorNotice("Couldn't update that item — please try again.");
         if (row) {
             row.classList.remove('is-updating');
             row.querySelectorAll('button').forEach(btn => btn.disabled = false);
@@ -206,7 +206,7 @@ async function removeItem(id) {
 
     if (error) {
         console.warn('Could not remove cart item:', error.message);
-        alert("Couldn't remove that item — please try again.");
+        showErrorNotice("Couldn't remove that item — please try again.");
         if (row) {
             row.classList.remove('is-updating');
             row.querySelectorAll('button').forEach(btn => btn.disabled = false);

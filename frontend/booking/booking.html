@@ -162,6 +162,8 @@
                             <div class="booking-success-row"><span>Location</span><span id="bookingSuccessLocation"></span></div>
                             <div class="booking-success-row"><span>Date &amp; Time</span><span id="bookingSuccessDateTime"></span></div>
                             <div class="booking-success-row"><span>Contact</span><span id="bookingSuccessContact"></span></div>
+                            <div class="booking-success-row" id="bookingSuccessFeeRow" hidden><span>Travel Fee</span><span id="bookingSuccessFee"></span></div>
+                            <div class="booking-success-row booking-success-row--total"><span>Total</span><span id="bookingSuccessTotal"></span></div>
                         </div>
 
                         <div class="booking-ticket-divider" aria-hidden="true"></div>
@@ -246,11 +248,11 @@
                             <div class="booking-card" data-step="1">
                                 <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">1</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Where's Your Appointment?</h2>
 
-                                <div class="booking-location-toggle" role="tablist">
-                                    <button type="button" class="booking-location-btn active" data-location="studio" role="tab" aria-selected="true">
+                                <div class="booking-location-toggle" role="radiogroup" aria-label="Appointment location">
+                                    <button type="button" class="booking-location-btn active" data-location="studio" role="radio" aria-checked="true">
                                         <i class="fas fa-store" aria-hidden="true"></i> In-Studio
                                     </button>
-                                    <button type="button" class="booking-location-btn" data-location="home" role="tab" aria-selected="false">
+                                    <button type="button" class="booking-location-btn" data-location="home" role="radio" aria-checked="false">
                                         <i class="fas fa-house" aria-hidden="true"></i> Home Service
                                     </button>
                                 </div>
@@ -264,15 +266,13 @@
                                         <div class="booking-fee-note" id="bookingTravelFeeNote" hidden></div>
                                     </div>
 
-                                    <div class="booking-coverage-chips">
-                                        <span class="booking-coverage-chip">San Isidro</span>
-                                        <span class="booking-coverage-chip">Rodriguez (Montalban)</span>
-                                        <span class="booking-coverage-chip">San Mateo</span>
-                                        <span class="booking-coverage-chip">Marikina</span>
-                                        <span class="booking-coverage-chip">Antipolo</span>
-                                        <span class="booking-coverage-chip">Cainta</span>
-                                        <span class="booking-coverage-chip">Taytay</span>
-                                        <span class="booking-coverage-chip">Quezon City</span>
+                                    <div class="booking-coverage-chips" id="bookingCoverageChips" aria-label="Covered areas"></div>
+
+                                    <div class="booking-field" id="bookingSavedAddressField" hidden>
+                                        <label for="bookingSavedAddressSelect">Saved Addresses</label>
+                                        <select id="bookingSavedAddressSelect" class="booking-select">
+                                            <option value="">Choose a saved address</option>
+                                        </select>
                                     </div>
 
                                     <div class="booking-field">
@@ -286,11 +286,11 @@
                             <div class="booking-card" data-step="2">
                                 <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">2</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Your Service</h2>
 
-                                <div class="booking-gender-tabs" role="tablist">
-                                    <button type="button" class="booking-gender-tab active" data-gender="men" role="tab" aria-selected="true">
+                                <div class="booking-gender-tabs" role="radiogroup" aria-label="Service for">
+                                    <button type="button" class="booking-gender-tab active" data-gender="men" role="radio" aria-checked="true">
                                         <i class="fas fa-mars" aria-hidden="true"></i> Men's
                                     </button>
-                                    <button type="button" class="booking-gender-tab" data-gender="women" role="tab" aria-selected="false">
+                                    <button type="button" class="booking-gender-tab" data-gender="women" role="radio" aria-checked="false">
                                         <i class="fas fa-venus" aria-hidden="true"></i> Women's
                                     </button>
                                 </div>
@@ -351,15 +351,15 @@
                             <div class="booking-card" data-step="5">
                                 <h2 class="booking-card-title"><span class="booking-step-number"><span class="booking-step-num">5</span><i class="fas fa-check booking-step-check" aria-hidden="true"></i></span> Where Should We Reach You?</h2>
 
-                                <div class="booking-contact-method" role="tablist">
-                                    <button type="button" class="booking-contact-method-btn active" data-method="phone" role="tab" aria-selected="true">
+                                <div class="booking-contact-method" role="radiogroup" aria-label="How should we reach you">
+                                    <button type="button" class="booking-contact-method-btn active" data-method="phone" role="radio" aria-checked="true">
                                         <span class="booking-contact-method-icon"><i class="fas fa-phone" aria-hidden="true"></i></span>
                                         <span class="booking-contact-method-text">
                                             <span class="booking-contact-method-label">Phone</span>
                                             <span class="booking-contact-method-sub">SMS / Call</span>
                                         </span>
                                     </button>
-                                    <button type="button" class="booking-contact-method-btn" data-method="email" role="tab" aria-selected="false">
+                                    <button type="button" class="booking-contact-method-btn" data-method="email" role="radio" aria-checked="false">
                                         <span class="booking-contact-method-icon"><i class="fas fa-envelope" aria-hidden="true"></i></span>
                                         <span class="booking-contact-method-text">
                                             <span class="booking-contact-method-label">Email</span>
@@ -449,7 +449,7 @@
                                 <span id="bookingSummaryTotal">PHP 0</span>
                             </div>
 
-                            <button type="submit" class="btn-primary booking-confirm-btn" id="bookingConfirmBtn" disabled>
+                            <button type="submit" class="btn-primary booking-confirm-btn" id="bookingConfirmBtn">
                                 <span class="booking-confirm-text">Confirm Booking</span>
                                 <i class="fas fa-circle-notch fa-spin booking-confirm-spinner" aria-hidden="true" hidden></i>
                             </button>

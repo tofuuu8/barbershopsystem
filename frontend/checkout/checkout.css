@@ -878,3 +878,20 @@
 @media (prefers-reduced-motion: reduce) {
     .checkout-sticky-bar.is-visible { animation: none; }
 }
+
+/* Inline field message (set by showFieldMessage in main.js) */
+.checkout-field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--rust, #c5574c);
+}
+
+.checkout-field-error i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}

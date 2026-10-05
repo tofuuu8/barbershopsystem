@@ -87,10 +87,39 @@ const SHIPPING_AREAS = {
     'quezon city': 250
 };
 
-// Same loose phone check booking.js/account.js use, so all three stay
-// consistent for the visitor.
+// Phone/name/address rules live in main.js (validatePhMobile,
+// validatePersonName, validateAddressText) so checkout, booking and
+// My Account all agree. Inline messages use the same markup as
+// checkout-enhance.js's on-blur feedback.
+const CHECKOUT_FIELD_OPTS = {
+    wrapper: '.checkout-field',
+    errorClass: 'is-error',
+    messageClass: 'checkout-field-error'
+};
+
 function isValidCheckoutPhone(phone) {
-    return /^[0-9+()\-.\s]{7,20}$/.test(phone);
+    return !validatePhMobile(phone).error;
+}
+
+// Returns every problem with the form as [{ input, message }] (empty
+// when it's good to go), in the order the fields appear on the page.
+function collectCheckoutProblems(sel) {
+    const problems = [];
+
+    const nameMessage = validatePersonName(sel.name);
+    if (nameMessage) problems.push({ input: document.getElementById('checkoutNameInput'), message: nameMessage });
+
+    const phoneMessage = validatePhMobile(sel.phone).error;
+    if (phoneMessage) problems.push({ input: document.getElementById('checkoutPhoneInput'), message: phoneMessage });
+
+    if (currentFulfillment === 'delivery') {
+        if (!sel.area || !(sel.area in SHIPPING_AREAS)) {
+            problems.push({ input: document.getElementById('checkoutAreaInput'), message: 'Select your delivery area.' });
+        }
+        const addressMessage = validateAddressText(sel.address);
+        if (addressMessage) problems.push({ input: document.getElementById('checkoutAddressInput'), message: addressMessage });
+    }
+    return problems;
 }
 
 // ============================================
@@ -320,7 +349,7 @@ async function initContactFields() {
     }
 
     if (data.phone && phoneInput) {
-        phoneInput.value = data.phone;
+        phoneInput.value = formatPhMobile(data.phone);
     } else if (phoneNote) {
         phoneNote.hidden = false;
     }
@@ -481,13 +510,7 @@ async function checkCartAvailability(cart) {
 }
 
 function isSelectionComplete(sel) {
-    if (!sel.name || sel.name.length < MIN_NAME_LENGTH) return false;
-    if (!sel.phone || !isValidCheckoutPhone(sel.phone)) return false;
-    if (currentFulfillment === 'delivery') {
-        if (!sel.area || !(sel.area in SHIPPING_AREAS)) return false;
-        if (sel.address.length < MIN_ADDRESS_LENGTH) return false;
-    }
-    return true;
+    return collectCheckoutProblems(sel).length === 0;
 }
 
 function updateSummaryTotals() {
@@ -502,8 +525,10 @@ function updateSummaryTotals() {
     const deliveryFeeRow = document.getElementById('checkoutDeliveryFeeRow');
     if (deliveryFeeRow) deliveryFeeRow.hidden = currentFulfillment !== 'delivery';
 
-    const confirmBtn = document.getElementById('checkoutConfirmBtn');
-    if (confirmBtn) confirmBtn.disabled = !isSelectionComplete(currentSelection());
+    // The confirm button stays clickable on purpose: pressing it with
+    // something missing highlights exactly what needs fixing (see the
+    // submit handler) instead of leaving a greyed-out button with no
+    // explanation. It is only disabled while an order is being sent.
 }
 
 function setText(id, text) {
@@ -549,29 +574,34 @@ function initCheckoutForm() {
             return;
         }
 
-        const availability = await checkCartAvailability(cart);
+        // Cheap local checks first: show every field problem at once (only
+        // the first one scrolls/focuses) before spending a network round
+        // trip on the stock check.
+        const problems = collectCheckoutProblems(sel);
+        if (problems.length) {
+            problems.forEach(function (problem, index) {
+                showFieldMessage(problem.input, problem.message, Object.assign({ focus: index === 0 }, CHECKOUT_FIELD_OPTS));
+            });
+            return;
+        }
+        // Send the cleaned-up values rather than whatever was typed.
+        sel.phone = validatePhMobile(sel.phone).value;
+        sel.name = sel.name.replace(/\s+/g, ' ').trim();
+        if (currentFulfillment === 'delivery') sel.address = cleanAddressText(sel.address);
+
+        let availability;
+        try {
+            availability = await checkCartAvailability(cart);
+        } catch (thrown) {
+            console.error(thrown);
+            showCheckoutError(friendlyErrorMessage(thrown, 'We could not verify product availability. Please try again.'));
+            return;
+        }
         if (!availability.ok) {
             showCheckoutError(availability.message);
             return;
         }
         const verifiedCart = availability.items;
-
-        if (!sel.name || sel.name.length < MIN_NAME_LENGTH) {
-            showCheckoutError('Please enter your full name.');
-            return;
-        }
-        if (!sel.phone || !isValidCheckoutPhone(sel.phone)) {
-            showCheckoutError('Please enter a valid contact number so we can reach you about this order.');
-            return;
-        }
-        if (currentFulfillment === 'delivery' && (!sel.area || !(sel.area in SHIPPING_AREAS))) {
-            showCheckoutError('Please select your delivery area.');
-            return;
-        }
-        if (currentFulfillment === 'delivery' && sel.address.length < MIN_ADDRESS_LENGTH) {
-            showCheckoutError('Please enter a complete delivery address.');
-            return;
-        }
 
         const user = getCurrentUser();
         if (!user) {
@@ -587,11 +617,22 @@ function initCheckoutForm() {
         if (spinner) spinner.hidden = false;
 
         if (sel.paymentMethod === 'online') {
-            await submitOnlinePayment(sel, verifiedCart, confirmBtn, btnText, spinner);
+            try {
+                await submitOnlinePayment(sel, verifiedCart, confirmBtn, btnText, spinner);
+            } catch (thrown) {
+                console.error(thrown);
+                confirmBtn.disabled = false;
+                if (btnText) btnText.textContent = 'Continue to Payment';
+                if (spinner) spinner.hidden = true;
+                showCheckoutError(friendlyErrorMessage(thrown, 'Could not start online payment. Please try again or choose Cash on Pickup/Delivery.'));
+            }
             return;
         }
 
-        const { data: order, error: orderError } = await supabaseClient.rpc('create_order_atomic', {
+        let order = null;
+        let orderError = null;
+        try {
+            const orderResult = await supabaseClient.rpc('create_order_atomic', {
             p_customer_name: sel.name,
             p_fulfillment_type: currentFulfillment,
             p_area: currentFulfillment === 'delivery' ? sel.area : null,
@@ -602,7 +643,12 @@ function initCheckoutForm() {
                 return { product_id: item.id, quantity: item.quantity };
             }),
             p_payment_provider: null
-        });
+            });
+            order = orderResult.data;
+            orderError = orderResult.error;
+        } catch (thrown) {
+            orderError = thrown;
+        }
 
         if (orderError || !order) {
             confirmBtn.disabled = false;
@@ -611,10 +657,10 @@ function initCheckoutForm() {
             console.error(orderError);
             showCheckoutError(
                 /function .*create_order_atomic|does not exist/i.test(orderError?.message || '')
-                    ? 'The secure checkout function is not installed yet — run the latest Supabase migrations first.'
+                    ? 'Checkout is temporarily unavailable. Please try again shortly or contact the shop.'
                     : /out of stock|unavailable/i.test(orderError?.message || '')
                         ? (orderError.message || 'One or more products are no longer available.')
-                        : (orderError?.message || 'Something went wrong. Please try again.')
+                        : friendlyErrorMessage(orderError, "We couldn't place your order. Please try again.")
             );
             return;
         }
@@ -657,7 +703,7 @@ async function submitOnlinePayment(sel, cart, confirmBtn, btnText, spinner) {
         // supabase-js only gives a generic message on a non-2xx
         // response by default — the function's real error message is in
         // the response body, reachable via error.context.
-        let message = (data && data.error) || 'Could not start online payment. Please try again or choose Cash on Pickup/Delivery.';
+        let message = (data && data.error) || friendlyErrorMessage(error, 'Could not start online payment. Please try again or choose Cash on Pickup/Delivery.');
         if (error && error.context && typeof error.context.json === 'function') {
             try {
                 const body = await error.context.json();
