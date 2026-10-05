@@ -206,7 +206,7 @@ function renderProfile() {
     if (nameInput) nameInput.value = currentProfile.full_name || '';
 
     const phoneInput = document.getElementById('accountPhoneInput');
-    if (phoneInput) phoneInput.value = currentProfile.phone || '';
+    if (phoneInput) phoneInput.value = formatPhoneDisplay(currentProfile.phone);
 
     const addressInput = document.getElementById('accountAddressInput');
     if (addressInput) addressInput.value = currentProfile.address || '';
@@ -314,12 +314,17 @@ function showPasswordSuccess(message) { showBanner('accountPasswordError', 'acco
 // keystroke) instead of leaving the visitor to match a banner at the
 // top of the page against five stacked cards.
 // --------------------------------------------
-function setFieldError(input, message) {
+function setFieldError(input, message, opts) {
     if (!input) return;
     const field = input.closest('.login-field');
     if (!field) return;
 
+    // On-blur checks pass { focus: false } so tabbing away from a field
+    // never yanks the page or the cursor somewhere else.
+    const shouldFocus = !opts || opts.focus !== false;
+
     field.classList.add('has-error');
+    input.setAttribute('aria-invalid', 'true');
 
     let msg = field.querySelector('.account-field-error');
     if (!msg) {
@@ -334,8 +339,10 @@ function setFieldError(input, message) {
     text.textContent = message;
     msg.replaceChildren(icon, text);
 
-    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    window.setTimeout(() => input.focus(), 280);
+    if (shouldFocus) {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => input.focus(), 280);
+    }
 
     if (!input.dataset.hasErrorClearListener) {
         input.dataset.hasErrorClearListener = 'true';
@@ -348,8 +355,68 @@ function clearFieldError(input) {
     const field = input.closest('.login-field');
     if (!field) return;
     field.classList.remove('has-error');
+    input.removeAttribute('aria-invalid');
     const msg = field.querySelector('.account-field-error');
     if (msg) msg.remove();
+}
+
+// --------------------------------------------
+// Phone + address validation
+// Each validator returns an error string ('' when fine) so the same rule
+// drives both the on-blur hint and the submit-time check.
+// --------------------------------------------
+
+// Philippine mobile numbers only (09XX XXX XXXX, +63 9XX XXX XXXX, or
+// 639XXXXXXXXX) — the number is used for SMS updates and delivery calls,
+// so a landline would save fine but never actually reach anyone.
+// Returns { error, value } where value is the cleaned 11-digit 09... form.
+function validatePhone(raw) {
+    const text = (raw || '').trim();
+    if (!text) return { error: '', value: '' };
+
+    if (/[A-Za-z]/.test(text)) return { error: 'Phone number can only contain numbers.', value: '' };
+    if (!/^[0-9+()\-.\s]+$/.test(text)) return { error: 'Use numbers only — remove any special characters.', value: '' };
+    if (text.lastIndexOf('+') > 0) return { error: 'The + sign can only be at the very start.', value: '' };
+
+    let digits = text.replace(/\D/g, '');
+    if (digits.startsWith('63') && (text.startsWith('+') || digits.length === 12)) {
+        digits = '0' + digits.slice(2);
+    } else if (digits.startsWith('9') && digits.length === 10) {
+        digits = '0' + digits;
+    }
+
+    if (digits.length >= 2 && !digits.startsWith('09')) {
+        return { error: 'Enter a Philippine mobile number starting with 09 or +63 9.', value: '' };
+    }
+    if (digits.length < 11) {
+        return { error: 'That number is too short — mobile numbers have 11 digits (09XX XXX XXXX).', value: '' };
+    }
+    if (digits.length > 11) {
+        return { error: 'That number is too long — mobile numbers have 11 digits (09XX XXX XXXX).', value: '' };
+    }
+    return { error: '', value: digits };
+}
+
+function formatPhoneDisplay(stored) {
+    const result = validatePhone(stored);
+    const d = result.value;
+    return d ? d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7) : (stored || '');
+}
+
+function cleanAddress(raw) {
+    return (raw || '').replace(/\s+/g, ' ').trim();
+}
+
+function validateAddress(raw) {
+    const text = cleanAddress(raw);
+    if (!text) return '';
+    if (text.length > 200) return 'Keep each address under 200 characters.';
+    if (text.length < 10) return 'That address is too short — include your street, barangay, and city.';
+    if (!/[A-Za-z]/.test(text)) return 'Add a street, barangay, or city name — numbers alone are not enough.';
+    if (text.split(/[\s,]+/).filter(Boolean).length < 3) {
+        return 'Add more detail, e.g. house/unit no., street, barangay, city.';
+    }
+    return '';
 }
 
 // --------------------------------------------
@@ -452,30 +519,98 @@ function initEditNameForm() {
     const submitText = submitBtn.querySelector('.login-submit-text');
     const spinner = submitBtn.querySelector('.login-submit-spinner');
 
+    // Tell the visitor as soon as they leave a field, not only on Save.
+    // Empty is fine (both are optional); errors clear themselves on the
+    // next keystroke (see setFieldError).
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', function () {
+            const result = validatePhone(phoneInput.value);
+            if (result.error) setFieldError(phoneInput, result.error, { focus: false });
+        });
+    }
+    if (addressInput) {
+        addressInput.addEventListener('blur', function () {
+            const message = validateAddress(addressInput.value);
+            if (message) setFieldError(addressInput, message, { focus: false });
+        });
+    }
+    if (savedAddressesInput) {
+        savedAddressesInput.addEventListener('blur', function () {
+            const lines = savedAddressesInput.value.split('\n').map(cleanAddress).filter(Boolean);
+            if (lines.length > 5) {
+                setFieldError(savedAddressesInput, 'You can save up to 5 addresses — remove ' + (lines.length - 5) + '.', { focus: false });
+                return;
+            }
+            for (let i = 0; i < lines.length; i++) {
+                const message = validateAddress(lines[i]);
+                if (message) {
+                    setFieldError(savedAddressesInput, 'Line ' + (i + 1) + ': ' + message, { focus: false });
+                    return;
+                }
+            }
+        });
+    }
+
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         hideBanners('accountProfileError', 'accountProfileSuccess');
 
         const name = nameInput.value.trim();
         // Phone and address are optional — not every visitor wants to
-        // store them, and nothing else on the site depends on them yet.
-        const phone = phoneInput ? phoneInput.value.trim() : '';
-        const address = addressInput ? addressInput.value.trim() : '';
-        const savedAddresses = savedAddressesInput
-            ? savedAddressesInput.value.split('\n').map(value => value.trim()).filter(Boolean).slice(0, 5)
+        // store them — but if they ARE filled in, they have to be usable.
+        const rawSavedLines = savedAddressesInput
+            ? savedAddressesInput.value.split('\n').map(cleanAddress).filter(Boolean)
             : [];
-        if (address && !savedAddresses.includes(address)) savedAddresses.unshift(address);
         const preferredBarberId = preferredBarberInput ? preferredBarberInput.value : '';
         const defaultFulfillmentType = fulfillmentInput && fulfillmentInput.value === 'delivery' ? 'delivery' : 'pickup';
 
-        if (!name) {
-            setFieldError(nameInput, 'Enter your name.');
-            return;
+        // Collect every problem first, then show them all together (only
+        // the first one scrolls/focuses) so fixing one field doesn't
+        // reveal a new error on the next save attempt.
+        const problems = [];
+        [nameInput, phoneInput, addressInput, savedAddressesInput].forEach(clearFieldError);
+
+        if (!name) problems.push({ input: nameInput, message: 'Enter your name.' });
+
+        const phoneResult = validatePhone(phoneInput ? phoneInput.value : '');
+        if (phoneResult.error) problems.push({ input: phoneInput, message: phoneResult.error });
+        const phone = phoneResult.value;
+
+        const addressError = validateAddress(addressInput ? addressInput.value : '');
+        if (addressError) problems.push({ input: addressInput, message: addressError });
+        const address = cleanAddress(addressInput ? addressInput.value : '');
+
+        let savedAddresses = [];
+        if (savedAddressesInput) {
+            if (rawSavedLines.length > 5) {
+                problems.push({ input: savedAddressesInput, message: 'You can save up to 5 addresses — remove ' + (rawSavedLines.length - 5) + '.' });
+            } else {
+                for (let i = 0; i < rawSavedLines.length; i++) {
+                    const lineError = validateAddress(rawSavedLines[i]);
+                    if (lineError) {
+                        problems.push({ input: savedAddressesInput, message: 'Line ' + (i + 1) + ': ' + lineError });
+                        break;
+                    }
+                }
+            }
+            // Drop repeats (case-insensitive) so the same address isn't stored twice.
+            const seen = new Set();
+            savedAddresses = rawSavedLines.filter(function (line) {
+                const key = line.toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
         }
-        // Loose on purpose — PH numbers, landlines, and +country formats
-        // all vary — this just catches obvious garbage, not a strict format.
-        if (phone && !/^[0-9+()\-.\s]{7,20}$/.test(phone)) {
-            setFieldError(phoneInput, 'Enter a valid phone number.');
+        if (address && !savedAddresses.some(line => line.toLowerCase() === address.toLowerCase())) {
+            savedAddresses.unshift(address);
+        }
+        savedAddresses = savedAddresses.slice(0, 5);
+
+        if (problems.length) {
+            problems.forEach(function (problem, index) {
+                setFieldError(problem.input, problem.message, { focus: index === 0 });
+            });
             return;
         }
 

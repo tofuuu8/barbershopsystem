@@ -3836,6 +3836,77 @@ input:focus-visible {
     white-space: nowrap;
 }
 
+.notif-page-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.notif-clear-all {
+    padding: 10px 22px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    color: var(--rust);
+    border-color: var(--rust);
+}
+
+.notif-clear-all:hover {
+    background: var(--rust-bg);
+    color: var(--rust);
+    border-color: var(--rust);
+}
+
+.notif-clear-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--rust-bg);
+    border: 1px solid var(--rust);
+    border-radius: 6px;
+    max-width: 320px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--off);
+}
+
+.notif-clear-confirm[hidden] {
+    display: none;
+}
+
+.notif-clear-confirm-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.notif-clear-confirm-buttons .btn-secondary {
+    padding: 9px 16px;
+    font-size: 0.68rem;
+}
+
+.notif-clear-yes {
+    color: var(--rust);
+    border-color: var(--rust);
+}
+
+.notif-error {
+    max-width: 720px;
+    margin: -16px 0 20px;
+    padding: 10px 14px;
+    background: var(--rust-bg);
+    border: 1px solid var(--rust);
+    border-radius: 6px;
+    color: var(--rust);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+}
+
+.notif-error[hidden] {
+    display: none;
+}
+
 .notif-list {
     display: flex;
     flex-direction: column;
@@ -3977,8 +4048,17 @@ input:focus-visible {
     .notif-page-header .section-title {
         font-size: 1.9rem;
     }
-    .notif-mark-all {
+    .notif-page-actions {
         width: 100%;
+        justify-content: stretch;
+    }
+    .notif-mark-all,
+    .notif-clear-all {
+        flex: 1;
         text-align: center;
+    }
+    .notif-clear-confirm {
+        max-width: none;
+        width: 100%;
     }
 }

@@ -33,7 +33,7 @@
             <div class="container announce-bar-inner">
                 <p class="announce-bar-text">
                     <i class="fas fa-scissors" aria-hidden="true"></i>
-                    New client special — 20% off your first cut. <a href="../booking/booking.html">Book now →</a>
+                    Your next cut is one tap away. <a href="../booking/booking.html">Book now <span class="arrow">→</span></a>
                 </p>
             </div>
         </div>
@@ -129,8 +129,20 @@
                     <h1 class="section-title">Notifications</h1>
                     <p class="section-subtitle" id="notifSubtitle">Loading...</p>
                 </div>
-                <button type="button" class="btn-secondary notif-mark-all" id="notifMarkAllBtn" hidden>Mark all as read</button>
+                <div class="notif-page-actions">
+                    <button type="button" class="btn-secondary notif-mark-all" id="notifMarkAllBtn" hidden>Mark all as read</button>
+                    <button type="button" class="btn-secondary notif-clear-all" id="notifClearBtn" hidden>Clear all</button>
+                    <div class="notif-clear-confirm" id="notifClearConfirm" hidden>
+                        <span>Delete all your notifications? This can't be undone.</span>
+                        <div class="notif-clear-confirm-buttons">
+                            <button type="button" class="btn-secondary notif-clear-yes" id="notifClearYes">Yes, clear all</button>
+                            <button type="button" class="btn-secondary" id="notifClearNo">Cancel</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <p class="notif-error" id="notifError" role="alert" hidden></p>
 
             <div class="notif-list" id="notifList"></div>
 

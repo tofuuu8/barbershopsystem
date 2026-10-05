@@ -4,18 +4,24 @@
 // Unlike order-notifications.js's badge/toast logic (which only ever
 // looks at *unread* rows), this page shows the visitor's full
 // notification history and lets them mark things read individually or
-// all at once. Loads after supabase.js, main.js, bottom-nav.js and
-// order-notifications.js (same order as every other page — see the
-// <script> tags at the bottom of notifications.html), so it can reuse
-// SITE_BASE, authReadyPromise, isLoggedIn(), getCurrentUser(),
-// escapeHtml(), setCustomerNotificationBadge() and
-// getUnreadNotificationCount() exactly the way those files already
-// expose them.
+// all at once, or clear the whole list. Loads after supabase.js, main.js,
+// bottom-nav.js and order-notifications.js (same order as every other
+// page — see the <script> tags at the bottom of notifications.html), so it
+// can reuse SITE_BASE, authReadyPromise, isLoggedIn(), getCurrentUser(),
+// setCustomerNotificationBadge() and the label/status maps exactly the
+// way those files already expose them.
 
 const NOTIF_PAGE_SIZE = 30;
 let notifOffset = 0;
 let notifReachedEnd = false;
 let notifLoadInFlight = false;
+
+// This page's own unread count. It comes from a direct count query rather
+// than getUnreadNotificationCount(), because that value is filled in by
+// order-notifications.js's separate load and may not be ready yet when
+// this page's list finishes rendering (which made the subtitle briefly
+// say "all caught up" with unread rows on screen).
+let notifUnread = 0;
 
 document.addEventListener('DOMContentLoaded', async function () {
     await authReadyPromise;
@@ -43,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // inserts straight to this page instead of showing a toast that
     // would just be pointing the visitor at the page they're already on.
     window.onCustomerNotificationInserted = function (notification) {
-        prependNotification(notification, listEl, emptyEl);
+        prependNotification(notification, listEl);
     };
 
     if (markAllBtn) {
@@ -52,17 +58,60 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
     }
 
-    await loadMoreNotifications(user.id, listEl, emptyEl, subtitleEl, markAllBtn);
+    initClearAll(user.id, listEl);
 
-    const loadMoreBtn = document.getElementById('notifLoadMoreBtn');
-    if (loadMoreBtn) {
-        loadMoreBtn.addEventListener('click', function () {
-            loadMoreNotifications(user.id, listEl, emptyEl, subtitleEl, markAllBtn);
-        });
-    }
+    notifUnread = await fetchUnreadCount(user.id);
+    if (typeof setCustomerNotificationBadge === 'function') setCustomerNotificationBadge(notifUnread);
+
+    await loadMoreNotifications(user.id, listEl);
 });
 
-async function loadMoreNotifications(userId, listEl, emptyEl, subtitleEl, markAllBtn) {
+async function fetchUnreadCount(userId) {
+    const { count, error } = await supabaseClient
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('audience', 'customer')
+        .eq('user_id', userId)
+        .is('read_at', null);
+
+    if (error || typeof count !== 'number') {
+        return typeof getUnreadNotificationCount === 'function' ? getUnreadNotificationCount() : 0;
+    }
+    return count;
+}
+
+// Single place that decides what the header area shows, so the subtitle,
+// "Mark all as read", "Clear all" and the empty state can never disagree.
+function updateSummary(listEl) {
+    const subtitleEl = document.getElementById('notifSubtitle');
+    const emptyEl = document.getElementById('notifEmpty');
+    const markAllBtn = document.getElementById('notifMarkAllBtn');
+    const clearBtn = document.getElementById('notifClearBtn');
+    const confirmEl = document.getElementById('notifClearConfirm');
+
+    const hasItems = listEl.children.length > 0;
+    if (notifUnread < 0) notifUnread = 0;
+
+    if (emptyEl) emptyEl.hidden = hasItems;
+    if (markAllBtn) markAllBtn.hidden = !hasItems || notifUnread <= 0;
+    if (clearBtn) clearBtn.hidden = !hasItems || (confirmEl && !confirmEl.hidden);
+    if (!hasItems && confirmEl) confirmEl.hidden = true;
+
+    if (subtitleEl) {
+        subtitleEl.textContent = hasItems && notifUnread > 0
+            ? `${notifUnread} unread notification${notifUnread === 1 ? '' : 's'}`
+            : "You're all caught up.";
+    }
+}
+
+function showNotifError(message) {
+    const el = document.getElementById('notifError');
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = !message;
+}
+
+async function loadMoreNotifications(userId, listEl) {
     if (notifLoadInFlight || notifReachedEnd) return;
     notifLoadInFlight = true;
 
@@ -77,6 +126,7 @@ async function loadMoreNotifications(userId, listEl, emptyEl, subtitleEl, markAl
     notifLoadInFlight = false;
 
     if (error) {
+        const subtitleEl = document.getElementById('notifSubtitle');
         if (subtitleEl) subtitleEl.textContent = 'Something went wrong loading your notifications.';
         return;
     }
@@ -85,23 +135,9 @@ async function loadMoreNotifications(userId, listEl, emptyEl, subtitleEl, markAl
     notifOffset += rows.length;
     if (rows.length < NOTIF_PAGE_SIZE) notifReachedEnd = true;
 
-    if (notifOffset === rows.length && rows.length === 0) {
-        if (emptyEl) emptyEl.hidden = false;
-        if (subtitleEl) subtitleEl.textContent = "You're all caught up.";
-        if (markAllBtn) markAllBtn.hidden = true;
-        return;
-    }
-
     rows.forEach(function (row) { listEl.appendChild(renderNotificationItem(row)); });
     updateLoadMoreControl(listEl);
-
-    const unreadCount = typeof getUnreadNotificationCount === 'function' ? getUnreadNotificationCount() : 0;
-    if (subtitleEl) {
-        subtitleEl.textContent = unreadCount > 0
-            ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
-            : "You're all caught up.";
-    }
-    if (markAllBtn) markAllBtn.hidden = unreadCount <= 0;
+    updateSummary(listEl);
 }
 
 function updateLoadMoreControl(listEl) {
@@ -117,6 +153,12 @@ function updateLoadMoreControl(listEl) {
         btn.className = 'btn-secondary notif-load-more';
         btn.textContent = 'Load more';
         listEl.insertAdjacentElement('afterend', btn);
+        // Created after the initial wiring in DOMContentLoaded, so it
+        // needs its own handler.
+        btn.addEventListener('click', function () {
+            const user = getCurrentUser();
+            if (user) loadMoreNotifications(user.id, listEl);
+        });
     }
 }
 
@@ -161,20 +203,10 @@ async function handleNotificationClick(row, item) {
     if (!row.read_at) {
         row.read_at = new Date().toISOString();
         item.classList.remove('is-unread');
-        if (typeof setCustomerNotificationBadge === 'function') setCustomerNotificationBadge(-1, true);
 
-        // Keep "Mark all as read" and the subtitle count in sync — without
-        // this they went stale after reading the last unread notification
-        // one at a time, still showing "N unread" until a full reload.
-        const unreadCount = typeof getUnreadNotificationCount === 'function' ? getUnreadNotificationCount() : 0;
-        const markAllBtn = document.getElementById('notifMarkAllBtn');
-        const subtitleEl = document.getElementById('notifSubtitle');
-        if (markAllBtn) markAllBtn.hidden = unreadCount <= 0;
-        if (subtitleEl) {
-            subtitleEl.textContent = unreadCount > 0
-                ? `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
-                : "You're all caught up.";
-        }
+        notifUnread -= 1;
+        if (typeof setCustomerNotificationBadge === 'function') setCustomerNotificationBadge(Math.max(notifUnread, 0));
+        updateSummary(document.getElementById('notifList'));
 
         supabaseClient
             .from('notifications')
@@ -209,25 +241,86 @@ async function markAllRead(userId, listEl, markAllBtn) {
     }
 
     listEl.querySelectorAll('.notif-item.is-unread').forEach(function (el) { el.classList.remove('is-unread'); });
+    notifUnread = 0;
     if (typeof setCustomerNotificationBadge === 'function') setCustomerNotificationBadge(0);
-    markAllBtn.hidden = true;
-
-    const subtitleEl = document.getElementById('notifSubtitle');
-    if (subtitleEl) subtitleEl.textContent = "You're all caught up.";
+    updateSummary(listEl);
 }
 
-function prependNotification(notification, listEl, emptyEl) {
-    if (emptyEl) emptyEl.hidden = true;
+// --------------------------------------------
+// Clear all — inline two-step confirm (button -> "Are you sure?") instead
+// of window.confirm(), which looks out of place and is easy to dismiss
+// by accident on mobile.
+// --------------------------------------------
+function initClearAll(userId, listEl) {
+    const clearBtn = document.getElementById('notifClearBtn');
+    const confirmEl = document.getElementById('notifClearConfirm');
+    const yesBtn = document.getElementById('notifClearYes');
+    const noBtn = document.getElementById('notifClearNo');
+    if (!clearBtn || !confirmEl || !yesBtn || !noBtn) return;
+
+    clearBtn.addEventListener('click', function () {
+        showNotifError('');
+        clearBtn.hidden = true;
+        confirmEl.hidden = false;
+        noBtn.focus(); // default focus on the safe choice
+    });
+
+    noBtn.addEventListener('click', function () {
+        confirmEl.hidden = true;
+        updateSummary(listEl);
+        clearBtn.focus();
+    });
+
+    yesBtn.addEventListener('click', async function () {
+        yesBtn.classList.add('is-loading');
+        yesBtn.disabled = true;
+        noBtn.disabled = true;
+
+        // .select() makes Supabase return the rows it actually deleted.
+        // Without it, a Row Level Security policy that blocks DELETE
+        // looks exactly like success (0 rows, no error).
+        const { data, error } = await supabaseClient
+            .from('notifications')
+            .delete()
+            .eq('audience', 'customer')
+            .eq('user_id', userId)
+            .select('id');
+
+        yesBtn.classList.remove('is-loading');
+        yesBtn.disabled = false;
+        noBtn.disabled = false;
+
+        if (error || !data || data.length === 0) {
+            console.warn('Could not clear notifications:', error ? error.message : 'no rows deleted — check the notifications DELETE policy');
+            confirmEl.hidden = true;
+            updateSummary(listEl);
+            showNotifError("Couldn't clear your notifications. Please try again in a moment.");
+            return;
+        }
+
+        listEl.replaceChildren();
+        notifOffset = 0;
+        notifReachedEnd = true;
+        notifUnread = 0;
+        const loadMore = document.getElementById('notifLoadMoreBtn');
+        if (loadMore) loadMore.remove();
+        const toast = document.getElementById('customerNotificationToast');
+        if (toast) toast.classList.remove('is-visible');
+        if (typeof setCustomerNotificationBadge === 'function') setCustomerNotificationBadge(0);
+
+        confirmEl.hidden = true;
+        showNotifError('');
+        updateSummary(listEl);
+    });
+}
+
+function prependNotification(notification, listEl) {
     const item = renderNotificationItem(Object.assign({ read_at: null }, notification));
     listEl.insertBefore(item, listEl.firstChild);
     notifOffset += 1;
-
-    const markAllBtn = document.getElementById('notifMarkAllBtn');
-    if (markAllBtn) markAllBtn.hidden = false;
-
-    const subtitleEl = document.getElementById('notifSubtitle');
-    const unreadCount = typeof getUnreadNotificationCount === 'function' ? getUnreadNotificationCount() : 0;
-    if (subtitleEl) subtitleEl.textContent = `${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`;
+    notifUnread += 1;
+    showNotifError('');
+    updateSummary(listEl);
 }
 
 function formatRelativeTime(isoString) {

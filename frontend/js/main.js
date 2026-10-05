@@ -15,6 +15,8 @@
 // check isLoggedIn() at load time (currently just cart.js) need to do the
 // same — see the comment on authReadyPromise for details.
 document.addEventListener('DOMContentLoaded', async function () {
+    initAnnounceBar();
+    initNotifBellLink();
     await authReadyPromise;
 
     initNavigation();
@@ -36,6 +38,49 @@ document.addEventListener('DOMContentLoaded', async function () {
     setupVideoToggle('teamVideo', 'teamVideoBtn', '.area-video');
     initScrollAutoplay(['styleVideo', 'teamVideo']);
 });
+
+// ============================================
+// ANNOUNCEMENT BAR (single source of truth)
+// ============================================
+// Edit the message / link text here ONCE and every page updates. The
+// .announce-bar-text element on each page can contain anything (or the
+// old text) - this overwrites its contents on load. The icon and the
+// booking link are rebuilt using SITE_BASE, so it works at any folder depth.
+const ANNOUNCE_BAR = {
+    message: 'Your next cut is one tap away.',
+    linkText: 'Book now',
+    linkPath: 'booking/booking.html'
+};
+
+// The header bell link is written as a plain relative href
+// ("notifications/notifications.html") in each page's HTML, which only
+// resolves correctly from the homepage. From services/, studio/, etc. it
+// becomes services/notifications/notifications.html -> "Cannot GET".
+// Re-pointing it through SITE_BASE fixes it on every page from one place.
+function initNotifBellLink() {
+    document.querySelectorAll('.notif-bell-icon').forEach(function (link) {
+        link.setAttribute('href', SITE_BASE + 'notifications/notifications.html');
+    });
+}
+
+function initAnnounceBar() {
+    const el = document.querySelector('.announce-bar-text');
+    if (!el) return;
+
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-scissors';
+    icon.setAttribute('aria-hidden', 'true');
+
+    const link = document.createElement('a');
+    link.href = SITE_BASE + ANNOUNCE_BAR.linkPath;
+    link.append(ANNOUNCE_BAR.linkText + ' ');
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
+    arrow.textContent = '\u2192';
+    link.appendChild(arrow);
+
+    el.replaceChildren(icon, ANNOUNCE_BAR.message + ' ', link);
+}
 
 // ============================================
 // NAVIGATION
