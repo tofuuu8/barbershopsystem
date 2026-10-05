@@ -2143,7 +2143,7 @@ async function renderBarberCardsDynamic() {
         
         html += `
                 <button type="button" class="booking-barber-card" data-barber-id="${escapeHtml(barber.id)}" data-service-gender="${escapeHtml(barber.service_gender || 'all')}">
-                <img src="${imageSrc}" alt="" class="booking-barber-photo" loading="lazy" 
+                <img src="${escapeHtml(imageSrc)}" alt="" class="booking-barber-photo" loading="lazy" 
                      onerror="this.src='../images/team.jpg'" />
                 <span class="booking-barber-name">${escapeHtml(barber.name)}</span>
                 <span class="booking-barber-role">${escapeHtml(title)}</span>

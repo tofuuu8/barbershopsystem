@@ -605,9 +605,7 @@ function setText(id, text) {
 }
 
 function escapeHtmlAppt(str) {
-    const div = document.createElement('div');
-    div.textContent = String(str);
-    return div.innerHTML;
+    return escapeHtml(str); // shared, quote-safe version from main.js
 }
 
 // --------------------------------------------

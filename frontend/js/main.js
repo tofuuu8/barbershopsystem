@@ -399,10 +399,14 @@ function searchSite(query) {
         .slice(0, 6);
 }
 
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+// The ONE escapeHtml for the whole site (bottom-nav.js, studio.js, about.js
+// and the page scripts all use this). Escapes quotes as well as & < > so it's
+// safe inside HTML attributes (data-name="...", alt="...") and not just text,
+// and tolerates null/undefined/numbers.
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
 }
 
 function renderSearchResults(container, results, query) {

@@ -99,16 +99,6 @@ function starRatingHtml(rating) {
 }
 
 // ============================================
-// ESCAPE HTML
-// ============================================
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// ============================================
 // RENDER BARBER CARDS
 // ============================================
 function renderBarberCards() {
@@ -146,12 +136,12 @@ function renderBarberCards() {
         return `
         <article class="barber-card">
             <div class="barber-card-photo">
-                <img src="${imageSrc}"
-                     alt="${barber.name}, ${barber.title || 'Barber'}"
+                <img src="${escapeHtml(imageSrc)}"
+                     alt="${escapeHtml(barber.name)}, ${escapeHtml(barber.title || 'Barber')}"
                      loading="lazy"
                      onload="this.classList.add('is-loaded')"
                      onerror="this.src='../images/team.jpg'; this.classList.add('is-loaded')" />
-                <button class="barber-quick-view" type="button" tabindex="-1" aria-hidden="true" data-barber-id="${barber.id}">
+                <button class="barber-quick-view" type="button" tabindex="-1" aria-hidden="true" data-barber-id="${escapeHtml(barber.id)}">
                     <i class="fas fa-expand" aria-hidden="true"></i>
                 </button>
             </div>
@@ -166,8 +156,8 @@ function renderBarberCards() {
                     <span class="barber-card-rating">${starRatingHtml(barber.rating || 0)} ${barber.rating || 0}</span>
                 </div>
                 <div class="barber-card-actions">
-                    <a href="../booking/booking.html?barber=${barber.id}" class="btn-primary">Book with This Barber</a>
-                    <button class="barber-view-more" type="button" data-barber-id="${barber.id}">View Full Profile</button>
+                    <a href="../booking/booking.html?barber=${encodeURIComponent(barber.id)}" class="btn-primary">Book with This Barber</a>
+                    <button class="barber-view-more" type="button" data-barber-id="${escapeHtml(barber.id)}">View Full Profile</button>
                 </div>
             </div>
         </article>
@@ -249,7 +239,7 @@ function initBarberModal() {
 
         document.getElementById('barberModalExperience').textContent = barber.experience || 0;
         document.getElementById('barberModalReviews').textContent = barber.reviews || 0;
-        document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${barber.id}`;
+        document.getElementById('barberModalBook').href = `../booking/booking.html?barber=${encodeURIComponent(barber.id)}`;
 
         lastFocused = document.activeElement;
         if (panel) panel.style.transform = '';

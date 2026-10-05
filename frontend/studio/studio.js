@@ -132,13 +132,6 @@ function starRatingHtml(rating) {
     return html;
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 // Same relative/absolute image path handling as about.js, so a barber's
 // photo resolves the same way no matter which page rendered it.
 function resolveBarberImageSrc(barber, fallback) {

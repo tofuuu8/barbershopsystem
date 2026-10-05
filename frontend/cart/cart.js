@@ -44,12 +44,38 @@ async function getCart() {
         return [];
     }
 
-    return (data || []).map(row => ({
+    const items = (data || []).map(row => ({
         id: row.product_id,
         name: row.name,
         price: Number(row.price),
         quantity: row.quantity
     }));
+
+    // cart_items keeps the name/price from the moment each item was added,
+    // which goes stale if a price is edited afterwards. Checkout always
+    // charges the live `products` price, so show that same price here too —
+    // otherwise the cart/checkout total could differ from what's charged.
+    // Best-effort: if the lookup fails (or a product no longer exists) the
+    // stored values are kept and the server still decides the real price.
+    if (items.length) {
+        const { data: live, error: liveError } = await supabaseClient
+            .from('products')
+            .select('id, name, price')
+            .in('id', items.map(item => item.id));
+
+        if (!liveError && live) {
+            const liveById = new Map(live.map(p => [String(p.id), p]));
+            items.forEach(item => {
+                const product = liveById.get(String(item.id));
+                if (!product) return;
+                const livePrice = Number(product.price);
+                if (Number.isFinite(livePrice) && livePrice >= 0) item.price = livePrice;
+                if (product.name) item.name = product.name;
+            });
+        }
+    }
+
+    return items;
 }
 
 // Deletes every cart_items row for the signed-in visitor in one request —

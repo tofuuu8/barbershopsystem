@@ -205,22 +205,19 @@ function initLoginForm() {
             return;
         }
 
-        // ============================================
-        // ✅ UPDATE USER STATUS — ONLINE
-        // ============================================
+        // Record the login time. (This used to also set profiles.status = 'online',
+        // but nothing ever set it back to offline — logout and closed tabs never
+        // cleared it — so every user who had ever logged in looked online forever.
+        // Use last_login for "recently active" instead.)
+        // Awaited so the redirect below can't cancel the request mid-flight.
+        // Supabase reports failures via { error } rather than throwing, and a
+        // failed timestamp update should never block login, so just log it.
         if (data && data.user) {
-            try {
-                await supabaseClient
-                    .from('profiles')
-                    .update({ 
-                        status: 'online',
-                        last_login: new Date().toISOString()
-                    })
-                    .eq('id', data.user.id);
-                console.log('✅ User status updated to online');
-            } catch (statusError) {
-                console.error('Error updating user status:', statusError);
-            }
+            const { error: loginStampError } = await supabaseClient
+                .from('profiles')
+                .update({ last_login: new Date().toISOString() })
+                .eq('id', data.user.id);
+            if (loginStampError) console.warn('Could not record last login:', loginStampError.message);
         }
 
         // onAuthStateChange (in main.js) picks this session up automatically;

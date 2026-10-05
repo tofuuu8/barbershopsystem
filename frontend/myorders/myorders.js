@@ -521,9 +521,7 @@ function formatDateMyOrders(iso) {
 }
 
 function escapeHtmlMyOrders(str) {
-    const div = document.createElement('div');
-    div.textContent = String(str);
-    return div.innerHTML;
+    return escapeHtml(str); // shared, quote-safe version from main.js
 }
 
 function setTextMyOrders(id, value) {
